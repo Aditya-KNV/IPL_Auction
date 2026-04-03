@@ -12,6 +12,7 @@ import AuctionTimer from "./AuctionTimer";
 import AuctionControls from "./AuctionControls";
 import MyTeamPanel from "./MyTeamPanel";
 import OtherTeamsPanel from "./OtherTeamsPanel";
+import { hasBattingStats, hasBowlingStats } from "../../utils/playerDisplay";
 
 const METRIC_STYLES = {
   blue: "border-blue-500/20 bg-blue-500/10 text-blue-200",
@@ -74,8 +75,8 @@ const buildRatings = (player) => {
     ["Consistency", player.role_impact?.consistency, "green"],
   ];
 
-  if (player.role === "Bowler") return [...bowling, ...impact];
-  if (player.role === "Batsman" || player.role === "Wicket-Keeper") return [...batting, ...impact];
+  if (!hasBattingStats(player.role)) return [...bowling, ...impact];
+  if (!hasBowlingStats(player.role)) return [...batting, ...impact];
   return [
     ["Batting", average(batting.map(([, value]) => value)), "blue"],
     ["Bowling", average(bowling.map(([, value]) => value)), "red"],
@@ -103,14 +104,14 @@ const buildSubRatings = (player) => {
     ["Flexibility", player.tactical?.flexibility, "green"],
   ];
 
-  if (player.role === "Bowler") {
+  if (!hasBattingStats(player.role)) {
     return [
       { title: "Bowling Skills", items: bowlingSkills },
       { title: "General", items: generalSkills },
     ];
   }
 
-  if (player.role === "Batsman" || player.role === "Wicket-Keeper") {
+  if (!hasBowlingStats(player.role)) {
     return [
       { title: "Batting Skills", items: battingSkills },
       { title: "General", items: generalSkills },
@@ -153,6 +154,8 @@ const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
   const subRatings = buildSubRatings(player);
   const profileStats = buildProfileStats(player);
   const { battingPhases, bowlingPhases } = buildPhaseDetails(player);
+  const showBatting = hasBattingStats(player.role);
+  const showBowling = hasBowlingStats(player.role);
 
   return (
     <div className={`rounded-2xl border border-gray-800 bg-gray-900/80 ${expanded ? "h-full p-3" : "p-4"}`}>
@@ -199,7 +202,7 @@ const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
           </div>
         )}
 
-        {expanded && (
+        {expanded && showBatting && (
           <div>
             <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
               Batting Phases
@@ -216,7 +219,7 @@ const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
           </div>
         )}
 
-        {expanded && (
+        {expanded && showBowling && (
           <div>
             <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
               Bowling Phases

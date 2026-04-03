@@ -1,64 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { useRoom }   from '../context/RoomContext';
-import { useAuth }   from '../context/AuthContext';
+import { useRoom } from '../context/RoomContext';
+import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import CreateRoomForm from '../components/room/CreateRoomForm';
-import JoinRoomForm   from '../components/room/JoinRoomForm';
-import RoomLobby      from '../components/room/RoomLobby';
-import AuctionBoard   from '../components/auction/AuctionBoard';
-import { useMyTeam }  from '../hooks/useMyTeam';
+import JoinRoomForm from '../components/room/JoinRoomForm';
+import RoomLobby from '../components/room/RoomLobby';
+import AuctionBoard from '../components/auction/AuctionBoard';
+import { useMyTeam } from '../hooks/useMyTeam';
 import OtherTeamsPanel from '../components/auction/OtherTeamsPanel';
-import MyTeamPanel     from '../components/auction/MyTeamPanel';
-import DashboardPage  from './DashboardPage';
-import RankingPage    from './RankingPage';
+import MyTeamPanel from '../components/auction/MyTeamPanel';
+import PlayerStatsModal from '../components/players/PlayerStatsModal';
+import DashboardPage from './DashboardPage';
+import RankingPage from './RankingPage';
 import api from '../services/api';
-
-// ── Players tab ───────────────────────────────────────────────────────────────
-
-const STATUS_COLOR = {
-  sold: 'text-green-400',
-  unsold: 'text-red-400',
-  'in-auction': 'text-yellow-400',
-  available: 'text-gray-400',
-};
+import { STATUS_COLOR, getDisplayStatus } from '../utils/playerDisplay';
 
 function PlayersTab() {
   const { socket } = useSocket();
   const [players, setPlayers] = useState([]);
-  const [filter,  setFilter]  = useState({ role: '', status: '', auctionSetName: '' });
+  const [filter, setFilter] = useState({ role: '', status: '', auctionSetName: '' });
+  const [selected, setSelected] = useState(null);
+  const [loadingPlayer, setLoadingPlayer] = useState(false);
 
-  const setOptions = [
-    'Marquee Set 1',
-    'Marquee Set 2',
-    'Set 3',
-    'Set 4',
-    'Set 5',
-    'Set 6',
-  ];
+  const setOptions = ['Marquee Set 1', 'Marquee Set 2', 'Set 3', 'Set 4', 'Set 5', 'Set 6'];
 
   const load = () => {
     const params = {};
-    if (filter.role)   params.role   = filter.role;
+    if (filter.role) params.role = filter.role;
     if (filter.status) params.status = filter.status;
     if (filter.auctionSetName) params.auctionSetName = filter.auctionSetName;
     api.get('/players', { params }).then((r) => setPlayers(r.data)).catch(console.error);
   };
 
-  useEffect(() => { load(); }, [filter]); // re-fetch when filter changes
+  useEffect(() => { load(); }, [filter]);
 
-  // Refresh when a player is sold/unsold
   useEffect(() => {
     if (!socket) return;
-    socket.on('auction:sold',   load);
+    socket.on('auction:sold', load);
     socket.on('auction:unsold', load);
     return () => {
-      socket.off('auction:sold',   load);
+      socket.off('auction:sold', load);
       socket.off('auction:unsold', load);
     };
-  }, [socket]); // socket is stable after connect
+  }, [socket]);
+
+  const openPlayer = async (id) => {
+    setLoadingPlayer(true);
+    try {
+      const { data } = await api.get(`/players/${id}`);
+      setSelected(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPlayer(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-6">
+      {selected && <PlayerStatsModal player={selected} onClose={() => setSelected(null)} />}
+      {loadingPlayer && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50">
+          <svg className="h-8 w-8 animate-spin text-ipl-gold" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+        </div>
+      )}
+
       <h2 className="text-2xl font-bold text-ipl-gold mb-6">Players</h2>
 
       <div className="flex gap-4 mb-6">
@@ -109,22 +118,29 @@ function PlayersTab() {
             </tr>
           </thead>
           <tbody>
-            {players.map((p) => (
-              <tr key={p._id} className="border-b border-gray-800 hover:bg-gray-900/60 transition">
-                <td className="py-3 px-4 font-semibold text-white">{p.name}</td>
-                <td className="py-3 px-4 text-gray-400">{p.auctionSetName || '—'}</td>
-                <td className="py-3 px-4 text-gray-300">{p.role}</td>
-                <td className="py-3 px-4 text-gray-400">{p.nationality}</td>
-                <td className="py-3 px-4 text-right text-gray-300">₹{p.basePrice}</td>
-                <td className="py-3 px-4 text-right text-ipl-gold font-semibold">
-                  {p.soldPrice ? `₹${p.soldPrice}` : '—'}
-                </td>
-                <td className="py-3 px-4 text-gray-300">{p.team?.shortName || '—'}</td>
-                <td className={`py-3 px-4 font-semibold capitalize ${STATUS_COLOR[p.status] || 'text-gray-400'}`}>
-                  {p.status}
-                </td>
-              </tr>
-            ))}
+            {players.map((p) => {
+              const displayStatus = getDisplayStatus(p);
+              return (
+                <tr
+                  key={p._id}
+                  onClick={() => openPlayer(p._id)}
+                  className="border-b border-gray-800 hover:bg-gray-900/60 transition cursor-pointer"
+                >
+                  <td className="py-3 px-4 font-semibold text-white">{p.name}</td>
+                  <td className="py-3 px-4 text-gray-400">{p.auctionSetName || '—'}</td>
+                  <td className="py-3 px-4 text-gray-300">{p.role}</td>
+                  <td className="py-3 px-4 text-gray-400">{p.nationality}</td>
+                  <td className="py-3 px-4 text-right text-gray-300">₹{p.basePrice}</td>
+                  <td className="py-3 px-4 text-right text-ipl-gold font-semibold">
+                    {p.soldPrice ? `₹${p.soldPrice}` : '—'}
+                  </td>
+                  <td className="py-3 px-4 text-gray-300">{p.team?.shortName || '—'}</td>
+                  <td className={`py-3 px-4 font-semibold capitalize ${STATUS_COLOR[displayStatus] || 'text-gray-400'}`}>
+                    {displayStatus}
+                  </td>
+                </tr>
+              );
+            })}
             {players.length === 0 && (
               <tr>
                 <td colSpan={8} className="py-10 text-center text-gray-600">No players found</td>
@@ -137,26 +153,25 @@ function PlayersTab() {
   );
 }
 
-// ── Teams tab ─────────────────────────────────────────────────────────────────
-
 function TeamsTab() {
-  const { user }            = useAuth();
+  const { user } = useAuth();
   const { teamAssignments } = useRoom();
   const { myTeam, allTeams, squadByRole, loading } = useMyTeam();
 
   const myTeamId = user ? teamAssignments?.[user.id]?.teamId ?? null : null;
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-gray-500">Loading teams…</p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-gray-500">Loading teams...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       <h2 className="text-2xl font-bold text-ipl-gold">Teams</h2>
 
-      {/* My team with full squad */}
       {myTeam && (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">My Team</p>
@@ -164,7 +179,6 @@ function TeamsTab() {
         </div>
       )}
 
-      {/* All teams comparison */}
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">All Teams</p>
         <OtherTeamsPanel teams={allTeams} myTeamId={myTeamId} />
@@ -173,20 +187,17 @@ function TeamsTab() {
   );
 }
 
-// ── In-room tab bar layout ────────────────────────────────────────────────────
-
 const TABS = ['Lobby', 'Auction', 'Teams', 'Players', 'Dashboard', 'Rankings'];
 
 function InRoomLayout() {
   const { room, teamAssignments } = useRoom();
-  const { user }   = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Lobby');
 
   const myAssignment = user ? teamAssignments?.[user.id] : null;
 
   return (
     <div className="h-full bg-ipl-dark overflow-hidden">
-      {/* Tab bar — fixed below the main Navbar */}
       <div className="fixed top-[72px] inset-x-0 z-40 bg-gray-950 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-6 flex items-center gap-1">
           {TABS.map((tab) => (
@@ -200,14 +211,12 @@ function InRoomLayout() {
               }`}
             >
               {tab}
-              {/* Show a dot on Auction tab when there's an active room */}
               {tab === 'Auction' && room && (
                 <span className="absolute top-2 right-1 w-1.5 h-1.5 rounded-full bg-green-500" />
               )}
             </button>
           ))}
 
-          {/* Room code pill */}
           <div className="ml-auto flex items-center gap-2 pb-1">
             <span className="text-xs text-gray-500">Room:</span>
             <span className="font-mono font-bold text-ipl-gold text-sm bg-gray-900 px-2 py-0.5 rounded-lg border border-gray-700">
@@ -217,7 +226,6 @@ function InRoomLayout() {
         </div>
       </div>
 
-      {/* Tab content */}
       <div className="h-full pt-[57px] overflow-hidden">
         {activeTab === 'Lobby' && (
           <div className="h-full overflow-y-auto">
@@ -236,17 +244,17 @@ function InRoomLayout() {
             <div className="h-full overflow-y-auto">
               <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="bg-gray-900 border border-gray-700 rounded-2xl p-10 text-center max-w-sm">
-                <p className="text-4xl mb-4">🏏</p>
-                <h2 className="text-white font-bold text-xl mb-2">Pick a Team First</h2>
-                <p className="text-gray-400 text-sm mb-6">
-                  Go to the Lobby tab and select your team before joining the auction.
-                </p>
-                <button
-                  onClick={() => setActiveTab('Lobby')}
-                  className="bg-ipl-gold text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
-                >
-                  Go to Lobby
-                </button>
+                  <p className="text-4xl mb-4">🏏</p>
+                  <h2 className="text-white font-bold text-xl mb-2">Pick a Team First</h2>
+                  <p className="text-gray-400 text-sm mb-6">
+                    Go to the Lobby tab and select your team before joining the auction.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('Lobby')}
+                    className="bg-ipl-gold text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
+                  >
+                    Go to Lobby
+                  </button>
                 </div>
               </div>
             </div>
@@ -277,8 +285,6 @@ function InRoomLayout() {
     </div>
   );
 }
-
-// ── Page root ─────────────────────────────────────────────────────────────────
 
 export default function RoomPage() {
   const { status, error } = useRoom();
