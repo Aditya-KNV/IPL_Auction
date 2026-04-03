@@ -4,7 +4,7 @@ const User         = require('../models/User');
 const AuctionSession = require('../models/AuctionSession');
 const Team         = require('../models/Team');
 const { registerRoomHandlers } = require('./roomHandlers');
-const { getRawRoom }           = require('./roomStore');
+const { getRawRoom, getRawRoomByUserId } = require('./roomStore');
 const timer        = require('./auctionTimer');
 const { isValidBid, getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
 const { canTeamBuyPlayer, MAX_OVERSEAS_PLAYERS } = require('../utils/teamRules');
@@ -62,7 +62,9 @@ const initSocket = (server) => {
         }
 
         // ── 2. Resolve team from room assignment ──────────────────────────────
-        const rawRoom  = getRawRoom(socket.id);
+        // Fall back to userId lookup when socket hasn't re-registered in
+        // socketToRoom yet (brief race window during reconnect → room:join).
+        const rawRoom  = getRawRoom(socket.id) ?? getRawRoomByUserId(socket.user.userId);
         const assigned = rawRoom?.teamAssignments.get(socket.user.userId);
         if (!assigned) {
           return socket.emit('bid:error', { message: 'You have not picked a team yet' });

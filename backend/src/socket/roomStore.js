@@ -178,6 +178,18 @@ const getRawRoom = (socketId) => {
 const getRawRoomByCode = (code) => rooms.get(code) ?? null;
 const roomExists = (code) => rooms.has(code);
 
+/**
+ * Fallback lookup by userId — used when a socket reconnects and
+ * socketToRoom hasn't been updated yet (race condition during room:join).
+ * Finds a room where this userId has a team assignment.
+ */
+const getRawRoomByUserId = (userId) => {
+  for (const room of rooms.values()) {
+    if (room.teamAssignments.has(userId)) return room;
+  }
+  return null;
+};
+
 module.exports = {
   createRoom,
   joinRoom,
@@ -188,5 +200,6 @@ module.exports = {
   getRoomBySocket,
   getRawRoom,
   getRawRoomByCode,
+  getRawRoomByUserId,
   roomExists,
 };

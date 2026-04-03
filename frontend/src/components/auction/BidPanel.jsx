@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRoom } from '../../context/RoomContext';
 import { formatCroreAmount, normalizeCroreAmount } from '../../utils/currency';
@@ -27,19 +27,25 @@ export default function BidPanel({
   const { user } = useAuth();
   const { teamAssignments } = useRoom();
   const [bidding, setBidding] = useState(false);
+  const bidTimeoutRef = useRef(null);
 
   const myTeamAssignment = user ? teamAssignments?.[user.id] : null;
-  const isLeading = !!(
-    myTeamAssignment &&
-    highestBidder &&
-    String(getBidderTeamId(highestBidder)) === String(myTeamAssignment.teamId)
-  );
+
+  // Null-safe comparison: both IDs must be truthy strings before comparing
+  const myTeamId    = myTeamAssignment?.teamId ? String(myTeamAssignment.teamId) : null;
+  const bidderTeamId = getBidderTeamId(highestBidder) ? String(getBidderTeamId(highestBidder)) : null;
+  const isLeading   = !!(myTeamId && bidderTeamId && myTeamId === bidderTeamId);
+
   const hasExistingBid = !!highestBidder;
 
-  // Re-enable buttons as soon as the server responds (bid accepted or rejected)
+  // Re-enable as soon as server responds (bid accepted → currentBid changes,
+  // bid rejected → bidError changes). 1.5 s hard timeout as safety net.
   useEffect(() => {
     setBidding(false);
+    clearTimeout(bidTimeoutRef.current);
   }, [currentBid, bidError]);
+
+  useEffect(() => () => clearTimeout(bidTimeoutRef.current), []);
 
   const canBid = !!currentPlayer && timeLeft > 0 && !!myTeamAssignment && !isLeading && !bidding;
   const quickBids = useMemo(() => getQuickBids(currentBid, hasExistingBid), [currentBid, hasExistingBid]);
@@ -48,6 +54,8 @@ export default function BidPanel({
   const handleQuickBid = (amount) => {
     if (!canBid) return;
     setBidding(true);
+    clearTimeout(bidTimeoutRef.current);
+    bidTimeoutRef.current = setTimeout(() => setBidding(false), 1500);
     onBid(amount);
   };
 
