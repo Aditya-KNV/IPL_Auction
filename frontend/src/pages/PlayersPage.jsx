@@ -158,10 +158,14 @@ export default function PlayersPage() {
   const [loadingPlayer, setLoadingPlayer] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
     const params = {};
     if (filter.role) params.role = filter.role;
     if (filter.status) params.status = filter.status;
-    api.get('/players', { params }).then(r => setPlayers(r.data)).catch(console.error);
+    api.get('/players', { params, signal: controller.signal })
+      .then(r => setPlayers(r.data))
+      .catch(err => { if (err.name !== 'CanceledError') console.error(err); });
+    return () => controller.abort();
   }, [filter]);
 
   const openPlayer = async (id) => {
