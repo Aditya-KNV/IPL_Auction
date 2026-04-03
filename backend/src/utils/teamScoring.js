@@ -219,9 +219,28 @@ const topAverage = (players, metricFn, count) => {
   return ratings.length ? average(ratings) : 0;
 };
 
-const powerplayBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.powerplay ?? 0, 4) * 1.1;
-const middleBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.middle ?? 0, 5) * 1.2;
-const deathBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.death ?? 0, 4) * 1.1;
+// Only players who actually bowl (overs > 0) are eligible for phase scores.
+// Each phase requires at least 2 eligible bowlers — a single bowler cannot
+// cover the required overs alone (powerplay = 6, middle = 10, death = 4).
+const eligibleBowlers = (players) => players.filter((p) => (p.tactical?.overs ?? 0) > 0);
+
+const powerplayBowlingScore = (players) => {
+  const bowlers = eligibleBowlers(players);
+  if (bowlers.length < 2) return 0;
+  return topAverage(bowlers, (p) => p.bowling?.phases?.powerplay ?? 0, 4) * 1.1;
+};
+
+const middleBowlingScore = (players) => {
+  const bowlers = eligibleBowlers(players);
+  if (bowlers.length < 2) return 0;
+  return topAverage(bowlers, (p) => p.bowling?.phases?.middle ?? 0, 5) * 1.2;
+};
+
+const deathBowlingScore = (players) => {
+  const bowlers = eligibleBowlers(players);
+  if (bowlers.length < 2) return 0;
+  return topAverage(bowlers, (p) => p.bowling?.phases?.death ?? 0, 4) * 1.1;
+};
 
 const playerFitnessComposite = (player) => average([
   player.fitness?.stamina ?? 0,
