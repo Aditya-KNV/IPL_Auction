@@ -1,14 +1,29 @@
 const Player = require('../models/Player');
+const AuctionSession = require('../models/AuctionSession');
 
 const getPlayers = async (req, res) => {
   try {
     const { role, status, team, auctionSetName } = req.query;
     const filter = {};
+    let unsoldPlayerIds = null;
+
+    if (status === 'unsold' || status === 'available') {
+      const session = await AuctionSession.findOne().select('unsoldPlayers');
+      unsoldPlayerIds = (session?.unsoldPlayers || []).map((id) => String(id));
+    }
+
     if (role) filter.role = role;
     if (status) {
-      filter.status = status === 'unsold'
-        ? { $in: ['unsold', 'available'] }
-        : status;
+      if (status === 'unsold') {
+        filter._id = { $in: unsoldPlayerIds || [] };
+      } else if (status === 'available') {
+        filter.status = 'available';
+        if (unsoldPlayerIds?.length) {
+          filter._id = { $nin: unsoldPlayerIds };
+        }
+      } else {
+        filter.status = status;
+      }
     }
     if (team) filter.team = team;
     if (auctionSetName) filter.auctionSetName = auctionSetName;

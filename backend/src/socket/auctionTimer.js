@@ -103,4 +103,13 @@ const getTimeLeft  = () => _computeTimeLeft();
 const getExpiresAt = () => _expiresAt;
 const isRunning    = () => _timeout !== null;
 
-module.exports = { start, extend, stop, getTimeLeft, getExpiresAt, isRunning, EXTENSION_SECS };
+module.exports = {
+  start,
+  extend,
+  stop,
+  getTimeLeft,
+  getExpiresAt,
+  isRunning,
+  EXTENSION_SECS,
+  EXPIRE_GRACE_MS,
+};

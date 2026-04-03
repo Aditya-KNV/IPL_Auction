@@ -79,7 +79,7 @@ const initSocket = (server) => {
           return socket.emit('bid:error', { message: 'Auction is not active' });
         }
 
-        if (!timer.isRunning() && timer.getExpiresAt() && now > timer.getExpiresAt() + 400) {
+        if (!timer.isRunning() && timer.getExpiresAt() && now > timer.getExpiresAt() + timer.EXPIRE_GRACE_MS) {
           return socket.emit('bid:error', { message: 'Bidding window just closed' });
         }
 
