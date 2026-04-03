@@ -19,6 +19,9 @@ initSocket(server);
 app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
 app.use(express.json());
 
+// Health check — keeps Render free tier awake when pinged by an uptime monitor
+app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/players', require('./routes/players'));
