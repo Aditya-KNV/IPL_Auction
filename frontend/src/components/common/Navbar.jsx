@@ -4,9 +4,7 @@ import { useAuth }   from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 
 const NAV_LINKS = [
-  { to: '/', label: 'Dashboard' },
   { to: '/room', label: 'Rooms' },
-  { to: '/ranking', label: 'Rankings' },
 ];
 
 export default function Navbar() {
