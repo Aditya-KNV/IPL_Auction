@@ -4,7 +4,7 @@ const Team           = require('../models/Team');
 const { getIO }      = require('../socket');
 const timer          = require('../socket/auctionTimer');
 const { getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
-const { canTeamBuyPlayer, MAX_OVERSEAS_PLAYERS } = require('../utils/teamRules');
+const { canTeamBuyPlayer, MAX_OVERSEAS_SQUAD, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules');
 
 const NEXT_PLAYER_DELAY_MS = 3000; // pause after sold/unsold before next player
 
@@ -96,7 +96,11 @@ const executeSale = async (session) => {
 
   const eligibility = await canTeamBuyPlayer(team._id, player);
   if (!eligibility.allowed) {
-    throw new Error(`Overseas player limit reached (${MAX_OVERSEAS_PLAYERS})`);
+    throw new Error(
+      eligibility.reason === 'playing12'
+        ? `Playing-12 overseas limit reached (${MAX_OVERSEAS_PLAYING})`
+        : `Overseas squad limit reached (${MAX_OVERSEAS_SQUAD})`
+    );
   }
 
   player.status    = 'sold';

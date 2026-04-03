@@ -11,12 +11,14 @@
  */
 
 const EXTENSION_SECS = 10; // extra seconds granted after every new bid
+const EXPIRE_GRACE_MS = 400; // window after timer fires where bids still count
 
-let _io        = null;
-let _onExpire  = null;
-let _timeLeft  = 0;
-let _expiresAt = 0;
-let _timeout   = null;
+let _io         = null;
+let _onExpire   = null;
+let _timeLeft   = 0;
+let _expiresAt  = 0;
+let _timeout    = null;
+let _generation = 0; // incremented each time the timer is (re)started
 
 // ── Private ───────────────────────────────────────────────────────────────────
 
@@ -26,15 +28,26 @@ const _clearAll = () => {
 
 const _run = (seconds) => {
   _clearAll();
+  _generation++;
+  const gen  = _generation;
   _timeLeft  = seconds;
   _expiresAt = Date.now() + seconds * 1000;
 
-  // Expire after `seconds` — clients drive their own visual countdown
+  // Expire after `seconds` — clients drive their own visual countdown.
+  // We wait EXPIRE_GRACE_MS before invoking onExpire so that any bids that
+  // arrived just before the deadline (and called extend()) cancel the expiry.
   _timeout = setTimeout(async () => {
     _clearAll();
     _timeLeft  = 0;
     _expiresAt = 0;
     _io?.emit('auction:timer', { timeLeft: 0, expiresAt: Date.now() });
+
+    // Brief grace: let any in-flight bid that just called extend() win
+    await new Promise((r) => setTimeout(r, EXPIRE_GRACE_MS));
+
+    // If extend() ran during the grace window it bumped _generation — abort
+    if (_generation !== gen) return;
+
     if (_onExpire) {
       try {
         await _onExpire();

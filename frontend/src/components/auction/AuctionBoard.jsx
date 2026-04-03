@@ -488,7 +488,6 @@ export default function AuctionBoard() {
                 minNextBid={minNextBid}
                 highestBidder={highestBidder}
                 currentPlayer={currentPlayer}
-                timeLeft={timeLeft}
                 bidError={bidError}
                 onBid={placeBid}
               />

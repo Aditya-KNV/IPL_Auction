@@ -20,7 +20,6 @@ export default function BidPanel({
   minNextBid,
   highestBidder,
   currentPlayer,
-  timeLeft,
   bidError,
   onBid,
 }) {
@@ -47,7 +46,10 @@ export default function BidPanel({
 
   useEffect(() => () => clearTimeout(bidTimeoutRef.current), []);
 
-  const canBid = !!currentPlayer && timeLeft > 0 && !!myTeamAssignment && !isLeading && !bidding;
+  // timeLeft is intentionally excluded — the server is the authority on timing.
+  // Removing it prevents clock-skew from falsely disabling buttons when the
+  // server still has time (the server rejects any bid that arrives too late).
+  const canBid = !!currentPlayer && !!myTeamAssignment && !isLeading && !bidding;
   const quickBids = useMemo(() => getQuickBids(currentBid, hasExistingBid), [currentBid, hasExistingBid]);
   const effectiveMin = minNextBid || (currentBid ? getMinNextBid(currentBid, hasExistingBid) : 0);
 

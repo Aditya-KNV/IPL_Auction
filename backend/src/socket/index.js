@@ -7,7 +7,7 @@ const { registerRoomHandlers } = require('./roomHandlers');
 const { getRawRoom, getRawRoomByUserId } = require('./roomStore');
 const timer        = require('./auctionTimer');
 const { isValidBid, getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
-const { canTeamBuyPlayer, MAX_OVERSEAS_PLAYERS } = require('../utils/teamRules');
+const { canTeamBuyPlayer, MAX_OVERSEAS_SQUAD, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules');
 
 let io;
 
@@ -91,9 +91,10 @@ const initSocket = (server) => {
         }
         const eligibility = await canTeamBuyPlayer(teamId, currentSession.currentPlayer);
         if (!eligibility.allowed) {
-          return socket.emit('bid:error', {
-            message: `Overseas player limit reached (${MAX_OVERSEAS_PLAYERS}). ${team.name} cannot buy ${currentSession.currentPlayer.name}.`,
-          });
+          const msg = eligibility.reason === 'playing12'
+            ? `Playing-12 overseas limit reached (${MAX_OVERSEAS_PLAYING}). Buy more Indian players to unlock the bench slots.`
+            : `Overseas squad limit reached (${MAX_OVERSEAS_SQUAD}). ${team.name} cannot buy more overseas players.`;
+          return socket.emit('bid:error', { message: msg });
         }
         const hasExistingBid = !!currentSession.currentHighestBidder;
         const minRequired = getMinNextBid(currentSession.currentBid, hasExistingBid);

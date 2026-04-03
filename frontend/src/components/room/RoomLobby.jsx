@@ -92,9 +92,10 @@ export default function RoomLobby() {
   const { socket } = useSocket();
   const { user }   = useAuth();
 
-  const [copied,    setCopied]    = useState(false);
-  const [toasts,    setToasts]    = useState([]);
-  const [allTeams,  setAllTeams]  = useState([]);
+  const [copied,         setCopied]        = useState(false);
+  const [toasts,         setToasts]        = useState([]);
+  const [allTeams,       setAllTeams]      = useState([]);
+  const [auctionStatus,  setAuctionStatus] = useState(null);
 
   const mySocketId = socket?.id;
   const amHost     = room?.hostId === mySocketId;
@@ -102,10 +103,24 @@ export default function RoomLobby() {
   // Find my assignment
   const myAssignment = user ? teamAssignments[user.id] : null;
 
-  // Fetch all teams once
+  // Fetch all teams + auction status once
   useEffect(() => {
     api.get('/teams').then((r) => setAllTeams(r.data)).catch(() => {});
+    api.get('/auction/session').then((r) => setAuctionStatus(r.data?.status ?? null)).catch(() => {});
   }, []);
+
+  // Keep auction status in sync via socket events
+  useEffect(() => {
+    if (!socket) return;
+    const onStatus    = ({ status }) => setAuctionStatus(status);
+    const onCompleted = () => setAuctionStatus('completed');
+    socket.on('auction:status',    onStatus);
+    socket.on('auction:completed', onCompleted);
+    return () => {
+      socket.off('auction:status',    onStatus);
+      socket.off('auction:completed', onCompleted);
+    };
+  }, [socket]);
 
   // Build a reverse map: teamId → claimedBy username
   const takenMap = {};
@@ -128,7 +143,10 @@ export default function RoomLobby() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const auctionLocked = auctionStatus === 'active' || auctionStatus === 'paused' || auctionStatus === 'completed';
+
   const handlePickTeam = (team) => {
+    if (auctionLocked) return;
     pickTeam({ teamId: team._id, name: team.name, shortName: team.shortName, color: team.color });
   };
 
@@ -153,9 +171,16 @@ export default function RoomLobby() {
       </div>
 
       {/* ── Team picker ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6">
+      <div className={`bg-gray-900 border rounded-2xl p-6 ${auctionLocked ? 'border-gray-800 opacity-75' : 'border-gray-700'}`}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Pick Your Team</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Pick Your Team</h3>
+            {auctionLocked && (
+              <span className="text-xs font-semibold text-yellow-500 bg-yellow-500/10 border border-yellow-500/30 px-2 py-0.5 rounded-full">
+                Locked
+              </span>
+            )}
+          </div>
           {myAssignment && (
             <span className="text-xs text-green-400 font-medium">
               You picked: {myAssignment.shortName}
@@ -163,10 +188,16 @@ export default function RoomLobby() {
           )}
         </div>
 
+        {auctionLocked && (
+          <p className="text-yellow-600 text-xs mb-3 text-center">
+            Team selection is locked once the auction has started.
+          </p>
+        )}
+
         {allTeams.length === 0 ? (
           <p className="text-gray-500 text-sm text-center py-4">Loading teams…</p>
         ) : (
-          <div className="grid grid-cols-4 gap-2">
+          <div className={`grid grid-cols-4 gap-2 ${auctionLocked ? 'pointer-events-none' : ''}`}>
             {allTeams.map((team) => (
               <TeamCard
                 key={team._id}
@@ -180,7 +211,11 @@ export default function RoomLobby() {
         )}
 
         <p className="text-gray-600 text-xs mt-3 text-center">
-          {amHost ? 'You are the host — pick first, then share the code.' : 'Pick a team before the auction starts. First come, first served.'}
+          {auctionLocked
+            ? 'The auction is underway — head to the Auction tab to bid.'
+            : amHost
+            ? 'You are the host — pick first, then share the code.'
+            : 'Pick a team before the auction starts. First come, first served.'}
         </p>
       </div>
 
