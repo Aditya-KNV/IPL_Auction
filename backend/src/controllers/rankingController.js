@@ -95,12 +95,23 @@ exports.getRankings = async (req, res) => {
         const squad = selectSquad(team);
         const breakdown = scoreBreakdown(squad);
 
+        const playing12 = squad.map((p) => ({
+          _id: p._id,
+          name: p.name,
+          role: p.role,
+          nationality: p.nationality,
+          batting_style: p.batting_style,
+          bowling_style: p.bowling_style,
+          age: p.age,
+        }));
+
         return {
           teamId: team._id,
           teamName: team.name,
           teamShortName: team.shortName,
           score: breakdown.final,
           breakdown,
+          playing12,
           summary: buildSummary({
             teamName: team.name,
             teamShortName: team.shortName,
@@ -116,6 +127,7 @@ exports.getRankings = async (req, res) => {
         teamShortName: entry.teamShortName,
         score: entry.score,
         breakdown: entry.breakdown,
+        playing12: entry.playing12,
         summary: entry.summary,
         teamId: entry.teamId,
       }));
@@ -130,6 +142,7 @@ exports.getRankings = async (req, res) => {
       rankings: rankings.map(({ teamId, ...entry }) => entry),
       verdict: buildVerdict(rankings),
     });
+
   } catch (err) {
     console.error('[rankingController]', err.message);
     res.status(500).json({ message: err.message });

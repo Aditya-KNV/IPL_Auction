@@ -203,10 +203,38 @@ const ScoreBar = ({ score }) => (
   </div>
 );
 
+const ROLE_COLOR = {
+  Batsman: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
+  Bowler: 'text-red-400 border-red-400/30 bg-red-400/10',
+  'All-Rounder': 'text-purple-400 border-purple-400/30 bg-purple-400/10',
+  'Wicket-Keeper': 'text-amber-400 border-amber-400/30 bg-amber-400/10',
+};
+
+const Playing12 = ({ players }) => {
+  if (!players?.length) return <p className="text-xs text-gray-500">No squad data available.</p>;
+  return (
+    <div className="grid grid-cols-2 gap-1.5">
+      {players.map((p, i) => (
+        <div key={p._id} className="flex items-center gap-2 rounded-lg border border-gray-800 bg-gray-950/60 px-2.5 py-2">
+          <span className="w-5 flex-shrink-0 text-center text-xs tabular-nums text-gray-600">{i + 1}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold text-white">{p.name}</p>
+            <p className="truncate text-[10px] text-gray-500">{p.nationality} · {p.batting_style === 'left-handed' ? 'LHB' : 'RHB'}</p>
+          </div>
+          <span className={`flex-shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold ${ROLE_COLOR[p.role] ?? 'text-gray-400 border-gray-700 bg-gray-800'}`}>
+            {p.role === 'Wicket-Keeper' ? 'WK' : p.role === 'All-Rounder' ? 'AR' : p.role === 'Batsman' ? 'BAT' : 'BWL'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ── Team card ─────────────────────────────────────────────────────────────────
 
 const TeamCard = ({ entry }) => {
   const [expanded, setExpanded] = useState(false);
+  const [tab, setTab] = useState('scores');
   const medal = MEDAL[entry.rank - 1] ?? `#${entry.rank}`;
   const b = entry.breakdown;
 
@@ -235,67 +263,63 @@ const TeamCard = ({ entry }) => {
       </button>
 
       {expanded && (
-        <div className="space-y-4 border-t border-gray-800/60 px-5 pb-5 pt-4">
-          <p className="text-sm leading-relaxed text-gray-300">{entry.summary}</p>
-
-          {/* Top-level */}
-          <div className="grid grid-cols-2 gap-2">
-            <BreakdownRow label="Batting" value={b.batting.total} max={43} />
-            <BreakdownRow label="Bowling" value={b.bowling.total} max={43} />
-            <BreakdownRow label="Fitness" value={b.fitness} max={5} explanation={explainFitness(b.fitness)} />
-            <BreakdownRow label="Impact" value={b.impact} max={5} explanation={explainImpact(b.impact)} />
-            <BreakdownRow label="Tactical" value={b.tactical} max={3} explanation={explainTactical(b.tactical)} />
-            <BreakdownRow label="Age" value={b.age} max={1} explanation={explainAge(b.age)} />
+        <div className="border-t border-gray-800/60">
+          {/* Tabs */}
+          <div className="flex border-b border-gray-800">
+            {['scores', 'playing12'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition ${
+                  tab === t ? 'border-b-2 border-ipl-gold text-ipl-gold' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {t === 'scores' ? 'Score Breakdown' : 'Playing 12'}
+              </button>
+            ))}
           </div>
 
-          {/* Batting breakdown */}
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-400">Batting Breakdown</p>
-            <div className="space-y-2">
-              <BreakdownRow
-                label="Wicket Keeper" value={b.batting.wicketKeeper} max={4}
-                explanation={explainWicketKeeper(b.batting.wicketKeeper)}
-              />
-              <BreakdownRow
-                label="Left/Right Balance" value={b.batting.leftRightBalance} max={5}
-                explanation={explainBalance(b.batting.leftRightBalance)}
-              />
-              <BreakdownRow
-                label="Position Fit" value={b.batting.positions} max={34}
-                explanation={explainPositions(b.batting.positions)}
-              />
-            </div>
-          </div>
+          <div className="space-y-4 px-5 pb-5 pt-4">
+            {tab === 'playing12' ? (
+              <Playing12 players={entry.playing12} />
+            ) : (
+              <>
+                <p className="text-sm leading-relaxed text-gray-300">{entry.summary}</p>
 
-          {/* Bowling breakdown */}
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-red-400">Bowling Breakdown</p>
-            <div className="space-y-2">
-              <BreakdownRow
-                label="Total Overs" value={b.bowling.totalOvers} max={5}
-                explanation={explainTotalOvers(b.bowling.totalOvers)}
-              />
-              <BreakdownRow
-                label="Pace Overs" value={b.bowling.paceOvers} max={5}
-                explanation={explainPaceOvers(b.bowling.paceOvers)}
-              />
-              <BreakdownRow
-                label="Spin Overs" value={b.bowling.spinOvers} max={5}
-                explanation={explainSpinOvers(b.bowling.spinOvers)}
-              />
-              <BreakdownRow
-                label="Powerplay Bowling" value={b.bowling.powerplay} max={9}
-                explanation={explainPhase(b.bowling.powerplay, 9, 'powerplay')}
-              />
-              <BreakdownRow
-                label="Middle Overs" value={b.bowling.middle} max={10}
-                explanation={explainPhase(b.bowling.middle, 10, 'middle-overs')}
-              />
-              <BreakdownRow
-                label="Death Bowling" value={b.bowling.death} max={9}
-                explanation={explainPhase(b.bowling.death, 9, 'death')}
-              />
-            </div>
+                {/* Top-level */}
+                <div className="grid grid-cols-2 gap-2">
+                  <BreakdownRow label="Batting" value={b.batting.total} max={43} />
+                  <BreakdownRow label="Bowling" value={b.bowling.total} max={43} />
+                  <BreakdownRow label="Fitness" value={b.fitness} max={5} explanation={explainFitness(b.fitness)} />
+                  <BreakdownRow label="Impact" value={b.impact} max={5} explanation={explainImpact(b.impact)} />
+                  <BreakdownRow label="Tactical" value={b.tactical} max={3} explanation={explainTactical(b.tactical)} />
+                  <BreakdownRow label="Age" value={b.age} max={1} explanation={explainAge(b.age)} />
+                </div>
+
+                {/* Batting breakdown */}
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-400">Batting Breakdown</p>
+                  <div className="space-y-2">
+                    <BreakdownRow label="Wicket Keeper" value={b.batting.wicketKeeper} max={4} explanation={explainWicketKeeper(b.batting.wicketKeeper)} />
+                    <BreakdownRow label="Left/Right Balance" value={b.batting.leftRightBalance} max={5} explanation={explainBalance(b.batting.leftRightBalance)} />
+                    <BreakdownRow label="Position Fit" value={b.batting.positions} max={34} explanation={explainPositions(b.batting.positions)} />
+                  </div>
+                </div>
+
+                {/* Bowling breakdown */}
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-red-400">Bowling Breakdown</p>
+                  <div className="space-y-2">
+                    <BreakdownRow label="Total Overs" value={b.bowling.totalOvers} max={5} explanation={explainTotalOvers(b.bowling.totalOvers)} />
+                    <BreakdownRow label="Pace Overs" value={b.bowling.paceOvers} max={5} explanation={explainPaceOvers(b.bowling.paceOvers)} />
+                    <BreakdownRow label="Spin Overs" value={b.bowling.spinOvers} max={5} explanation={explainSpinOvers(b.bowling.spinOvers)} />
+                    <BreakdownRow label="Powerplay Bowling" value={b.bowling.powerplay} max={9} explanation={explainPhase(b.bowling.powerplay, 9, 'powerplay')} />
+                    <BreakdownRow label="Middle Overs" value={b.bowling.middle} max={10} explanation={explainPhase(b.bowling.middle, 10, 'middle-overs')} />
+                    <BreakdownRow label="Death Bowling" value={b.bowling.death} max={9} explanation={explainPhase(b.bowling.death, 9, 'death')} />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
