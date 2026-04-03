@@ -51,7 +51,7 @@ const explainBowling = (b) => {
   else if (b.spinOvers >= 2) parts.push('some spin cover');
   else parts.push('limited spin');
 
-  const phaseAvg = ((b.powerplay / 9) + (b.middle / 10) + (b.death / 9)) / 3;
+  const phaseAvg = ((b.powerplay / 11) + (b.middle / 12) + (b.death / 11)) / 3;
   if (phaseAvg >= 0.75) parts.push('elite phase bowling across powerplay, middle and death');
   else if (phaseAvg >= 0.5) parts.push('solid phase bowling');
   else parts.push('bowling phases need improvement');

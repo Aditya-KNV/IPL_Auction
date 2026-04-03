@@ -28,29 +28,29 @@ const explainPositions = (score) => {
 };
 
 const explainTotalOvers = (score) => {
-  if (score >= 5) return '24+ overs covered — full bowling rotation available.';
-  if (score >= 4) return '23 overs — one over short of full cover.';
-  if (score >= 3) return '22 overs — a small but real bowling gap.';
-  if (score >= 2) return '21 overs — noticeable shortage of bowling options.';
-  if (score >= 1) return '20 overs — bare minimum, no margin for error.';
+  if (score >= 3) return '24+ overs covered — full bowling rotation available.';
+  if (score >= 2.5) return '23 overs — one over short of full cover.';
+  if (score >= 2) return '22 overs — a small but real bowling gap.';
+  if (score >= 1) return '21 overs — noticeable shortage of bowling options.';
+  if (score > 0) return '20 overs — bare minimum, no margin for error.';
   return 'Under 20 overs — not enough bowlers to complete a match legally.';
 };
 
 const explainPaceOvers = (score) => {
-  if (score >= 4.5) return '14+ pace overs with both left-arm and right-arm variety (+1 bonus).';
-  if (score >= 4) return '14+ pace overs — dominant pace attack.';
-  if (score >= 3) return '12–13 pace overs — solid pace depth.';
-  if (score >= 2) return '11 pace overs — limited pace options.';
-  if (score >= 1) return '10 pace overs — only bare pace cover.';
+  if (score >= 2.8) return '14+ pace overs with both left-arm and right-arm variety (+0.5 bonus).';
+  if (score >= 2.5) return '14+ pace overs — dominant pace attack.';
+  if (score >= 1.5) return '12–13 pace overs — solid pace depth.';
+  if (score >= 1) return '11 pace overs — limited pace options.';
+  if (score > 0) return '10 pace overs — only bare pace cover.';
   return 'Under 10 pace overs — critically short on fast bowling.';
 };
 
 const explainSpinOvers = (score) => {
-  if (score >= 4.5) return '10+ spin overs with a complementary bowling combination (+1 bonus).';
-  if (score >= 4) return '10+ spin overs — strong spin department.';
-  if (score >= 3) return '8–9 spin overs — decent spin cover.';
-  if (score >= 2) return '7 spin overs — limited spin options.';
-  if (score >= 1) return '6 spin overs — minimal spin cover.';
+  if (score >= 2.8) return '10+ spin overs with a complementary bowling combination (+0.5 bonus).';
+  if (score >= 2.5) return '10+ spin overs — strong spin department.';
+  if (score >= 1.5) return '8–9 spin overs — decent spin cover.';
+  if (score >= 1) return '7 spin overs — limited spin options.';
+  if (score > 0) return '6 spin overs — minimal spin cover.';
   return 'Under 6 spin overs — very little spin in the attack.';
 };
 
@@ -117,12 +117,12 @@ const SCHEMA_SECTIONS = [
     title: 'Bowling — 43 pts',
     color: 'text-red-400',
     rows: [
-      { label: 'Total Overs', max: 5, desc: '≥24=5 · 23=4 · 22=3 · 21=2 · 20=1 · <20=0' },
-      { label: 'Pace Overs', max: 5, desc: '≥14=4 · 13=3.5 · 12=3 · 11=2 · 10=1 · <10=0 · +1 if left+right arm pacers' },
-      { label: 'Spin Overs', max: 5, desc: '≥10=4 · 9=3.5 · 8=3 · 7=2 · 6=1 · <6=0 · +1 for complementary spin combo' },
-      { label: 'Powerplay Bowling', max: 9, desc: 'Avg of top 4 bowlers\' powerplay rating × 0.9' },
-      { label: 'Middle Overs Bowling', max: 10, desc: 'Avg of top 5 bowlers\' middle-over rating' },
-      { label: 'Death Bowling', max: 9, desc: 'Avg of top 4 bowlers\' death-over rating × 0.9' },
+      { label: 'Total Overs', max: 3, desc: '≥24=3 · 23=2.5 · 22=2 · 21=1 · 20=0.5 · <20=0' },
+      { label: 'Pace Overs', max: 3, desc: '≥14=2.5 · 13=2 · 12=1.5 · 11=1 · 10=0.5 · <10=0 · +0.5 if left+right arm pacers' },
+      { label: 'Spin Overs', max: 3, desc: '≥10=2.5 · 9=2 · 8=1.5 · 7=1 · 6=0.5 · <6=0 · +0.5 for complementary spin combo' },
+      { label: 'Powerplay Bowling', max: 11, desc: 'Avg of top 4 bowlers\' powerplay rating × 1.1' },
+      { label: 'Middle Overs Bowling', max: 12, desc: 'Avg of top 5 bowlers\' middle-over rating × 1.2' },
+      { label: 'Death Bowling', max: 11, desc: 'Avg of top 4 bowlers\' death-over rating × 1.1' },
     ],
   },
   {
@@ -310,12 +310,12 @@ const TeamCard = ({ entry }) => {
                 <div>
                   <p className="mb-2 text-xs font-bold uppercase tracking-wider text-red-400">Bowling Breakdown</p>
                   <div className="space-y-2">
-                    <BreakdownRow label="Total Overs" value={b.bowling.totalOvers} max={5} explanation={explainTotalOvers(b.bowling.totalOvers)} />
-                    <BreakdownRow label="Pace Overs" value={b.bowling.paceOvers} max={5} explanation={explainPaceOvers(b.bowling.paceOvers)} />
-                    <BreakdownRow label="Spin Overs" value={b.bowling.spinOvers} max={5} explanation={explainSpinOvers(b.bowling.spinOvers)} />
-                    <BreakdownRow label="Powerplay Bowling" value={b.bowling.powerplay} max={9} explanation={explainPhase(b.bowling.powerplay, 9, 'powerplay')} />
-                    <BreakdownRow label="Middle Overs" value={b.bowling.middle} max={10} explanation={explainPhase(b.bowling.middle, 10, 'middle-overs')} />
-                    <BreakdownRow label="Death Bowling" value={b.bowling.death} max={9} explanation={explainPhase(b.bowling.death, 9, 'death')} />
+                    <BreakdownRow label="Total Overs" value={b.bowling.totalOvers} max={3} explanation={explainTotalOvers(b.bowling.totalOvers)} />
+                    <BreakdownRow label="Pace Overs" value={b.bowling.paceOvers} max={3} explanation={explainPaceOvers(b.bowling.paceOvers)} />
+                    <BreakdownRow label="Spin Overs" value={b.bowling.spinOvers} max={3} explanation={explainSpinOvers(b.bowling.spinOvers)} />
+                    <BreakdownRow label="Powerplay Bowling" value={b.bowling.powerplay} max={11} explanation={explainPhase(b.bowling.powerplay, 11, 'powerplay')} />
+                    <BreakdownRow label="Middle Overs" value={b.bowling.middle} max={12} explanation={explainPhase(b.bowling.middle, 12, 'middle-overs')} />
+                    <BreakdownRow label="Death Bowling" value={b.bowling.death} max={11} explanation={explainPhase(b.bowling.death, 11, 'death')} />
                   </div>
                 </div>
               </>

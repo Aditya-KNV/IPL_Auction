@@ -153,11 +153,11 @@ const spinType = (style = '') => {
 
 const totalOversScore = (players) => {
   const overs = players.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0);
-  if (overs >= 24) return 5;
-  if (overs === 23) return 4;
-  if (overs === 22) return 3;
-  if (overs === 21) return 2;
-  if (overs === 20) return 1;
+  if (overs >= 24) return 3;
+  if (overs === 23) return 2.5;
+  if (overs === 22) return 2;
+  if (overs === 21) return 1;
+  if (overs === 20) return 0.5;
   return 0;
 };
 
@@ -166,16 +166,16 @@ const paceOversScore = (players) => {
   const overs = pacers.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0);
 
   let score = 0;
-  if (overs >= 14) score = 4;
-  else if (overs === 13) score = 3.5;
-  else if (overs === 12) score = 3;
-  else if (overs === 11) score = 2;
-  else if (overs === 10) score = 1;
+  if (overs >= 14) score = 2.5;
+  else if (overs === 13) score = 2;
+  else if (overs === 12) score = 1.5;
+  else if (overs === 11) score = 1;
+  else if (overs === 10) score = 0.5;
 
   const arms = new Set(pacers.map((player) => bowlingArm(player.bowling_style)).filter((arm) => arm !== 'unknown'));
-  if (arms.has('left') && arms.has('right')) score += 1;
+  if (arms.has('left') && arms.has('right')) score += 0.5;
 
-  return clamp(score, 0, 5);
+  return clamp(score, 0, 3);
 };
 
 const spinOversScore = (players) => {
@@ -183,11 +183,11 @@ const spinOversScore = (players) => {
   const overs = spinners.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0);
 
   let score = 0;
-  if (overs >= 10) score = 4;
-  else if (overs === 9) score = 3.5;
-  else if (overs === 8) score = 3;
-  else if (overs === 7) score = 2;
-  else if (overs === 6) score = 1;
+  if (overs >= 10) score = 2.5;
+  else if (overs === 9) score = 2;
+  else if (overs === 8) score = 1.5;
+  else if (overs === 7) score = 1;
+  else if (overs === 6) score = 0.5;
 
   const archetypes = new Set(
     spinners
@@ -206,8 +206,8 @@ const spinOversScore = (players) => {
     (archetypes.has('off-left') && archetypes.has('off-right')) ||
     (archetypes.has('leg-left') && archetypes.has('leg-right'));
 
-  if (hasCombo) score += 1;
-  return clamp(score, 0, 5);
+  if (hasCombo) score += 0.5;
+  return clamp(score, 0, 3);
 };
 
 const topAverage = (players, metricFn, count) => {
@@ -219,9 +219,9 @@ const topAverage = (players, metricFn, count) => {
   return ratings.length ? average(ratings) : 0;
 };
 
-const powerplayBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.powerplay ?? 0, 4) * 0.9;
-const middleBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.middle ?? 0, 5);
-const deathBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.death ?? 0, 4) * 0.9;
+const powerplayBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.powerplay ?? 0, 4) * 1.1;
+const middleBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.middle ?? 0, 5) * 1.2;
+const deathBowlingScore = (players) => topAverage(players, (player) => player.bowling?.phases?.death ?? 0, 4) * 1.1;
 
 const playerFitnessComposite = (player) => average([
   player.fitness?.stamina ?? 0,
