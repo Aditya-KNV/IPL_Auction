@@ -141,16 +141,20 @@ const initSocket = (server) => {
 
         // ── 4. Extend the bid timer ───────────────────────────────────────────
         timer.extend();
-        AuctionSession.findOneAndUpdate(
-          { status: 'active' },
-          { $set: { timerEndsAt: new Date(timer.getExpiresAt()) } }
-        ).catch(() => {});
+        const timerEndsAt = timer.getExpiresAt() ? new Date(timer.getExpiresAt()) : null;
+        if (timerEndsAt) {
+          await AuctionSession.findOneAndUpdate(
+            { _id: updated._id, status: 'active' },
+            { $set: { timerEndsAt } }
+          );
+        }
 
         // ── 6. Broadcast to everyone ──────────────────────────────────────────
         io.emit('bid:update', {
           currentBid:    normalizedAmount,
           highestBidder: { id: teamId, name: team.name, shortName: team.shortName, color: team.color },
           minNextBid:    getMinNextBid(normalizedAmount, true),
+          timerEndsAt,
           bidEntry:      { team: { name: team.name, shortName: team.shortName, color: team.color }, amount: normalizedAmount, timestamp: new Date() },
         });
 

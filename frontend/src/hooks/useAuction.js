@@ -105,10 +105,16 @@ export const useAuction = () => {
       startLocalTick(endsAt);
     };
 
-    const onBidUpdate = ({ currentBid, highestBidder, minNextBid, bidEntry }) => {
+    const onBidUpdate = ({ currentBid, highestBidder, minNextBid, bidEntry, timerEndsAt }) => {
       setCurrentBid(normalizeCroreAmount(currentBid));
       setMinNextBid(normalizeCroreAmount(minNextBid || 0));
       setHighestBidder(highestBidder);
+      if (timerEndsAt) {
+        const endsAt = new Date(timerEndsAt).getTime();
+        const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+        setTimeLeft(remaining);
+        startLocalTick(endsAt);
+      }
       if (bidEntry) {
         setBidHistory((prev) => [
           { ...bidEntry, amount: normalizeCroreAmount(bidEntry.amount) },

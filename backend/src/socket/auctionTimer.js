@@ -76,7 +76,9 @@ const start = (io, duration, onExpire) => {
 };
 
 const extend = () => {
-  if (!_timeout) return;
+  if (!_timeout) {
+    if (!_expiresAt || Date.now() > _expiresAt + EXPIRE_GRACE_MS) return;
+  }
   _run(EXTENSION_SECS);
 };
 
