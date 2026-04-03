@@ -51,7 +51,7 @@ export default function BidPanel({
   useEffect(() => () => clearTimeout(bidTimeoutRef.current), []);
 
   const canBid = !!currentPlayer && !!myTeamAssignment && !isLeading && !bidding && !hasWithdrawn;
-  const canWithdraw = !!currentPlayer && !!myTeamAssignment && !hasWithdrawn && !withdrawing;
+  const canWithdraw = !!currentPlayer && !!myTeamAssignment && !isLeading && !hasWithdrawn && !withdrawing;
   const quickBids = useMemo(() => getQuickBids(currentBid, hasExistingBid), [currentBid, hasExistingBid]);
   const effectiveMin = minNextBid || (currentBid ? getMinNextBid(currentBid, hasExistingBid) : 0);
 
@@ -144,7 +144,7 @@ export default function BidPanel({
                 : 'border-gray-700 bg-gray-900 text-gray-200 hover:border-red-500/50 hover:text-red-300 disabled:opacity-40 disabled:cursor-not-allowed'
             }`}
           >
-            {hasWithdrawn ? 'Withdrawn for this player' : 'Withdraw'}
+            {isLeading ? 'Leading bid locked' : hasWithdrawn ? 'Withdrawn for this player' : 'Withdraw'}
           </button>
 
           {withdrawnTeams.length > 0 && (

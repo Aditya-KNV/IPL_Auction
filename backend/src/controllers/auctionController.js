@@ -206,6 +206,10 @@ const applyWithdraw = async (teamId) => {
     return { error: 'You are not assigned to a team in this room' };
   }
 
+  if (session.currentHighestBidder && String(session.currentHighestBidder) === normalizedTeamId) {
+    return { error: 'The current highest bidder cannot withdraw' };
+  }
+
   const alreadyWithdrawn = (session.withdrawnTeams || []).some(
     (withdrawnTeamId) => String(withdrawnTeamId) === normalizedTeamId
   );
