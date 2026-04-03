@@ -22,7 +22,7 @@ export default function Navbar() {
   return (
     <nav className={`fixed top-0 inset-x-0 z-50 bg-gray-950 px-6 py-4 ${showBottomBorder ? 'border-b border-gray-800' : ''}`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link to="/" className="text-ipl-gold font-bold text-2xl tracking-wide">
+        <Link to="/room" className="text-ipl-gold font-bold text-2xl tracking-wide">
           IPL Auction
         </Link>
 
