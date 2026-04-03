@@ -11,7 +11,7 @@ const NEXT_PLAYER_DELAY_MS = 3000;
 
 const pickRandomPlayer = async () => {
   const [nextSet] = await Player.aggregate([
-    { $match: { status: { $in: ['available', 'unsold'] } } },
+    { $match: { status: 'available' } },
     {
       $group: {
         _id: null,
@@ -22,7 +22,7 @@ const pickRandomPlayer = async () => {
 
   if (nextSet?.minSetOrder == null) {
     const fallbackResults = await Player.aggregate([
-      { $match: { status: { $in: ['available', 'unsold'] } } },
+      { $match: { status: 'available' } },
       { $sample: { size: 1 } },
     ]);
     return fallbackResults[0] ? await Player.findById(fallbackResults[0]._id) : null;
@@ -153,7 +153,7 @@ const executeSale = async (session) => {
 const executeUnsold = async (session) => {
   const player = await Player.findById(session.currentPlayer);
   if (player) {
-    player.status = 'available';
+    player.status = 'unsold';
     await player.save();
   }
 
