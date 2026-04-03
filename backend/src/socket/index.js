@@ -55,6 +55,7 @@ const initSocket = (server) => {
     socket.on('bid:place', async ({ amount }) => {
       try {
         const normalizedAmount = normalizeBidAmount(amount);
+        const now = Date.now();
 
         // ── 1. Sanity checks (fast, no DB) ───────────────────────────────────
         if (typeof amount !== 'number' || !Number.isFinite(amount) || normalizedAmount <= 0) {
@@ -89,6 +90,9 @@ const initSocket = (server) => {
         if (!currentSession || currentSession.status !== 'active' || !currentSession.currentPlayer) {
           return socket.emit('bid:error', { message: 'Auction is not active' });
         }
+        if (!timer.isRunning() && timer.getExpiresAt() && now > timer.getExpiresAt() + 400) {
+          return socket.emit('bid:error', { message: 'Bidding window just closed' });
+        }
         const eligibility = await canTeamBuyPlayer(teamId, currentSession.currentPlayer);
         if (!eligibility.allowed) {
           const msg = eligibility.reason === 'playing12'
@@ -109,12 +113,12 @@ const initSocket = (server) => {
           hasExistingBid
             ? {
                 status:        'active',
-                currentPlayer: { $ne: null },
+                currentPlayer: currentSession.currentPlayer._id,
                 currentBid:    { $lt: normalizedAmount },
               }
             : {
                 status:              'active',
-                currentPlayer:       { $ne: null },
+                currentPlayer:       currentSession.currentPlayer._id,
                 currentHighestBidder: null,
                 currentBid:          normalizedAmount,
               },

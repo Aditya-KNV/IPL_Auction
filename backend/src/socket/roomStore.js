@@ -16,7 +16,7 @@ const crypto = require('crypto');
 const rooms = new Map();
 const socketToRoom = new Map();
 const roomCleanupTimers = new Map();
-const EMPTY_ROOM_TTL_MS = 60 * 1000;
+const EMPTY_ROOM_TTL_MS = 12 * 60 * 60 * 1000;
 
 const generateCode = () => {
   const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
