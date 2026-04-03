@@ -69,7 +69,7 @@ const registerRoomHandlers = (io, socket) => {
   });
 
   // ── room:leave ─────────────────────────────────────────────────────────────
-  // Explicit leave — releases team assignment too
+  // Explicit leave — keeps team assignment so the user can rejoin later
   socket.on('room:leave', () => _leaveExplicit(io, socket));
 
   // ── room:pick-team ─────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ const registerRoomHandlers = (io, socket) => {
     const targetSocket = io.sockets.sockets.get(targetSocketId);
     if (targetSocket) {
       targetSocket.emit('room:kicked', { message: 'You were removed from the room by the host' });
-      _leaveExplicit(io, targetSocket);
+      _leaveExplicit(io, targetSocket, { releaseTeam: true });
     }
   });
 
@@ -115,8 +115,8 @@ const _leave = (io, socket) => {
   _broadcast(io, socket, updatedRoom);
 };
 
-const _leaveExplicit = (io, socket) => {
-  const updatedRoom = leaveRoomExplicit(socket.id); // clears team assignment
+const _leaveExplicit = (io, socket, options) => {
+  const updatedRoom = leaveRoomExplicit(socket.id, options);
   _broadcast(io, socket, updatedRoom);
 };
 

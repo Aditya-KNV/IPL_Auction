@@ -19,37 +19,39 @@ export default function BidPanel({
   currentBid,
   minNextBid,
   highestBidder,
+  withdrawnTeams = [],
   currentPlayer,
   bidError,
   onBid,
+  onWithdraw,
 }) {
   const { user } = useAuth();
   const { teamAssignments } = useRoom();
   const [bidding, setBidding] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
   const bidTimeoutRef = useRef(null);
 
   const myTeamAssignment = user ? teamAssignments?.[user.id] : null;
-
-  // Null-safe comparison: both IDs must be truthy strings before comparing
-  const myTeamId    = myTeamAssignment?.teamId ? String(myTeamAssignment.teamId) : null;
+  const myTeamId = myTeamAssignment?.teamId ? String(myTeamAssignment.teamId) : null;
   const bidderTeamId = getBidderTeamId(highestBidder) ? String(getBidderTeamId(highestBidder)) : null;
-  const isLeading   = !!(myTeamId && bidderTeamId && myTeamId === bidderTeamId);
-
+  const isLeading = !!(myTeamId && bidderTeamId && myTeamId === bidderTeamId);
   const hasExistingBid = !!highestBidder;
+  const withdrawnTeamIds = useMemo(
+    () => withdrawnTeams.map((team) => String(team?._id || team?.id || team)),
+    [withdrawnTeams]
+  );
+  const hasWithdrawn = !!(myTeamId && withdrawnTeamIds.includes(myTeamId));
 
-  // Re-enable as soon as server responds (bid accepted → currentBid changes,
-  // bid rejected → bidError changes). 1.5 s hard timeout as safety net.
   useEffect(() => {
     setBidding(false);
+    setWithdrawing(false);
     clearTimeout(bidTimeoutRef.current);
-  }, [currentBid, bidError]);
+  }, [currentBid, bidError, withdrawnTeams]);
 
   useEffect(() => () => clearTimeout(bidTimeoutRef.current), []);
 
-  // timeLeft is intentionally excluded — the server is the authority on timing.
-  // Removing it prevents clock-skew from falsely disabling buttons when the
-  // server still has time (the server rejects any bid that arrives too late).
-  const canBid = !!currentPlayer && !!myTeamAssignment && !isLeading && !bidding;
+  const canBid = !!currentPlayer && !!myTeamAssignment && !isLeading && !bidding && !hasWithdrawn;
+  const canWithdraw = !!currentPlayer && !!myTeamAssignment && !hasWithdrawn && !withdrawing;
   const quickBids = useMemo(() => getQuickBids(currentBid, hasExistingBid), [currentBid, hasExistingBid]);
   const effectiveMin = minNextBid || (currentBid ? getMinNextBid(currentBid, hasExistingBid) : 0);
 
@@ -59,6 +61,12 @@ export default function BidPanel({
     clearTimeout(bidTimeoutRef.current);
     bidTimeoutRef.current = setTimeout(() => setBidding(false), 1500);
     onBid(amount);
+  };
+
+  const handleWithdraw = () => {
+    if (!canWithdraw) return;
+    setWithdrawing(true);
+    onWithdraw();
   };
 
   if (!currentPlayer) {
@@ -125,6 +133,25 @@ export default function BidPanel({
               Min: <span className="text-ipl-gold font-semibold">Rs {formatCroreAmount(effectiveMin)} Cr</span>
             </span>
           </div>
+
+          <button
+            type="button"
+            onClick={handleWithdraw}
+            disabled={!canWithdraw}
+            className={`w-full rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+              hasWithdrawn
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300 cursor-default'
+                : 'border-gray-700 bg-gray-900 text-gray-200 hover:border-red-500/50 hover:text-red-300 disabled:opacity-40 disabled:cursor-not-allowed'
+            }`}
+          >
+            {hasWithdrawn ? 'Withdrawn for this player' : 'Withdraw'}
+          </button>
+
+          {withdrawnTeams.length > 0 && (
+            <p className="text-xs text-gray-500">
+              Withdrawn: {withdrawnTeams.map((team) => team.shortName || team.name).join(', ')}
+            </p>
+          )}
         </>
       ) : (
         <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-5 text-center">

@@ -245,6 +245,9 @@ export default function RoomLobby() {
         className="w-full border border-red-500/40 text-red-400 hover:bg-red-500/10 font-semibold py-2.5 rounded-xl transition">
         Leave Room
       </button>
+      <p className="text-center text-xs text-gray-600 -mt-3">
+        Your team stays reserved for you unless the host removes you.
+      </p>
 
       {toasts.map((t) => (
         <Toast key={t.id} message={t.msg} onDone={() => setToasts((p) => p.filter((x) => x.id !== t.id))} />

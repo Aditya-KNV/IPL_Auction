@@ -3,9 +3,10 @@ import api from '../../services/api';
 
 const Btn = ({ onClick, disabled, color, children }) => (
   <button
+    type="button"
     onClick={onClick}
     disabled={disabled}
-    className={`w-full font-bold py-2.5 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed ${color}`}
+    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition disabled:opacity-50 disabled:cursor-not-allowed ${color}`}
   >
     {children}
   </button>
@@ -30,29 +31,34 @@ export default function AuctionControls({ session, onRefetch }) {
   const notStarted = !session || status === 'waiting';
 
   return (
-    <div className="bg-gray-900 rounded-2xl p-5 border border-gray-700 space-y-3">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-        Host Controls
-      </p>
-
+    <div className="flex flex-wrap items-center justify-end gap-2">
       {notStarted && (
-        <Btn onClick={() => action('start')} disabled={loading}
-          color="bg-green-600 hover:bg-green-500 text-white">
-          Start Auction
+        <Btn
+          onClick={() => action('start')}
+          disabled={loading}
+          color="border-green-500/40 bg-green-500/10 text-green-300 hover:bg-green-500/20"
+        >
+          Start
         </Btn>
       )}
 
       {status === 'active' && (
-        <Btn onClick={() => action('pause')} disabled={loading}
-          color="bg-yellow-600 hover:bg-yellow-500 text-white">
-          Pause Auction
+        <Btn
+          onClick={() => action('pause')}
+          disabled={loading}
+          color="border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
+        >
+          Pause
         </Btn>
       )}
 
       {status === 'paused' && (
-        <Btn onClick={() => action('resume')} disabled={loading}
-          color="bg-green-600 hover:bg-green-500 text-white">
-          Resume Auction
+        <Btn
+          onClick={() => action('resume')}
+          disabled={loading}
+          color="border-green-500/40 bg-green-500/10 text-green-300 hover:bg-green-500/20"
+        >
+          Resume
         </Btn>
       )}
 
@@ -62,16 +68,10 @@ export default function AuctionControls({ session, onRefetch }) {
             if (window.confirm('End the auction? This cannot be undone.')) action('end');
           }}
           disabled={loading}
-          color="bg-red-700 hover:bg-red-600 text-white"
+          color="border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20"
         >
-          End Auction
+          End
         </Btn>
-      )}
-
-      {status === 'completed' && (
-        <p className="text-center text-green-400 text-sm font-semibold py-2">
-          Auction Completed
-        </p>
       )}
     </div>
   );

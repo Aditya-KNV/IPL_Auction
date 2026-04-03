@@ -43,6 +43,7 @@ const resetAuctionState = async (io) => {
   session.bids = [];
   session.soldPlayers = [];
   session.unsoldPlayers = [];
+  session.withdrawnTeams = [];
   session.timerEndsAt = null;
   await session.save();
 

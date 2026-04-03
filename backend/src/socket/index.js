@@ -1,29 +1,33 @@
-const { Server }   = require('socket.io');
-const jwt          = require('jsonwebtoken');
-const User         = require('../models/User');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 const AuctionSession = require('../models/AuctionSession');
-const Team         = require('../models/Team');
+const Team = require('../models/Team');
 const { registerRoomHandlers } = require('./roomHandlers');
 const { getRawRoom, getRawRoomByUserId } = require('./roomStore');
-const timer        = require('./auctionTimer');
-const { isValidBid, getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
+const timer = require('./auctionTimer');
+const { getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
 const { canTeamBuyPlayer, MAX_OVERSEAS_SQUAD, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules');
 
 let io;
 
+const getAssignedTeamForSocket = (socket) => {
+  const rawRoom = getRawRoom(socket.id) ?? getRawRoomByUserId(socket.user.userId);
+  return rawRoom?.teamAssignments.get(socket.user.userId) ?? null;
+};
+
 const initSocket = (server) => {
   io = new Server(server, {
-    cors: { origin: process.env.CLIENT_URL, methods: ['GET', 'POST'] },
+    cors: { origin: process.env.CLIENT_URL || true, methods: ['GET', 'POST'] },
   });
 
-  // ── Auth middleware ────────────────────────────────────────────────────────
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
       if (!token) return next(new Error('Authentication required'));
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user    = await User.findById(decoded.id).select('username _id');
+      const user = await User.findById(decoded.id).select('username _id');
       if (!user) return next(new Error('User not found'));
 
       socket.user = { userId: String(user._id), username: user.username };
@@ -33,135 +37,144 @@ const initSocket = (server) => {
     }
   });
 
-  // ── Connection ─────────────────────────────────────────────────────────────
   io.on('connection', (socket) => {
     console.log(`[socket] ${socket.user.username} connected (${socket.id})`);
 
     registerRoomHandlers(io, socket);
 
-    socket.on('join:team',      (teamId) => socket.join(`team:${teamId}`));
-    socket.on('join:auctioneer', ()      => socket.join('auctioneer'));
+    socket.on('join:team', (teamId) => socket.join(`team:${teamId}`));
+    socket.on('join:auctioneer', () => socket.join('auctioneer'));
 
-    // ── bid:place ────────────────────────────────────────────────────────────
-    //
-    // Safety guarantees:
-    //  1. MongoDB `findOneAndUpdate` with `currentBid: { $lt: amount }` makes
-    //     the read-compare-write a single atomic operation. Two simultaneous
-    //     bids for the same amount can never both succeed.
-    //  2. Purse check is done BEFORE touching the session so a team can never
-    //     go into negative balance.
-    //  3. Bid amount must satisfy the price-tier minimum increment rule.
-    //
     socket.on('bid:place', async ({ amount }) => {
       try {
         const normalizedAmount = normalizeBidAmount(amount);
         const now = Date.now();
 
-        // ── 1. Sanity checks (fast, no DB) ───────────────────────────────────
         if (typeof amount !== 'number' || !Number.isFinite(amount) || normalizedAmount <= 0) {
           return socket.emit('bid:error', { message: 'Invalid bid amount' });
         }
 
-        // ── 2. Resolve team from room assignment ──────────────────────────────
-        // Fall back to userId lookup when socket hasn't re-registered in
-        // socketToRoom yet (brief race window during reconnect → room:join).
-        const rawRoom  = getRawRoom(socket.id) ?? getRawRoomByUserId(socket.user.userId);
-        const assigned = rawRoom?.teamAssignments.get(socket.user.userId);
+        const assigned = getAssignedTeamForSocket(socket);
         if (!assigned) {
           return socket.emit('bid:error', { message: 'You have not picked a team yet' });
         }
-        const teamId = assigned.teamId;
 
-        // ── 3. Verify team & purse ────────────────────────────────────────────
+        const teamId = assigned.teamId;
         const team = await Team.findById(teamId);
         if (!team) {
           return socket.emit('bid:error', { message: 'Team not found' });
         }
+
         if (team.remainingPurse < normalizedAmount) {
           return socket.emit('bid:error', {
-            message: `Insufficient purse (₹${team.remainingPurse} Cr remaining)`,
+            message: `Insufficient purse (Rs ${team.remainingPurse} Cr remaining)`,
           });
         }
 
-        // ── 3. Validate minimum increment (pre-check) ────────────────────────
         const currentSession = await AuctionSession.findOne()
-          .select('currentBid status currentPlayer currentHighestBidder')
+          .select('currentBid currentPlayer currentHighestBidder status')
           .populate('currentPlayer', 'nationality name');
+
         if (!currentSession || currentSession.status !== 'active' || !currentSession.currentPlayer) {
           return socket.emit('bid:error', { message: 'Auction is not active' });
         }
+
         if (!timer.isRunning() && timer.getExpiresAt() && now > timer.getExpiresAt() + 400) {
           return socket.emit('bid:error', { message: 'Bidding window just closed' });
         }
+
         const eligibility = await canTeamBuyPlayer(teamId, currentSession.currentPlayer);
         if (!eligibility.allowed) {
-          const msg = eligibility.reason === 'playing12'
+          const message = eligibility.reason === 'playing12'
             ? `Playing-12 overseas limit reached (${MAX_OVERSEAS_PLAYING}). Buy more Indian players to unlock the bench slots.`
             : `Overseas squad limit reached (${MAX_OVERSEAS_SQUAD}). ${team.name} cannot buy more overseas players.`;
-          return socket.emit('bid:error', { message: msg });
+          return socket.emit('bid:error', { message });
         }
+
         const hasExistingBid = !!currentSession.currentHighestBidder;
         const minRequired = getMinNextBid(currentSession.currentBid, hasExistingBid);
         if (normalizedAmount < minRequired) {
-          return socket.emit('bid:error', { message: `Minimum bid is ₹${minRequired} Cr` });
+          return socket.emit('bid:error', { message: `Minimum bid is Rs ${minRequired} Cr` });
         }
 
-        // ── 4. Atomic conditional update ──────────────────────────────────────
-        // $lt: amount ensures if a concurrent bid already raised the price,
-        // this one is rejected — only one winner possible per amount level.
         const updated = await AuctionSession.findOneAndUpdate(
           hasExistingBid
             ? {
-                status:        'active',
+                status: 'active',
                 currentPlayer: currentSession.currentPlayer._id,
-                currentBid:    { $lt: normalizedAmount },
+                currentBid: { $lt: normalizedAmount },
               }
             : {
-                status:              'active',
-                currentPlayer:       currentSession.currentPlayer._id,
+                status: 'active',
+                currentPlayer: currentSession.currentPlayer._id,
                 currentHighestBidder: null,
-                currentBid:          normalizedAmount,
+                currentBid: normalizedAmount,
               },
           {
-            $set:  { currentBid: normalizedAmount, currentHighestBidder: teamId },
+            $set: {
+              currentBid: normalizedAmount,
+              currentHighestBidder: teamId,
+              withdrawnTeams: [],
+            },
             $push: { bids: { team: teamId, amount: normalizedAmount, timestamp: new Date() } },
           },
           { new: true }
         );
 
         if (!updated) {
-          const fresh = await AuctionSession.findOne().select('currentBid status currentHighestBidder');
+          const fresh = await AuctionSession.findOne().select('currentBid status');
           if (!fresh || fresh.status !== 'active') {
             return socket.emit('bid:error', { message: 'Auction is not active' });
           }
           return socket.emit('bid:error', {
-            message: `Bid too low — minimum is ₹${getMinNextBid(fresh.currentBid)} Cr`,
+            message: `Bid too low - minimum is Rs ${getMinNextBid(fresh.currentBid)} Cr`,
           });
         }
 
-        // ── 4. Extend the bid timer ───────────────────────────────────────────
         timer.extend();
         const timerEndsAt = timer.getExpiresAt() ? new Date(timer.getExpiresAt()) : null;
         if (timerEndsAt) {
-          await AuctionSession.findOneAndUpdate(
-            { _id: updated._id, status: 'active' },
-            { $set: { timerEndsAt } }
-          );
+          updated.timerEndsAt = timerEndsAt;
+          await updated.save();
         }
 
-        // ── 6. Broadcast to everyone ──────────────────────────────────────────
+        const { emitWithdrawState } = require('../controllers/auctionController');
+        await emitWithdrawState(io, updated, { reason: 'reset' });
+
         io.emit('bid:update', {
-          currentBid:    normalizedAmount,
+          currentBid: normalizedAmount,
           highestBidder: { id: teamId, name: team.name, shortName: team.shortName, color: team.color },
-          minNextBid:    getMinNextBid(normalizedAmount, true),
+          minNextBid: getMinNextBid(normalizedAmount, true),
           timerEndsAt,
-          bidEntry:      { team: { name: team.name, shortName: team.shortName, color: team.color }, amount: normalizedAmount, timestamp: new Date() },
+          bidEntry: {
+            team: { name: team.name, shortName: team.shortName, color: team.color },
+            amount: normalizedAmount,
+            timestamp: new Date(),
+          },
         });
 
-        console.log(`[bid] ${team.name} → ₹${normalizedAmount} Cr`);
+        console.log(`[bid] ${team.name} -> Rs ${normalizedAmount} Cr`);
       } catch (err) {
         console.error('[bid:place] error:', err.message);
         socket.emit('bid:error', { message: 'Server error processing bid' });
+      }
+    });
+
+    socket.on('auction:withdraw', async () => {
+      try {
+        const assigned = getAssignedTeamForSocket(socket);
+        if (!assigned?.teamId) {
+          return socket.emit('bid:error', { message: 'Pick a team before you withdraw' });
+        }
+
+        const { applyWithdraw } = require('../controllers/auctionController');
+        const result = await applyWithdraw(assigned.teamId);
+        if (result?.error) {
+          return socket.emit('bid:error', { message: result.error });
+        }
+      } catch (err) {
+        console.error('[auction:withdraw] error:', err.message);
+        socket.emit('bid:error', { message: 'Server error processing withdraw' });
       }
     });
 

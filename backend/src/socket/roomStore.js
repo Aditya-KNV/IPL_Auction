@@ -123,15 +123,16 @@ const leaveRoom = (socketId) => {
 };
 
 /**
- * Called on explicit room:leave. Removes the user and releases their team.
+ * Called on explicit room:leave. Preserves team assignment by default so
+ * users can step out and reclaim the same team when they return.
  */
-const leaveRoomExplicit = (socketId) => {
+const leaveRoomExplicit = (socketId, { releaseTeam = false } = {}) => {
   const code = socketToRoom.get(socketId);
   if (!code) return null;
 
   const room = rooms.get(code);
   const userEntry = room?.users.get(socketId);
-  if (userEntry) room.teamAssignments.delete(userEntry.userId);
+  if (releaseTeam && userEntry) room.teamAssignments.delete(userEntry.userId);
 
   return leaveRoom(socketId);
 };
@@ -190,6 +191,17 @@ const getRawRoomByUserId = (userId) => {
   return null;
 };
 
+const getAssignedTeamIds = () => {
+  const assignedTeamIds = new Set();
+  for (const room of rooms.values()) {
+    for (const user of room.users.values()) {
+      const assignment = room.teamAssignments.get(user.userId);
+      if (assignment?.teamId) assignedTeamIds.add(String(assignment.teamId));
+    }
+  }
+  return [...assignedTeamIds];
+};
+
 module.exports = {
   createRoom,
   joinRoom,
@@ -201,5 +213,6 @@ module.exports = {
   getRawRoom,
   getRawRoomByCode,
   getRawRoomByUserId,
+  getAssignedTeamIds,
   roomExists,
 };

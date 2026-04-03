@@ -18,6 +18,7 @@ const auctionSessionSchema = new mongoose.Schema({
   bids:                 [bidSchema],               // full bid log for current player
   soldPlayers:          [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],
   unsoldPlayers:        [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }],
+  withdrawnTeams:       [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
   timerDuration:        { type: Number, default: 10 },   // seconds for the first window
   timerEndsAt:          { type: Date,   default: null },  // absolute deadline, for reconnects
 }, { timestamps: true });

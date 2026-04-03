@@ -5,7 +5,11 @@ const getPlayers = async (req, res) => {
     const { role, status, team, auctionSetName } = req.query;
     const filter = {};
     if (role) filter.role = role;
-    if (status) filter.status = status;
+    if (status) {
+      filter.status = status === 'unsold'
+        ? { $in: ['unsold', 'available'] }
+        : status;
+    }
     if (team) filter.team = team;
     if (auctionSetName) filter.auctionSetName = auctionSetName;
 

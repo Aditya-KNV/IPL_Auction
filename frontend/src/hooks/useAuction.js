@@ -13,6 +13,7 @@ export const useAuction = () => {
   const [currentBid,    setCurrentBid]    = useState(0);
   const [minNextBid,    setMinNextBid]    = useState(0);
   const [highestBidder, setHighestBidder] = useState(null);
+  const [withdrawnTeams, setWithdrawnTeams] = useState([]);
   const [timeLeft,      setTimeLeft]      = useState(0);
   const [timerTotal,    setTimerTotal]    = useState(10); // full duration of current period
   const [bidHistory,    setBidHistory]    = useState([]);
@@ -48,6 +49,7 @@ export const useAuction = () => {
         setCurrentBid(0);
         setMinNextBid(0);
         setHighestBidder(null);
+        setWithdrawnTeams([]);
         setTimeLeft(0);
         setBidHistory([]);
         setBidError('');
@@ -61,6 +63,7 @@ export const useAuction = () => {
       setCurrentBid(normalizeCroreAmount(data.currentBid || 0));
       setMinNextBid(normalizeCroreAmount(data.minNextBid || 0));
       setHighestBidder(data.currentHighestBidder || null);
+      setWithdrawnTeams(data.withdrawnTeams || []);
 
       if (data.timerEndsAt && data.status === 'active') {
         const endsAt    = new Date(data.timerEndsAt).getTime();
@@ -101,6 +104,7 @@ export const useAuction = () => {
       setCurrentBid(normalizeCroreAmount(currentBid));
       setMinNextBid(normalizeCroreAmount(minNextBid || 0));
       setHighestBidder(null);
+      setWithdrawnTeams([]);
       setBidHistory([]);
       setBidError('');
       setTimerTotal(timerDuration || 10);
@@ -112,6 +116,7 @@ export const useAuction = () => {
       setCurrentBid(normalizeCroreAmount(currentBid));
       setMinNextBid(normalizeCroreAmount(minNextBid || 0));
       setHighestBidder(highestBidder);
+      setWithdrawnTeams([]);
       if (timerEndsAt) {
         const endsAt    = new Date(timerEndsAt).getTime();
         const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
@@ -145,6 +150,7 @@ export const useAuction = () => {
       setCurrentBid(0);
       setMinNextBid(0);
       setHighestBidder(null);
+      setWithdrawnTeams([]);
       setBidHistory([]);
       setSession((prev) => prev ? {
         ...prev,
@@ -159,6 +165,7 @@ export const useAuction = () => {
       setCurrentBid(0);
       setMinNextBid(0);
       setHighestBidder(null);
+      setWithdrawnTeams([]);
       setBidHistory([]);
       setSession((prev) => prev ? {
         ...prev,
@@ -174,6 +181,7 @@ export const useAuction = () => {
         setCurrentBid(0);
         setMinNextBid(0);
         setHighestBidder(null);
+        setWithdrawnTeams([]);
         setTimeLeft(0);
         setBidHistory([]);
         setBidError('');
@@ -193,10 +201,18 @@ export const useAuction = () => {
       startLocalTick(endsAt);
     };
 
+    const onWithdrawUpdated = ({ withdrawnTeams = [], reason }) => {
+      setWithdrawnTeams(withdrawnTeams);
+      if (reason === 'reset') {
+        setWithdrawnTeams([]);
+      }
+    };
+
     const onCompleted = () => {
       stopLocalTick();
       setSession((prev) => prev ? { ...prev, status: 'completed' } : prev);
       setCurrentPlayer(null);
+      setWithdrawnTeams([]);
     };
 
     const onBidError = ({ message }) => {
@@ -212,6 +228,7 @@ export const useAuction = () => {
     socket.on('auction:status',     onStatus);
     socket.on('auction:resumed',    onResumed);
     socket.on('auction:completed',  onCompleted);
+    socket.on('auction:withdraw-updated', onWithdrawUpdated);
     socket.on('bid:error',          onBidError);
 
     return () => {
@@ -223,6 +240,7 @@ export const useAuction = () => {
       socket.off('auction:status',     onStatus);
       socket.off('auction:resumed',    onResumed);
       socket.off('auction:completed',  onCompleted);
+      socket.off('auction:withdraw-updated', onWithdrawUpdated);
       socket.off('bid:error',          onBidError);
     };
   }, [socket, startLocalTick, stopLocalTick]);
@@ -232,9 +250,14 @@ export const useAuction = () => {
     socket?.emit('bid:place', { amount: normalizeCroreAmount(amount) });
   }, [socket]);
 
+  const withdraw = useCallback(() => {
+    setBidError('');
+    socket?.emit('auction:withdraw');
+  }, [socket]);
+
   return {
     session, currentPlayer, currentBid, minNextBid,
-    highestBidder, timeLeft, timerTotal, bidHistory, bidError,
-    soldFlash, loading, placeBid, refetch: fetchSession,
+    highestBidder, withdrawnTeams, timeLeft, timerTotal, bidHistory, bidError,
+    soldFlash, loading, placeBid, withdraw, refetch: fetchSession,
   };
 };
