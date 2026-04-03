@@ -175,6 +175,12 @@ export const useAuction = () => {
 
     const onStatus = ({ status }) => {
       setSession((prev) => prev ? { ...prev, status } : prev);
+      if (status === 'active' && Notification.permission === 'granted') {
+        new Notification('IPL Auction', {
+          body: 'Auction has started! Head to the Auction tab to bid.',
+          icon: '/favicon.ico',
+        });
+      }
       if (status === 'waiting') {
         stopLocalTick();
         setCurrentPlayer(null);

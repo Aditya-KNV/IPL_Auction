@@ -196,8 +196,11 @@ const finishCurrentPlayer = async ({ io, session, mode, auto = false, reason = n
 
 const applyWithdraw = async (teamId) => {
   const session = await AuctionSession.findOne();
-  if (!session || session.status !== 'active' || !session.currentPlayer) {
+  if (!session || !session.currentPlayer) {
     return { error: 'Auction is not active' };
+  }
+  if (session.status !== 'active') {
+    return { error: session.status === 'paused' ? 'Auction is paused' : 'Auction is not active' };
   }
 
   const assignedTeamIds = getAssignedTeamIds();

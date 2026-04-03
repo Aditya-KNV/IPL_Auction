@@ -64,9 +64,12 @@ const PlayerSummary = ({ player, role, compact, highlighted, currentBid, isLive 
   </div>
 );
 
-export default function PlayerCard({ player, currentBid, highlighted, compact }) {
+export default function PlayerCard({ player, currentBid, highlighted, compact, onViewStats }) {
   const role = ROLE_BADGE[player.role] ?? { label: '?', color: '#6b7280' };
   const isLive = highlighted && currentBid > 0;
+  const positions = Array.isArray(player.tactical?.positions) && player.tactical.positions.length
+    ? player.tactical.positions.join(', ')
+    : null;
 
   return (
     <div
@@ -86,6 +89,30 @@ export default function PlayerCard({ player, currentBid, highlighted, compact })
         currentBid={currentBid}
         isLive={isLive}
       />
+
+      {(player.auctionSetName || positions || onViewStats) && (
+        <div className="flex items-center gap-2 flex-wrap px-4 pb-3 border-t border-gray-800/60 pt-2.5">
+          {player.auctionSetName && (
+            <span className="inline-flex items-center rounded-full border border-ipl-gold/30 bg-ipl-gold/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ipl-gold">
+              {player.auctionSetName}
+            </span>
+          )}
+          {positions && (
+            <span className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 px-2.5 py-0.5 text-[10px] font-medium text-gray-400">
+              {positions}
+            </span>
+          )}
+          {onViewStats && (
+            <button
+              type="button"
+              onClick={onViewStats}
+              className="ml-auto inline-flex items-center rounded-lg border border-ipl-gold/40 bg-ipl-gold/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-ipl-gold transition hover:bg-ipl-gold/20"
+            >
+              View Stats
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

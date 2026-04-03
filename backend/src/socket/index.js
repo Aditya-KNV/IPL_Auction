@@ -75,8 +75,13 @@ const initSocket = (server) => {
           .select('currentBid currentPlayer currentHighestBidder status')
           .populate('currentPlayer', 'nationality name');
 
-        if (!currentSession || currentSession.status !== 'active' || !currentSession.currentPlayer) {
+        if (!currentSession || !currentSession.currentPlayer) {
           return socket.emit('bid:error', { message: 'Auction is not active' });
+        }
+        if (currentSession.status !== 'active') {
+          return socket.emit('bid:error', {
+            message: currentSession.status === 'paused' ? 'Auction is paused' : 'Auction is not active',
+          });
         }
 
         if (!timer.isRunning() && timer.getExpiresAt() && now > timer.getExpiresAt() + timer.EXPIRE_GRACE_MS) {
@@ -124,7 +129,9 @@ const initSocket = (server) => {
         if (!updated) {
           const fresh = await AuctionSession.findOne().select('currentBid status');
           if (!fresh || fresh.status !== 'active') {
-            return socket.emit('bid:error', { message: 'Auction is not active' });
+            return socket.emit('bid:error', {
+              message: fresh?.status === 'paused' ? 'Auction is paused' : 'Auction is not active',
+            });
           }
           return socket.emit('bid:error', {
             message: `Bid too low - minimum is Rs ${getMinNextBid(fresh.currentBid)} Cr`,

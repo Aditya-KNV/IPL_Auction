@@ -194,6 +194,12 @@ function InRoomLayout() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Lobby');
 
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   const myAssignment = user ? teamAssignments?.[user.id] : null;
 
   return (

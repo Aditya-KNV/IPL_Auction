@@ -10,7 +10,6 @@ import BidPanel from "./BidPanel";
 import BidFeed from "./BidFeed";
 import AuctionTimer from "./AuctionTimer";
 import AuctionControls from "./AuctionControls";
-import MyTeamPanel from "./MyTeamPanel";
 import OtherTeamsPanel from "./OtherTeamsPanel";
 import { hasBattingStats, hasBowlingStats } from "../../utils/playerDisplay";
 
@@ -345,7 +344,7 @@ export default function AuctionBoard() {
     refetch,
   } = useAuction();
 
-  const { myTeam, allTeams, squadByRole, loading: teamLoading } = useMyTeam();
+  const { myTeam, allTeams, loading: teamLoading } = useMyTeam();
 
   if (auctionLoading || teamLoading) return <Spinner />;
 
@@ -371,8 +370,7 @@ export default function AuctionBoard() {
         <div className="flex-shrink-0 border-b border-gray-800 px-6 py-3 flex items-center justify-between bg-gray-950/60 backdrop-blur-sm">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-xl font-black text-ipl-gold leading-none">IPL Auction</h1>
-              <p className="text-gray-600 text-xs mt-0.5">
+              <p className="text-gray-400 text-sm font-semibold">
                 {soldCount} sold · {unsoldCount} unsold
               </p>
             </div>
@@ -399,13 +397,6 @@ export default function AuctionBoard() {
                 <PlayerRatingsPanel player={currentPlayer} expanded onClose={closeStatsPanel} />
               ) : (
                 <>
-                  {myTeamAssignment && (
-                    <div>
-                      <SectionLabel>My Team</SectionLabel>
-                      <MyTeamPanel team={myTeam} squadByRole={squadByRole} />
-                    </div>
-                  )}
-
                   {currentPlayer && <PlayerRatingsPanel player={currentPlayer} />}
 
                   <div>
@@ -422,24 +413,14 @@ export default function AuctionBoard() {
               <div className="rounded-3xl p-4 space-y-4 transition-all duration-300">
                 <div>
                   <SectionLabel>Up for Auction</SectionLabel>
-                  {currentPlayer?.auctionSetName && (
-                    <div className="mb-3 inline-flex items-center rounded-full border border-ipl-gold/30 bg-ipl-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-ipl-gold">
-                      Set: {currentPlayer.auctionSetName}
-                    </div>
-                  )}
-                  {currentPlayer && (
-                    <div className="mb-3">
-                      <button
-                        type="button"
-                        onClick={openStatsPanel}
-                        className="inline-flex items-center rounded-xl border border-ipl-gold/40 bg-ipl-gold/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-ipl-gold transition hover:bg-ipl-gold/20"
-                      >
-                        View Stats
-                      </button>
-                    </div>
-                  )}
                   {currentPlayer ? (
-                    <PlayerCard player={currentPlayer} currentBid={currentBid} highlighted compact />
+                    <PlayerCard
+                      player={currentPlayer}
+                      currentBid={currentBid}
+                      highlighted
+                      compact
+                      onViewStats={openStatsPanel}
+                    />
                   ) : (
                     <EmptySlot status={session?.status} />
                   )}
@@ -502,7 +483,7 @@ export default function AuctionBoard() {
               {(currentPlayer || bidHistory.length > 0) && (
                 <div className="bg-gray-900/80 rounded-2xl border border-gray-800 p-4">
                   <SectionLabel>Bid History</SectionLabel>
-                  <BidFeed bids={bidHistory} highestBidder={highestBidder} />
+                  <BidFeed bids={bidHistory} highestBidder={highestBidder} currentPlayer={currentPlayer} />
                 </div>
               )}
             </div>
