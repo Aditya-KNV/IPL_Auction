@@ -10,7 +10,7 @@
  *  - Expose  stop()    so manual sold/unsold cancels the auto-expire
  */
 
-const EXTENSION_SECS = 5; // extra seconds granted after every new bid
+const EXTENSION_SECS = 10; // extra seconds granted after every new bid
 
 let _io        = null;
 let _onExpire  = null;
