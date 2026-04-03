@@ -12,8 +12,9 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
  * @param {boolean} active        - whether to show pulsing ring
  */
 export default function AuctionTimer({ timeLeft, totalDuration = 30, active }) {
-  const pct      = totalDuration > 0 ? Math.max(0, timeLeft / totalDuration) : 0;
-  const offset   = CIRCUMFERENCE * (1 - pct);
+  const pct    = totalDuration > 0 ? Math.min(1, Math.max(0, timeLeft / totalDuration)) : 0;
+  const offset = CIRCUMFERENCE * (1 - pct);
+  const display = Math.min(timeLeft, 99); // guard against stale ms values reaching the UI
 
   const ringColor = useMemo(() => {
     if (!active || timeLeft === 0) return '#4B5563';  // gray-600
@@ -54,7 +55,7 @@ export default function AuctionTimer({ timeLeft, totalDuration = 30, active }) {
         {/* Centre text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className={`text-3xl font-bold tabular-nums ${textColor} ${active && timeLeft <= 10 && timeLeft > 0 ? 'animate-pulse' : ''}`}>
-            {timeLeft}
+            {display}
           </span>
           <span className="text-xs text-gray-500 mt-0.5">sec</span>
         </div>

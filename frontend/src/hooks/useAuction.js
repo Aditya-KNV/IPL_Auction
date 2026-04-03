@@ -14,6 +14,7 @@ export const useAuction = () => {
   const [minNextBid,    setMinNextBid]    = useState(0);
   const [highestBidder, setHighestBidder] = useState(null);
   const [timeLeft,      setTimeLeft]      = useState(0);
+  const [timerTotal,    setTimerTotal]    = useState(10); // full duration of current period
   const [bidHistory,    setBidHistory]    = useState([]);
   const [bidError,      setBidError]      = useState('');
   const [soldFlash,     setSoldFlash]     = useState(null);
@@ -62,12 +63,13 @@ export const useAuction = () => {
       setHighestBidder(data.currentHighestBidder || null);
 
       if (data.timerEndsAt && data.status === 'active') {
-        const endsAt = new Date(data.timerEndsAt).getTime();
+        const endsAt    = new Date(data.timerEndsAt).getTime();
         const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
         setTimeLeft(remaining);
+        setTimerTotal(data.timerDuration || remaining || 10);
         if (remaining > 0) startLocalTick(endsAt);
       } else {
-        setTimeLeft(data.timeLeft || 0);
+        setTimeLeft(0);
       }
 
       setBidHistory(
@@ -93,7 +95,7 @@ export const useAuction = () => {
     if (!socket) return;
 
     const onNextPlayer = ({ player, currentBid, timerDuration, timerEndsAt, minNextBid }) => {
-      const endsAt = timerEndsAt ? new Date(timerEndsAt).getTime() : Date.now() + timerDuration * 1000;
+      const endsAt    = timerEndsAt ? new Date(timerEndsAt).getTime() : Date.now() + timerDuration * 1000;
       const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
       setCurrentPlayer(player);
       setCurrentBid(normalizeCroreAmount(currentBid));
@@ -101,6 +103,7 @@ export const useAuction = () => {
       setHighestBidder(null);
       setBidHistory([]);
       setBidError('');
+      setTimerTotal(timerDuration || 10);
       setTimeLeft(remaining);
       startLocalTick(endsAt);
     };
@@ -110,8 +113,9 @@ export const useAuction = () => {
       setMinNextBid(normalizeCroreAmount(minNextBid || 0));
       setHighestBidder(highestBidder);
       if (timerEndsAt) {
-        const endsAt = new Date(timerEndsAt).getTime();
+        const endsAt    = new Date(timerEndsAt).getTime();
         const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+        setTimerTotal(remaining); // ring resets to full on each bid
         setTimeLeft(remaining);
         startLocalTick(endsAt);
       }
@@ -123,9 +127,13 @@ export const useAuction = () => {
       }
     };
 
-    const onTimer = ({ timeLeft: tl, expiresAt }) => {
-      setTimeLeft(tl);
-      if (expiresAt) startLocalTick(expiresAt);
+    // Server emits auction:timer only at key moments (start/extend/expire=0).
+    // Use expiresAt to compute remaining locally — avoids server/client clock skew.
+    const onTimer = ({ expiresAt }) => {
+      if (!expiresAt) { setTimeLeft(0); return; }
+      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      setTimeLeft(remaining);
+      startLocalTick(expiresAt);
     };
 
     const onSold = ({ player, team, amount, auto }) => {
@@ -175,11 +183,12 @@ export const useAuction = () => {
     };
 
     const onResumed = ({ timerDuration, timerEndsAt, currentBid, minNextBid, highestBidder }) => {
-      const endsAt = timerEndsAt ? new Date(timerEndsAt).getTime() : Date.now() + timerDuration * 1000;
+      const endsAt    = timerEndsAt ? new Date(timerEndsAt).getTime() : Date.now() + timerDuration * 1000;
       const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
       if (typeof currentBid === 'number') setCurrentBid(normalizeCroreAmount(currentBid));
       if (typeof minNextBid === 'number') setMinNextBid(normalizeCroreAmount(minNextBid));
       if (highestBidder !== undefined) setHighestBidder(highestBidder || null);
+      setTimerTotal(timerDuration || remaining || 10);
       setTimeLeft(remaining);
       startLocalTick(endsAt);
     };
@@ -225,7 +234,7 @@ export const useAuction = () => {
 
   return {
     session, currentPlayer, currentBid, minNextBid,
-    highestBidder, timeLeft, bidHistory, bidError,
+    highestBidder, timeLeft, timerTotal, bidHistory, bidError,
     soldFlash, loading, placeBid, refetch: fetchSession,
   };
 };

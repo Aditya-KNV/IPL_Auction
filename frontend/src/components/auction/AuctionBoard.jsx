@@ -331,6 +331,7 @@ export default function AuctionBoard() {
     minNextBid,
     highestBidder,
     timeLeft,
+    timerTotal,
     bidHistory,
     bidError,
     soldFlash,
@@ -447,7 +448,7 @@ export default function AuctionBoard() {
                   >
                     <AuctionTimer
                       timeLeft={timeLeft}
-                      totalDuration={session?.timerDuration || 30}
+                      totalDuration={timerTotal}
                       active={isActive && !!currentPlayer}
                     />
                   </div>
