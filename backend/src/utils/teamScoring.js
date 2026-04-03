@@ -182,10 +182,8 @@ const bowlingArm = (style = '') => {
 };
 
 const spinType = (style = '') => {
-  const normalized = normalizeBowlingStyle(style);
-  if (/(orthodox|off-spin|off spin|mystery spin)/i.test(normalized)) return 'off';
-  if (/(leg-spin|leg spin|wrist-spin|wrist spin|chinaman)/i.test(normalized)) return 'leg';
-  return null;
+  if (/(off-spin|off spin|orthodox)/i.test(style)) return 'off';
+  return 'leg'; // leg-spin, wrist-spin, chinaman, mystery spin, and anything else
 };
 
 const totalOversScore = (players) => {
