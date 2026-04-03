@@ -60,6 +60,7 @@ const playerSchema = new mongoose.Schema({
   tactical: {
     flexibility:   { type: Number, default: 5 },
     positions:     [{ type: Number }],    // batting positions e.g. [1,2]
+    overs:         { type: Number, default: 0 },
   },
 
   // ── Auction ─────────────────────────────────────────────────────────────────

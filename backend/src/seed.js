@@ -1973,7 +1973,7 @@ const MARQUEE_SET_2 = [
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 9, positions: [1, 2, 3, 4, 5], overs: 3 },
+    tactical: { flexibility: 10, positions: [1, 2, 3, 4, 5], overs: 3 },
     basePrice: 2,
   },
   {
@@ -6224,7 +6224,7 @@ const PLAYERS = PLAYER_SETS.flatMap(({ name, order, players }) =>
     ...player,
     auctionSetName: name,
     auctionSetOrder: order,
-  }))
+  })),
 );
 
 async function seed() {
