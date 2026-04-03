@@ -74,7 +74,7 @@ const playerBattingScoreForPosition = (player, position) => {
   return weightedNormalizedScore(getBattingMetrics(player), weights);
 };
 
-const optimizeBattingOrderScore = (players) => {
+const optimizeBattingOrder = (players) => {
   const slots = Array.from({ length: 12 }, (_, index) => index + 1);
   const memo = new Map();
 
@@ -102,7 +102,39 @@ const optimizeBattingOrderScore = (players) => {
     return best;
   };
 
-  return dfs(0, 0);
+  const totalScore = dfs(0, 0);
+
+  // Reconstruct the optimal assignment from the memoised values
+  const memoGet = (slotIndex, mask) => (slotIndex >= slots.length ? 0 : (memo.get(`${slotIndex}:${mask}`) ?? 0));
+
+  const assignments = [];
+  let usedMask = 0;
+
+  for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
+    const position = slots[slotIndex];
+    let bestValue = -3 + memoGet(slotIndex + 1, usedMask); // skip value
+    let bestPi = -1;
+
+    for (let pi = 0; pi < players.length; pi += 1) {
+      if (usedMask & (1 << pi)) continue;
+      const player = players[pi];
+      const preferred = player.tactical?.positions ?? [];
+      const slotScore = preferred.includes(position)
+        ? playerBattingScoreForPosition(player, position)
+        : playerBattingScoreForPosition(player, position) - 3;
+      const candidate = slotScore + memoGet(slotIndex + 1, usedMask | (1 << pi));
+      if (candidate > bestValue) { bestValue = candidate; bestPi = pi; }
+    }
+
+    if (bestPi >= 0) {
+      const player = players[bestPi];
+      const preferred = player.tactical?.positions ?? [];
+      assignments.push({ position, playerIndex: bestPi, isPreferred: preferred.includes(position) });
+      usedMask |= (1 << bestPi);
+    }
+  }
+
+  return { totalScore, assignments };
 };
 
 const wicketKeeperScore = (players) => {
@@ -130,9 +162,14 @@ const battingPositionScore = (players) => {
   const candidates = [...players]
     .sort((a, b) => battingComposite(b) - battingComposite(a))
     .slice(0, 15);
-  const totalSlotScore = optimizeBattingOrderScore(candidates);
-  const averageSlotScore = totalSlotScore / 12;
-  return Math.max(0, (averageSlotScore / 10) * 34);
+  const { totalScore, assignments } = optimizeBattingOrder(candidates);
+  const averageSlotScore = totalScore / 12;
+  const score = Math.max(0, (averageSlotScore / 10) * 34);
+  const battingOrder = assignments.map(({ position, playerIndex, isPreferred }) => {
+    const p = candidates[playerIndex];
+    return { playerId: String(p._id), name: p.name, position, isPreferred };
+  }).sort((a, b) => a.position - b.position);
+  return { score, battingOrder };
 };
 
 const normalizeBowlingStyle = (style = '') => style.toLowerCase().trim();
@@ -264,12 +301,13 @@ const ageScore = (players) => {
 const battingScore = (players) => {
   const wicketKeeper = wicketKeeperScore(players);
   const balance = battingBalanceScore(players);
-  const positions = battingPositionScore(players);
+  const { score: positions, battingOrder } = battingPositionScore(players);
 
   return {
     wicketKeeper,
     balance,
     positions,
+    battingOrder,
     total: wicketKeeper + balance + positions,
   };
 };
@@ -308,6 +346,7 @@ const scoreBreakdown = (players) => {
       leftRightBalance: round(batting.balance),
       positions: round(batting.positions),
       total: round(batting.total),
+      battingOrder: batting.battingOrder,
     },
     bowling: {
       totalOvers: round(bowling.totalOvers),

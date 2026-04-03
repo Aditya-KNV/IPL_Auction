@@ -95,15 +95,29 @@ exports.getRankings = async (req, res) => {
         const squad = selectSquad(team);
         const breakdown = scoreBreakdown(squad);
 
-        const playing12 = squad.map((p) => ({
-          _id: p._id,
-          name: p.name,
-          role: p.role,
-          nationality: p.nationality,
-          batting_style: p.batting_style,
-          bowling_style: p.bowling_style,
-          age: p.age,
-        }));
+        const battingOrderMap = new Map(
+          (breakdown.batting.battingOrder ?? []).map((b) => [b.playerId, b])
+        );
+        const playing12 = squad
+          .map((p) => {
+            const bo = battingOrderMap.get(String(p._id));
+            return {
+              _id: p._id,
+              name: p.name,
+              role: p.role,
+              nationality: p.nationality,
+              batting_style: p.batting_style,
+              bowling_style: p.bowling_style,
+              age: p.age,
+              battingPosition: bo?.position ?? null,
+              isPreferred: bo?.isPreferred ?? null,
+            };
+          })
+          .sort((a, b) => {
+            if (a.battingPosition === null) return 1;
+            if (b.battingPosition === null) return -1;
+            return a.battingPosition - b.battingPosition;
+          });
 
         return {
           teamId: team._id,

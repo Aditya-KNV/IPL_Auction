@@ -213,13 +213,19 @@ const ROLE_COLOR = {
 const Playing12 = ({ players }) => {
   if (!players?.length) return <p className="text-xs text-gray-500">No squad data available.</p>;
   return (
-    <div className="grid grid-cols-2 gap-1.5">
-      {players.map((p, i) => (
-        <div key={p._id} className="flex items-center gap-2 rounded-lg border border-gray-800 bg-gray-950/60 px-2.5 py-2">
-          <span className="w-5 flex-shrink-0 text-center text-xs tabular-nums text-gray-600">{i + 1}</span>
+    <div className="space-y-1.5">
+      {players.map((p) => (
+        <div key={p._id} className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 ${p.isPreferred === false ? 'border-amber-500/30 bg-amber-500/5' : 'border-gray-800 bg-gray-950/60'}`}>
+          {/* Batting position badge */}
+          <div className={`w-8 flex-shrink-0 text-center text-xs font-bold tabular-nums ${p.battingPosition ? (p.isPreferred ? 'text-green-400' : 'text-amber-400') : 'text-gray-600'}`}>
+            {p.battingPosition ? `#${p.battingPosition}` : '—'}
+          </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-white">{p.name}</p>
-            <p className="truncate text-[10px] text-gray-500">{p.nationality} · {p.batting_style === 'left-handed' ? 'LHB' : 'RHB'}</p>
+            <p className="truncate text-[10px] text-gray-500">
+              {p.nationality} · {p.batting_style === 'left-handed' ? 'LHB' : 'RHB'}
+              {p.isPreferred === false && <span className="ml-1 text-amber-400">· out of position</span>}
+            </p>
           </div>
           <span className={`flex-shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold ${ROLE_COLOR[p.role] ?? 'text-gray-400 border-gray-700 bg-gray-800'}`}>
             {p.role === 'Wicket-Keeper' ? 'WK' : p.role === 'All-Rounder' ? 'AR' : p.role === 'Batsman' ? 'BAT' : 'BWL'}
