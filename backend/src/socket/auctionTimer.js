@@ -11,7 +11,9 @@
  */
 
 const EXTENSION_SECS = 10;
-const EXPIRE_GRACE_MS = 400;
+// Must be longer than the worst-case bid processing time (5 DB queries).
+// If extend() is called within this window after timer fires, expire is cancelled.
+const EXPIRE_GRACE_MS = 1500;
 
 let _io = null;
 let _onExpire = null;
