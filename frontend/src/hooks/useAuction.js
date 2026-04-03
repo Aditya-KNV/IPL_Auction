@@ -21,14 +21,13 @@ export const useAuction = () => {
 
   const tickRef = useRef(null);
 
-  const startLocalTick = useCallback((initialSeconds) => {
+  const startLocalTick = useCallback((expiresAt) => {
     clearInterval(tickRef.current);
-    let t = initialSeconds;
     tickRef.current = setInterval(() => {
-      t = Math.max(0, t - 1);
-      setTimeLeft(t);
-      if (t === 0) clearInterval(tickRef.current);
-    }, 1000);
+      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      setTimeLeft(remaining);
+      if (remaining === 0) clearInterval(tickRef.current);
+    }, 250);
   }, []);
 
   const stopLocalTick = useCallback(() => {
@@ -63,9 +62,10 @@ export const useAuction = () => {
       setHighestBidder(data.currentHighestBidder || null);
 
       if (data.timerEndsAt && data.status === 'active') {
-        const remaining = Math.max(0, Math.ceil((new Date(data.timerEndsAt) - Date.now()) / 1000));
+        const endsAt = new Date(data.timerEndsAt).getTime();
+        const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
         setTimeLeft(remaining);
-        if (remaining > 0) startLocalTick(remaining);
+        if (remaining > 0) startLocalTick(endsAt);
       } else {
         setTimeLeft(data.timeLeft || 0);
       }
@@ -92,15 +92,17 @@ export const useAuction = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const onNextPlayer = ({ player, currentBid, timerDuration, minNextBid }) => {
+    const onNextPlayer = ({ player, currentBid, timerDuration, timerEndsAt, minNextBid }) => {
+      const endsAt = timerEndsAt ? new Date(timerEndsAt).getTime() : Date.now() + timerDuration * 1000;
+      const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
       setCurrentPlayer(player);
       setCurrentBid(normalizeCroreAmount(currentBid));
       setMinNextBid(normalizeCroreAmount(minNextBid || 0));
       setHighestBidder(null);
       setBidHistory([]);
       setBidError('');
-      setTimeLeft(timerDuration);
-      startLocalTick(timerDuration);
+      setTimeLeft(remaining);
+      startLocalTick(endsAt);
     };
 
     const onBidUpdate = ({ currentBid, highestBidder, minNextBid, bidEntry }) => {
@@ -115,9 +117,9 @@ export const useAuction = () => {
       }
     };
 
-    const onTimer = ({ timeLeft: tl }) => {
+    const onTimer = ({ timeLeft: tl, expiresAt }) => {
       setTimeLeft(tl);
-      startLocalTick(tl);
+      if (expiresAt) startLocalTick(expiresAt);
     };
 
     const onSold = ({ player, team, amount, auto }) => {
@@ -166,18 +168,14 @@ export const useAuction = () => {
       if (status === 'paused') { stopLocalTick(); setTimeLeft(0); }
     };
 
-    const onResumed = ({ timerDuration, currentBid, minNextBid, highestBidder }) => {
-      if (typeof currentBid === 'number') {
-        setCurrentBid(normalizeCroreAmount(currentBid));
-      }
-      if (typeof minNextBid === 'number') {
-        setMinNextBid(normalizeCroreAmount(minNextBid));
-      }
-      if (highestBidder !== undefined) {
-        setHighestBidder(highestBidder || null);
-      }
-      setTimeLeft(timerDuration);
-      startLocalTick(timerDuration);
+    const onResumed = ({ timerDuration, timerEndsAt, currentBid, minNextBid, highestBidder }) => {
+      const endsAt = timerEndsAt ? new Date(timerEndsAt).getTime() : Date.now() + timerDuration * 1000;
+      const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+      if (typeof currentBid === 'number') setCurrentBid(normalizeCroreAmount(currentBid));
+      if (typeof minNextBid === 'number') setMinNextBid(normalizeCroreAmount(minNextBid));
+      if (highestBidder !== undefined) setHighestBidder(highestBidder || null);
+      setTimeLeft(remaining);
+      startLocalTick(endsAt);
     };
 
     const onCompleted = () => {

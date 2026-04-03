@@ -134,6 +134,10 @@ const initSocket = (server) => {
 
         // ── 4. Extend the bid timer ───────────────────────────────────────────
         timer.extend();
+        AuctionSession.findOneAndUpdate(
+          { status: 'active' },
+          { $set: { timerEndsAt: new Date(timer.getExpiresAt()) } }
+        ).catch(() => {});
 
         // ── 6. Broadcast to everyone ──────────────────────────────────────────
         io.emit('bid:update', {

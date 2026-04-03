@@ -18,9 +18,57 @@ const topMetric = (entry) => {
   return metrics.sort((a, b) => b.value - a.value)[0];
 };
 
+const explainBatting = (b) => {
+  const parts = [];
+  if (b.wicketKeeper === 4) parts.push('two keepers (full backup)');
+  else if (b.wicketKeeper === 3.5) parts.push('one fit keeper (low injury risk)');
+  else if (b.wicketKeeper === 3) parts.push('one keeper (no backup)');
+  else parts.push('no wicket keeper (critical gap)');
+
+  if (b.leftRightBalance >= 4.5) parts.push('excellent left/right batting mix');
+  else if (b.leftRightBalance >= 3) parts.push('decent batting balance');
+  else parts.push('uneven left/right balance');
+
+  if (b.positions >= 25) parts.push('batters fit their preferred positions very well');
+  else if (b.positions >= 15) parts.push('most batters reasonably placed in the order');
+  else parts.push('several batters out of their natural position');
+
+  return `Batting (${b.total}/43): ${parts.join('; ')}.`;
+};
+
+const explainBowling = (b) => {
+  const parts = [];
+  if (b.totalOvers >= 5) parts.push('full 24+ overs covered');
+  else if (b.totalOvers >= 3) parts.push('22-23 overs covered');
+  else if (b.totalOvers >= 1) parts.push('only 20-21 overs covered — thin bowling depth');
+  else parts.push('under 20 overs — dangerous bowling gap');
+
+  if (b.paceOvers >= 4) parts.push('strong pace attack');
+  else if (b.paceOvers >= 2) parts.push('moderate pace depth');
+  else parts.push('weak pace cover');
+
+  if (b.spinOvers >= 4) parts.push('good spin variety');
+  else if (b.spinOvers >= 2) parts.push('some spin cover');
+  else parts.push('limited spin');
+
+  const phaseAvg = ((b.powerplay / 9) + (b.middle / 10) + (b.death / 9)) / 3;
+  if (phaseAvg >= 0.75) parts.push('elite phase bowling across powerplay, middle and death');
+  else if (phaseAvg >= 0.5) parts.push('solid phase bowling');
+  else parts.push('bowling phases need improvement');
+
+  return `Bowling (${b.total}/43): ${parts.join('; ')}.`;
+};
+
 const buildSummary = (entry) => {
+  const { breakdown: b } = entry;
   const strongest = topMetric(entry);
-  return `${entry.teamShortName} lead with ${entry.score}/100, driven most by ${strongest.label} (${strongest.value}).`;
+  const lines = [
+    `${entry.teamShortName} score ${entry.score}/100. Strongest area: ${strongest.label} (${strongest.value}).`,
+    explainBatting(b.batting),
+    explainBowling(b.bowling),
+    `Fitness ${b.fitness}/5 · Impact ${b.impact}/5 · Tactical ${b.tactical}/3 · Age ${b.age}/1.`,
+  ];
+  return lines.join(' ');
 };
 
 const buildVerdict = (rankings) => {

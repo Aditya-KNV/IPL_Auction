@@ -15,31 +15,26 @@ const EXTENSION_SECS = 5; // extra seconds granted after every new bid
 let _io        = null;
 let _onExpire  = null;
 let _timeLeft  = 0;
-let _interval  = null;
+let _expiresAt = 0;
 let _timeout   = null;
 
 // ── Private ───────────────────────────────────────────────────────────────────
 
 const _clearAll = () => {
-  clearInterval(_interval); _interval = null;
-  clearTimeout(_timeout);   _timeout  = null;
+  clearTimeout(_timeout); _timeout = null;
 };
 
 const _run = (seconds) => {
   _clearAll();
-  _timeLeft = seconds;
+  _timeLeft  = seconds;
+  _expiresAt = Date.now() + seconds * 1000;
 
-  // Tick every second
-  _interval = setInterval(() => {
-    _timeLeft = Math.max(0, _timeLeft - 1);
-    _io?.emit('auction:timer', { timeLeft: _timeLeft });
-  }, 1000);
-
-  // Expire after `seconds`
+  // Expire after `seconds` — clients drive their own visual countdown
   _timeout = setTimeout(async () => {
     _clearAll();
-    _timeLeft = 0;
-    _io?.emit('auction:timer', { timeLeft: 0 });
+    _timeLeft  = 0;
+    _expiresAt = 0;
+    _io?.emit('auction:timer', { timeLeft: 0, expiresAt: Date.now() });
     if (_onExpire) {
       try {
         await _onExpire();
@@ -62,7 +57,7 @@ const start = (io, duration, onExpire) => {
   _io       = io;
   _onExpire = onExpire;
   _run(duration);
-  io.emit('auction:timer', { timeLeft: duration });
+  io.emit('auction:timer', { timeLeft: duration, expiresAt: _expiresAt });
 };
 
 /**
@@ -70,9 +65,9 @@ const start = (io, duration, onExpire) => {
  * No-op if the timer isn't running.
  */
 const extend = () => {
-  if (!_interval && !_timeout) return; // timer not active
+  if (!_timeout) return; // timer not active
   _run(EXTENSION_SECS);
-  _io?.emit('auction:timer', { timeLeft: EXTENSION_SECS });
+  _io?.emit('auction:timer', { timeLeft: EXTENSION_SECS, expiresAt: _expiresAt });
 };
 
 /**
@@ -84,7 +79,8 @@ const stop = () => {
   _timeLeft = 0;
 };
 
-const getTimeLeft = () => _timeLeft;
-const isRunning   = () => _interval !== null;
+const getTimeLeft  = () => _timeLeft;
+const getExpiresAt = () => _expiresAt;
+const isRunning    = () => _timeout !== null;
 
-module.exports = { start, extend, stop, getTimeLeft, isRunning, EXTENSION_SECS };
+module.exports = { start, extend, stop, getTimeLeft, getExpiresAt, isRunning, EXTENSION_SECS };
