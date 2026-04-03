@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRoom } from '../../context/RoomContext';
 import { formatCroreAmount, normalizeCroreAmount } from '../../utils/currency';
@@ -26,6 +26,7 @@ export default function BidPanel({
 }) {
   const { user } = useAuth();
   const { teamAssignments } = useRoom();
+  const [bidding, setBidding] = useState(false);
 
   const myTeamAssignment = user ? teamAssignments?.[user.id] : null;
   const isLeading = !!(
@@ -35,12 +36,18 @@ export default function BidPanel({
   );
   const hasExistingBid = !!highestBidder;
 
-  const canBid = !!currentPlayer && timeLeft > 0 && !!myTeamAssignment && !isLeading;
+  // Re-enable buttons as soon as the server responds (bid accepted or rejected)
+  useEffect(() => {
+    setBidding(false);
+  }, [currentBid, bidError]);
+
+  const canBid = !!currentPlayer && timeLeft > 0 && !!myTeamAssignment && !isLeading && !bidding;
   const quickBids = useMemo(() => getQuickBids(currentBid, hasExistingBid), [currentBid, hasExistingBid]);
   const effectiveMin = minNextBid || (currentBid ? getMinNextBid(currentBid, hasExistingBid) : 0);
 
   const handleQuickBid = (amount) => {
     if (!canBid) return;
+    setBidding(true);
     onBid(amount);
   };
 

@@ -388,6 +388,8 @@ export default function AuctionBoard() {
         <div className="lg:flex-1 lg:overflow-hidden grid grid-cols-1 lg:grid-cols-5">
           <div className="lg:order-2 lg:col-span-3 border-b lg:border-b-0 lg:border-l border-gray-800 lg:overflow-y-auto lg:h-full">
             <div className="p-5 space-y-5">
+              {amHost && <AuctionControls session={session} onRefetch={refetch} />}
+
               {showStatsPanel && currentPlayer ? (
                 <PlayerRatingsPanel player={currentPlayer} expanded onClose={closeStatsPanel} />
               ) : (
@@ -497,8 +499,6 @@ export default function AuctionBoard() {
                   <BidFeed bids={bidHistory} highestBidder={highestBidder} />
                 </div>
               )}
-
-              {amHost && <AuctionControls session={session} onRefetch={refetch} />}
             </div>
           </div>
         </div>
