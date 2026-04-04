@@ -212,7 +212,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 9,
         power_hitting: 9,
-        anchor: 5,
+        anchor: 7,
         spin_play: 7,
         pace_play: 9,
       },
@@ -262,7 +262,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 10,
         power_hitting: 10,
-        anchor: 5,
+        anchor: 8,
         spin_play: 10,
         pace_play: 8,
       },
@@ -299,12 +299,12 @@ const MARQUEE_SET_1 = [
       phases: {
         powerplay: { rating: 9, strike_rate: 150 },
         middle: { rating: 8, strike_rate: 130 },
-        death: { rating: 7, strike_rate: 155 },
+        death: { rating: 8, strike_rate: 155 },
       },
       skills: {
         finishing: 7,
         power_hitting: 8,
-        anchor: 5,
+        anchor: 6,
         spin_play: 6,
         pace_play: 8,
       },
@@ -404,8 +404,8 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: {
         powerplay: 9,
-        middle: 8,
-        death: 9,
+        middle: 9,
+        death: 8,
       },
       skills: {
         variations: 8,
@@ -446,7 +446,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 9,
         power_hitting: 9,
-        anchor: 7,
+        anchor: 8,
         spin_play: 8,
         pace_play: 9,
       },
@@ -544,7 +544,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: {
         powerplay: 8,
-        middle: 8,
+        middle: 9,
         death: 8,
       },
       skills: {
@@ -583,7 +583,7 @@ const MARQUEE_SET_1 = [
         death: { rating: 8, strike_rate: 140 },
       },
       skills: {
-        finishing: 6,
+        finishing: 7,
         power_hitting: 6,
         anchor: 9,
         spin_play: 8,
@@ -823,7 +823,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 10,
         power_hitting: 10,
-        anchor: 4,
+        anchor: 6,
         spin_play: 9,
         pace_play: 9,
       },
@@ -969,7 +969,7 @@ const MARQUEE_SET_1 = [
     },
     bowling: {
       phases: {
-        powerplay: 8,
+        powerplay: 7,
         middle: 9,
         death: 6,
       },
@@ -1094,7 +1094,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 7,
         power_hitting: 7,
-        anchor: 9,
+        anchor: 8,
         spin_play: 9,
         pace_play: 8,
       },
@@ -1135,7 +1135,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 8,
         power_hitting: 9,
-        anchor: 6,
+        anchor: 7,
         spin_play: 8,
         pace_play: 8,
       },
@@ -1226,7 +1226,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 8,
         power_hitting: 7,
-        anchor: 9,
+        anchor: 10,
         spin_play: 9,
         pace_play: 7,
       },
@@ -1267,7 +1267,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 8,
         power_hitting: 8,
-        anchor: 9,
+        anchor: 10,
         spin_play: 9,
         pace_play: 9,
       },
@@ -1316,7 +1316,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: {
         powerplay: 9,
-        middle: 9,
+        middle: 10,
         death: 9,
       },
       skills: {
@@ -1336,7 +1336,7 @@ const MARQUEE_SET_1 = [
     },
     tactical: {
       flexibility: 10,
-      positions: [1, 2, 7, 8],
+      positions: [1, 2, 7, 8, 9, 10],
       overs: 4,
     },
     basePrice: 2,
@@ -1358,7 +1358,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 9,
         power_hitting: 9,
-        anchor: 6,
+        anchor: 7,
         spin_play: 10,
         pace_play: 10,
       },
@@ -1407,8 +1407,8 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: {
         powerplay: 10,
-        middle: 7,
-        death: 9,
+        middle: 8,
+        death: 8,
       },
       skills: {
         variations: 8,
@@ -1455,9 +1455,9 @@ const MARQUEE_SET_1 = [
     },
     bowling: {
       phases: {
-        powerplay: 7,
+        powerplay: 6,
         middle: 9,
-        death: 7,
+        death: 6,
       },
       skills: {
         variations: 10,
@@ -1637,7 +1637,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 4, middle: 6, death: 3 },
+      phases: { powerplay: 6, middle: 7, death: 3 },
       skills: { variations: 6, yorker: 2, bouncer: 1 },
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
@@ -1697,7 +1697,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 5, death: 4 },
+      phases: { powerplay: 6, middle: 6, death: 6 },
       skills: { variations: 5, yorker: 4, bouncer: 5 },
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
@@ -1811,7 +1811,7 @@ const MARQUEE_SET_2 = [
       skills: {
         finishing: 10,
         power_hitting: 9,
-        anchor: 6,
+        anchor: 7,
         spin_play: 8,
         pace_play: 9,
       },
@@ -1835,19 +1835,19 @@ const MARQUEE_SET_2 = [
     batting: {
       phases: {
         powerplay: { rating: 7, strike_rate: 130 },
-        middle: { rating: 7, strike_rate: 135 },
+        middle: { rating: 8, strike_rate: 135 },
         death: { rating: 7, strike_rate: 155 },
       },
       skills: {
         finishing: 8,
         power_hitting: 7,
-        anchor: 6,
+        anchor: 8,
         spin_play: 7,
         pace_play: 7,
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 6, death: 8 },
+      phases: { powerplay: 7, middle: 6, death: 7 },
       skills: { variations: 8, yorker: 8, bouncer: 5 },
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 7 },
@@ -1902,7 +1902,7 @@ const MARQUEE_SET_2 = [
       skills: {
         finishing: 10,
         power_hitting: 10,
-        anchor: 3,
+        anchor: 5,
         spin_play: 7,
         pace_play: 10,
       },
@@ -1938,7 +1938,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 6, death: 4 },
+      phases: { powerplay: 6, middle: 7, death: 4 },
       skills: { variations: 6, yorker: 2, bouncer: 2 },
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
@@ -1960,7 +1960,7 @@ const MARQUEE_SET_2 = [
         death: { rating: 7, strike_rate: 155 },
       },
       skills: {
-        finishing: 8,
+        finishing: 6,
         power_hitting: 8,
         anchor: 7,
         spin_play: 7,
@@ -1968,7 +1968,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 7 },
+      phases: { powerplay: 6, middle: 8, death: 7 },
       skills: { variations: 6, yorker: 6, bouncer: 7 },
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
@@ -1985,7 +1985,7 @@ const MARQUEE_SET_2 = [
     age: 26,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 155 },
+        powerplay: { rating: 10, strike_rate: 155 },
         middle: { rating: 9, strike_rate: 145 },
         death: { rating: 8, strike_rate: 160 },
       },
@@ -2113,7 +2113,7 @@ const MARQUEE_SET_2 = [
       skills: {
         finishing: 9,
         power_hitting: 9,
-        anchor: 6,
+        anchor: 8,
         spin_play: 9,
         pace_play: 8,
       },
@@ -2143,7 +2143,7 @@ const MARQUEE_SET_2 = [
       skills: {
         finishing: 10,
         power_hitting: 9,
-        anchor: 5,
+        anchor: 9,
         spin_play: 8,
         pace_play: 9,
       },
@@ -2179,7 +2179,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 5, death: 4 },
+      phases: { powerplay: 5, middle: 7, death: 5 },
       skills: { variations: 5, yorker: 3, bouncer: 4 },
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
@@ -2197,7 +2197,7 @@ const MARQUEE_SET_2 = [
     batting: {
       phases: {
         powerplay: { rating: 6, strike_rate: 150 },
-        middle: { rating: 7, strike_rate: 145 },
+        middle: { rating: 8, strike_rate: 145 },
         death: { rating: 8, strike_rate: 175 },
       },
       skills: {
@@ -2227,7 +2227,7 @@ const MARQUEE_SET_2 = [
     batting: {
       phases: {
         powerplay: { rating: 9, strike_rate: 160 },
-        middle: { rating: 6, strike_rate: 145 },
+        middle: { rating: 7, strike_rate: 145 },
         death: { rating: 7, strike_rate: 170 },
       },
       skills: {
@@ -2299,7 +2299,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 7, death: 9 },
+      phases: { powerplay: 7, middle: 8, death: 9 },
       skills: { variations: 9, yorker: 10, bouncer: 7 },
     },
     role_impact: { match_winner: 9, clutch: 9, consistency: 7 },
@@ -2329,7 +2329,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 8, death: 7 },
+      phases: { powerplay: 7, middle: 8, death: 7 },
       skills: { variations: 9, yorker: 3, bouncer: 1 },
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 8 },
@@ -2419,7 +2419,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 7, death: 9 },
+      phases: { powerplay: 8, middle: 8, death: 9 },
       skills: { variations: 10, yorker: 8, bouncer: 4 },
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 7 },
@@ -2439,14 +2439,14 @@ const SET_3 = [
     age: 25,
     batting: {
       phases: {
-        powerplay: { rating: 6, strike_rate: 130 },
+        powerplay: { rating: 7, strike_rate: 130 },
         middle: { rating: 8, strike_rate: 135 },
         death: { rating: 8, strike_rate: 165 },
       },
       skills: {
-        finishing: 8,
+        finishing: 6,
         power_hitting: 7,
-        anchor: 6,
+        anchor: 9,
         spin_play: 7,
         pace_play: 7,
       },
@@ -2501,7 +2501,7 @@ const SET_3 = [
       phases: {
         powerplay: { rating: 6, strike_rate: 125 },
         middle: { rating: 7, strike_rate: 135 },
-        death: { rating: 7, strike_rate: 150 },
+        death: { rating: 6, strike_rate: 150 },
       },
       skills: {
         finishing: 7,
@@ -2512,7 +2512,7 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 8, death: 6 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 8, yorker: 4, bouncer: 2 },
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
@@ -2542,7 +2542,7 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 8, death: 9 },
+      phases: { powerplay: 6, middle: 7, death: 9 },
       skills: { variations: 10, yorker: 8, bouncer: 4 },
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
@@ -2572,7 +2572,7 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 10, death: 7 },
+      phases: { powerplay: 7, middle: 9, death: 7 },
       skills: { variations: 6, yorker: 8, bouncer: 8 },
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
@@ -2589,16 +2589,16 @@ const SET_3 = [
     age: 32,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 145 },
+        powerplay: { rating: 7, strike_rate: 140 },
+        middle: { rating: 9, strike_rate: 145 },
         death: { rating: 7, strike_rate: 155 },
       },
       skills: {
         finishing: 7,
         power_hitting: 8,
-        anchor: 7,
+        anchor: 9,
         spin_play: 9,
-        pace_play: 8,
+        pace_play: 7,
       },
     },
     bowling: {
@@ -2621,7 +2621,7 @@ const SET_3 = [
       phases: {
         powerplay: { rating: 6, strike_rate: 125 },
         middle: { rating: 7, strike_rate: 135 },
-        death: { rating: 7, strike_rate: 150 },
+        death: { rating: 6, strike_rate: 150 },
       },
       skills: {
         finishing: 7,
@@ -2711,8 +2711,8 @@ const SET_3 = [
     batting: {
       phases: {
         powerplay: { rating: 7, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 165 },
+        middle: { rating: 7, strike_rate: 145 },
+        death: { rating: 7, strike_rate: 165 },
       },
       skills: {
         finishing: 8,
@@ -2723,7 +2723,7 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 7, death: 4 },
+      phases: { powerplay: 7, middle: 7, death: 4 },
       skills: { variations: 6, yorker: 3, bouncer: 4 },
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
@@ -2740,7 +2740,7 @@ const SET_3 = [
     age: 33,
     batting: {
       phases: {
-        powerplay: { rating: 5, strike_rate: 130 },
+        powerplay: { rating: 6, strike_rate: 130 },
         middle: { rating: 8, strike_rate: 145 },
         death: { rating: 9, strike_rate: 175 },
       },
@@ -2771,7 +2771,7 @@ const SET_3 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 150 },
-        middle: { rating: 7, strike_rate: 140 },
+        middle: { rating: 8, strike_rate: 140 },
         death: { rating: 7, strike_rate: 165 },
       },
       skills: {
@@ -2802,7 +2802,7 @@ const SET_3 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 130 },
         middle: { rating: 6, strike_rate: 135 },
-        death: { rating: 6, strike_rate: 165 },
+        death: { rating: 5, strike_rate: 165 },
       },
       skills: {
         finishing: 8,
@@ -2813,7 +2813,7 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 8, death: 8 },
+      phases: { powerplay: 6, middle: 8, death: 7 },
       skills: { variations: 9, yorker: 5, bouncer: 2 },
     },
     role_impact: { match_winner: 9, clutch: 8, consistency: 8 },
@@ -2831,7 +2831,7 @@ const SET_3 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 155 },
-        middle: { rating: 7, strike_rate: 140 },
+        middle: { rating: 8, strike_rate: 140 },
         death: { rating: 8, strike_rate: 165 },
       },
       skills: {
@@ -2933,7 +2933,7 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 7, death: 7 },
+      phases: { powerplay: 6, middle: 7, death: 5 },
       skills: { variations: 8, yorker: 3, bouncer: 1 },
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
@@ -3020,7 +3020,7 @@ const SET_4 = [
       skills: {
         finishing: 9,
         power_hitting: 7,
-        anchor: 7,
+        anchor: 9,
         spin_play: 8,
         pace_play: 8,
       },
@@ -3105,7 +3105,7 @@ const SET_4 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 125 },
         middle: { rating: 6, strike_rate: 135 },
-        death: { rating: 9, strike_rate: 175 },
+        death: { rating: 8, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -3134,14 +3134,14 @@ const SET_4 = [
     batting: {
       phases: {
         powerplay: { rating: 6, strike_rate: 140 },
-        middle: { rating: 7, strike_rate: 145 },
+        middle: { rating: 8, strike_rate: 145 },
         death: { rating: 8, strike_rate: 180 },
       },
       skills: {
         finishing: 9,
         power_hitting: 9,
         anchor: 5,
-        spin_play: 7,
+        spin_play: 8,
         pace_play: 9,
       },
     },
@@ -3165,7 +3165,7 @@ const SET_4 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 125 },
         middle: { rating: 6, strike_rate: 130 },
-        death: { rating: 8, strike_rate: 155 },
+        death: { rating: 6, strike_rate: 155 },
       },
       skills: {
         finishing: 8,
@@ -3224,8 +3224,8 @@ const SET_4 = [
     batting: {
       phases: {
         powerplay: { rating: 6, strike_rate: 135 },
-        middle: { rating: 8, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 175 },
+        middle: { rating: 7, strike_rate: 145 },
+        death: { rating: 7, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -3255,7 +3255,7 @@ const SET_4 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 125 },
         middle: { rating: 6, strike_rate: 135 },
-        death: { rating: 8, strike_rate: 160 },
+        death: { rating: 7, strike_rate: 160 },
       },
       skills: {
         finishing: 8,
@@ -3266,7 +3266,7 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 6, death: 8 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 6, yorker: 7, bouncer: 7 },
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
@@ -3327,7 +3327,7 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 7, death: 9 },
+      phases: { powerplay: 6, middle: 7, death: 8 },
       skills: { variations: 9, yorker: 9, bouncer: 7 },
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 8 },
