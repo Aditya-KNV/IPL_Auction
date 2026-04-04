@@ -113,7 +113,6 @@ const initSocket = (server) => {
                 status: 'active',
                 currentPlayer: currentSession.currentPlayer._id,
                 currentHighestBidder: null,
-                currentBid: normalizedAmount,
               },
           {
             $set: {

@@ -416,30 +416,29 @@ const applyWithdraw = async (teamId) => {
     return { error: 'The current highest bidder cannot withdraw' };
   }
 
-  const alreadyWithdrawn = (session.withdrawnTeams || []).some(
-    (withdrawnTeamId) => String(withdrawnTeamId) === normalizedTeamId
+  // Atomic add — $addToSet prevents duplicates and is race-condition-safe
+  const updated = await AuctionSession.findOneAndUpdate(
+    { _id: session._id, status: 'active', currentPlayer: { $ne: null } },
+    { $addToSet: { withdrawnTeams: teamId } },
+    { new: true }
   );
-
-  if (!alreadyWithdrawn) {
-    session.withdrawnTeams.push(teamId);
-    await session.save();
-  }
+  if (!updated) return { error: 'Auction state changed' };
 
   const io = getIO();
-  const withdrawalState = getWithdrawalState(session);
-  await emitWithdrawState(io, session);
+  const withdrawalState = getWithdrawalState(updated);
+  await emitWithdrawState(io, updated);
 
   if (withdrawalState.everyoneWithdrawn) {
-    await finishCurrentPlayer({ io, session, mode: 'unsold', reason: 'all-withdrew' });
-    return { session, resolved: 'unsold' };
+    await finishCurrentPlayer({ io, session: updated, mode: 'unsold', reason: 'all-withdrew' });
+    return { session: updated, resolved: 'unsold' };
   }
 
   if (withdrawalState.allNonLeadingWithdrawn) {
-    await finishCurrentPlayer({ io, session, mode: 'sold', reason: 'others-withdrew' });
-    return { session, resolved: 'sold' };
+    await finishCurrentPlayer({ io, session: updated, mode: 'sold', reason: 'others-withdrew' });
+    return { session: updated, resolved: 'sold' };
   }
 
-  return { session, resolved: null };
+  return { session: updated, resolved: null };
 };
 
 const makeExpireCallback = () => async () => {

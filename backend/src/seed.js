@@ -112,7 +112,7 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 8,
         power_hitting: 6,
-        anchor: 7,
+        anchor: 8,
         spin_play: 9,
         pace_play: 7,
       },
@@ -3556,7 +3556,7 @@ const SET_4 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 135 },
         middle: { rating: 8, strike_rate: 150 },
-        death: { rating: 9, strike_rate: 180 },
+        death: { rating: 8, strike_rate: 180 },
       },
       skills: {
         finishing: 9,
