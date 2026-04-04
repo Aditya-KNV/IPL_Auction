@@ -87,7 +87,6 @@ const buildSections = (player) => {
 };
 
 const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
-  const [showJson, setShowJson] = useState(false);
   if (!player) return null;
 
   const sections = buildSections(player);
@@ -103,37 +102,20 @@ const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
           <SectionLabel>Player Ratings</SectionLabel>
           <p className={`${expanded ? "text-xs" : "text-sm"} font-semibold text-white truncate`}>{player.name}</p>
         </div>
-        <div className="flex items-center gap-2">
+        {onClose && (
           <button
             type="button"
-            onClick={() => setShowJson(!showJson)}
-            className={`rounded-lg border ${showJson ? 'border-ipl-gold text-ipl-gold bg-ipl-gold/10' : 'border-gray-700 text-gray-500'} ${expanded ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-xs"} font-semibold transition hover:border-ipl-gold hover:text-ipl-gold focus:outline-none`}
+            onClick={onClose}
+            className={`rounded-lg border border-gray-700 ${expanded ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-xs"} font-semibold text-gray-300 transition hover:border-gray-500 hover:text-white`}
           >
-            {showJson ? 'GUI' : 'JSON'}
+            Close
           </button>
-          
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className={`rounded-lg border border-gray-700 ${expanded ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-xs"} font-semibold text-gray-300 transition hover:border-gray-500 hover:text-white`}
-            >
-              Close
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
-      {showJson ? (
-        <div className="flex-1 overflow-auto rounded-xl bg-gray-950 p-4 border border-gray-800 custom-scrollbar mt-2">
-          <pre className="text-[10px] sm:text-[11px] text-green-400 font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap word-break">
-            {JSON.stringify(player, null, 2)}
-          </pre>
-        </div>
-      ) : (
-        /* Sections: phases then skills, role-gated */
-        <div className={`${expanded ? "space-y-3" : "space-y-4"} flex-1 overflow-y-auto custom-scrollbar pr-1`}>
-          {sections.map((section) => (
+      {/* Sections: phases then skills, role-gated */}
+      <div className={`${expanded ? "space-y-3" : "space-y-4"} flex-1 overflow-y-auto custom-scrollbar pr-1`}>
+        {sections.map((section) => (
           <div key={section.title}>
             <p className={`mb-1.5 ${titleSize} font-bold uppercase tracking-[0.2em] ${section.color}`}>
               {section.title}
@@ -164,8 +146,56 @@ const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
             )}
           </div>
         ))}
-        </div>
-      )}
+
+        {/* Extra sections only in expanded (View Stats) mode */}
+        {expanded && (
+          <>
+            {/* Role Impact */}
+            <div>
+              <p className={`mb-1.5 ${titleSize} font-bold uppercase tracking-[0.2em] text-amber-300`}>Role Impact</p>
+              <div className={`grid grid-cols-3 ${gap}`}>
+                {[
+                  { label: "Match Winner", rating: player.role_impact?.match_winner ?? 0 },
+                  { label: "Clutch",       rating: player.role_impact?.clutch       ?? 0 },
+                  { label: "Consistency",  rating: player.role_impact?.consistency  ?? 0 },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-[0.16em] opacity-70">{item.label}</p>
+                    <p className={`mt-0.5 ${valSize} font-black leading-none text-amber-300`}>
+                      {item.rating}<span className="text-[10px] ml-0.5 font-semibold opacity-60">/10</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Fitness & Tactical */}
+            <div>
+              <p className={`mb-1.5 ${titleSize} font-bold uppercase tracking-[0.2em] text-green-300`}>Fitness & Tactical</p>
+              <div className={`grid grid-cols-3 ${gap}`}>
+                {[
+                  { label: "Stamina",      rating: player.fitness?.stamina      ?? 0 },
+                  { label: "Injury Risk",  rating: player.fitness?.injury_risk  ?? 0, invert: true },
+                  { label: "Flexibility",  rating: player.tactical?.flexibility ?? 0 },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg border border-green-500/20 bg-green-500/10 px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-[0.16em] opacity-70">{item.label}</p>
+                    <p className={`mt-0.5 ${valSize} font-black leading-none text-green-300`}>
+                      {item.rating}<span className="text-[10px] ml-0.5 font-semibold opacity-60">/10</span>
+                    </p>
+                    {item.invert && <p className="text-[9px] text-gray-500 mt-0.5">lower = better</p>}
+                  </div>
+                ))}
+              </div>
+              {player.tactical?.positions?.length > 0 && (
+                <p className={`mt-1.5 ${titleSize} text-gray-500`}>
+                  Positions: <span className="font-semibold text-white">{player.tactical.positions.join(', ')}</span>
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
@@ -187,6 +217,20 @@ const SoldFlash = ({ soldFlash }) => {
             Auto-sold - timer expired
           </p>
         )}
+      </div>
+    </div>
+  );
+};
+
+const UnsoldFlash = ({ player }) => {
+  if (!player) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      <div className="bg-gray-950/95 border-2 border-red-500 rounded-3xl px-12 py-10 text-center shadow-2xl shadow-red-500/20 animate-bounce-in">
+        <p className="text-red-500 text-6xl font-black tracking-widest">UNSOLD!</p>
+        <p className="text-white text-2xl font-bold mt-2">{player?.name}</p>
+        <p className="text-gray-400 mt-1 text-lg">{player?.role}</p>
       </div>
     </div>
   );
@@ -257,6 +301,7 @@ export default function AuctionBoard() {
     bidHistory,
     bidError,
     soldFlash,
+    unsoldFlash,
     loading: auctionLoading,
     placeBid,
     withdraw,
@@ -284,6 +329,7 @@ export default function AuctionBoard() {
   return (
     <>
       <SoldFlash soldFlash={soldFlash} />
+      <UnsoldFlash player={unsoldFlash} />
 
       <div className="flex flex-col bg-ipl-dark lg:overflow-hidden lg:h-[calc(100vh-105px)]">
         <div className="flex-shrink-0 border-b border-gray-800 px-6 py-3 flex items-center justify-between bg-gray-950/60 backdrop-blur-sm">

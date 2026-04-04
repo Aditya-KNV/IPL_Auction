@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRoom } from '../context/RoomContext';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -15,24 +15,132 @@ import RankingPage from './RankingPage';
 import api from '../services/api';
 import { STATUS_COLOR, getDisplayStatus } from '../utils/playerDisplay';
 
+// Groups of filter options per role — each group renders as an <optgroup>
+const ROLE_FILTERS = {
+  Batsman: [
+    {
+      group: 'Batting Phases',
+      options: [
+        { label: 'Powerplay', key: 'batting.phases.powerplay.rating' },
+        { label: 'Middle',    key: 'batting.phases.middle.rating'    },
+        { label: 'Death',     key: 'batting.phases.death.rating'     },
+      ],
+    },
+    {
+      group: 'Batting Skills',
+      options: [
+        { label: 'Finishing',    key: 'batting.skills.finishing'     },
+        { label: 'Power Hitting',key: 'batting.skills.power_hitting' },
+        { label: 'Anchor',       key: 'batting.skills.anchor'        },
+        { label: 'Spin Play',    key: 'batting.skills.spin_play'     },
+        { label: 'Pace Play',    key: 'batting.skills.pace_play'     },
+      ],
+    },
+  ],
+  Bowler: [
+    {
+      group: 'Bowling Phases',
+      options: [
+        { label: 'Powerplay', key: 'bowling.phases.powerplay' },
+        { label: 'Middle',    key: 'bowling.phases.middle'    },
+        { label: 'Death',     key: 'bowling.phases.death'     },
+      ],
+    },
+    {
+      group: 'Bowling Skills',
+      options: [
+        { label: 'Variations', key: 'bowling.skills.variations' },
+        { label: 'Yorker',     key: 'bowling.skills.yorker'     },
+        { label: 'Bouncer',    key: 'bowling.skills.bouncer'    },
+      ],
+    },
+  ],
+  'All-Rounder': [
+    {
+      group: 'Batting Phases',
+      options: [
+        { label: 'Bat Powerplay', key: 'batting.phases.powerplay.rating' },
+        { label: 'Bat Middle',    key: 'batting.phases.middle.rating'    },
+        { label: 'Bat Death',     key: 'batting.phases.death.rating'     },
+      ],
+    },
+    {
+      group: 'Batting Skills',
+      options: [
+        { label: 'Finishing',     key: 'batting.skills.finishing'     },
+        { label: 'Power Hitting', key: 'batting.skills.power_hitting' },
+        { label: 'Anchor',        key: 'batting.skills.anchor'        },
+        { label: 'Spin Play',     key: 'batting.skills.spin_play'     },
+        { label: 'Pace Play',     key: 'batting.skills.pace_play'     },
+      ],
+    },
+    {
+      group: 'Bowling Phases',
+      options: [
+        { label: 'Bowl Powerplay', key: 'bowling.phases.powerplay' },
+        { label: 'Bowl Middle',    key: 'bowling.phases.middle'    },
+        { label: 'Bowl Death',     key: 'bowling.phases.death'     },
+      ],
+    },
+    {
+      group: 'Bowling Skills',
+      options: [
+        { label: 'Variations', key: 'bowling.skills.variations' },
+        { label: 'Yorker',     key: 'bowling.skills.yorker'     },
+        { label: 'Bouncer',    key: 'bowling.skills.bouncer'    },
+      ],
+    },
+  ],
+  'Wicket-Keeper': [
+    {
+      group: 'Batting Phases',
+      options: [
+        { label: 'Powerplay', key: 'batting.phases.powerplay.rating' },
+        { label: 'Middle',    key: 'batting.phases.middle.rating'    },
+        { label: 'Death',     key: 'batting.phases.death.rating'     },
+      ],
+    },
+    {
+      group: 'Batting Skills',
+      options: [
+        { label: 'Finishing',     key: 'batting.skills.finishing'     },
+        { label: 'Power Hitting', key: 'batting.skills.power_hitting' },
+        { label: 'Anchor',        key: 'batting.skills.anchor'        },
+        { label: 'Spin Play',     key: 'batting.skills.spin_play'     },
+        { label: 'Pace Play',     key: 'batting.skills.pace_play'     },
+      ],
+    },
+  ],
+};
+
+const resolvePath = (obj, path) =>
+  path.split('.').reduce((cur, k) => (cur != null ? cur[k] : undefined), obj);
+
+const SET_OPTIONS = ['Marquee Set 1', 'Marquee Set 2', 'Set 3', 'Set 4', 'Set 5', 'Set 6'];
+
 function PlayersTab() {
   const { socket } = useSocket();
   const [players, setPlayers] = useState([]);
-  const [filter, setFilter] = useState({ role: '', status: '', auctionSetName: '' });
-  const [selected, setSelected] = useState(null);
+  const [role, setRole]                   = useState('');
+  const [status, setStatus]               = useState('');
+  const [auctionSetName, setAuctionSetName] = useState('');
+  const [phase, setPhase]                 = useState('');
+  const [minRating, setMinRating]         = useState('');
+  const [selected, setSelected]           = useState(null);
   const [loadingPlayer, setLoadingPlayer] = useState(false);
 
-  const setOptions = ['Marquee Set 1', 'Marquee Set 2', 'Set 3', 'Set 4', 'Set 5', 'Set 6'];
+  // Reset phase/rating when role changes
+  useEffect(() => { setPhase(''); setMinRating(''); }, [role]);
 
   const load = () => {
     const params = {};
-    if (filter.role) params.role = filter.role;
-    if (filter.status) params.status = filter.status;
-    if (filter.auctionSetName) params.auctionSetName = filter.auctionSetName;
+    if (role) params.role = role;
+    if (status) params.status = status;
+    if (auctionSetName) params.auctionSetName = auctionSetName;
     api.get('/players', { params }).then((r) => setPlayers(r.data)).catch(console.error);
   };
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); }, [role, status, auctionSetName]);
 
   useEffect(() => {
     if (!socket) return;
@@ -43,6 +151,21 @@ function PlayersTab() {
       socket.off('auction:unsold', load);
     };
   }, [socket]);
+
+  const filterGroups = role ? (ROLE_FILTERS[role] || []) : [];
+  const allFilterOptions = filterGroups.flatMap((g) => g.options);
+
+  const filtered = useMemo(() => {
+    if (!phase || minRating === '') return players;
+    const min = Number(minRating);
+    if (!Number.isFinite(min)) return players;
+    return players.filter((p) => {
+      const val = resolvePath(p, phase);
+      return typeof val === 'number' && val >= min;
+    });
+  }, [players, phase, minRating]);
+
+  const activeFilterLabel = allFilterOptions.find((o) => o.key === phase)?.label;
 
   const openPlayer = async (id) => {
     setLoadingPlayer(true);
@@ -70,10 +193,11 @@ function PlayersTab() {
 
       <h2 className="text-2xl font-bold text-ipl-gold mb-6">Players</h2>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-wrap gap-3 mb-4">
+        {/* Role */}
         <select
-          value={filter.role}
-          onChange={(e) => setFilter((f) => ({ ...f, role: e.target.value }))}
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
           className="bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
         >
           <option value="">All Roles</option>
@@ -81,9 +205,11 @@ function PlayersTab() {
             <option key={r} value={r}>{r}</option>
           ))}
         </select>
+
+        {/* Status */}
         <select
-          value={filter.status}
-          onChange={(e) => setFilter((f) => ({ ...f, status: e.target.value }))}
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
           className="bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
         >
           <option value="">All Status</option>
@@ -91,17 +217,73 @@ function PlayersTab() {
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
+
+        {/* Set */}
         <select
-          value={filter.auctionSetName}
-          onChange={(e) => setFilter((f) => ({ ...f, auctionSetName: e.target.value }))}
+          value={auctionSetName}
+          onChange={(e) => setAuctionSetName(e.target.value)}
           className="bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
         >
           <option value="">All Sets</option>
-          {setOptions.map((setName) => (
-            <option key={setName} value={setName}>{setName}</option>
+          {SET_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
+
+        {/* Phase/Skill — only when role is selected */}
+        {filterGroups.length > 0 && (
+          <select
+            value={phase}
+            onChange={(e) => { setPhase(e.target.value); setMinRating(''); }}
+            className="bg-gray-800 border border-blue-500/40 text-white rounded-lg px-4 py-2 text-sm"
+          >
+            <option value="">Phase / Skill</option>
+            {filterGroups.map((g) => (
+              <optgroup key={g.group} label={g.group}>
+                {g.options.map((o) => (
+                  <option key={o.key} value={o.key}>{o.label}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        )}
+
+        {/* Min rating — only when phase is selected */}
+        {phase && (
+          <div className="flex items-center gap-2 bg-gray-800 border border-blue-500/40 rounded-lg px-3 py-2">
+            <span className="text-gray-400 text-sm whitespace-nowrap">Min rating</span>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              step={1}
+              value={minRating}
+              onChange={(e) => setMinRating(e.target.value)}
+              placeholder="e.g. 8"
+              className="bg-transparent text-white w-12 text-sm outline-none"
+            />
+            <span className="text-gray-500 text-sm">/10</span>
+          </div>
+        )}
+
+        {/* Clear */}
+        {(role || status || auctionSetName || phase) && (
+          <button
+            onClick={() => { setRole(''); setStatus(''); setAuctionSetName(''); setPhase(''); setMinRating(''); }}
+            className="text-xs text-gray-400 border border-gray-700 rounded-lg px-3 py-2 hover:border-gray-500 hover:text-white transition"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
+
+      {/* Result summary */}
+      <p className="text-gray-500 text-xs mb-3">
+        {filtered.length} player{filtered.length !== 1 ? 's' : ''}
+        {activeFilterLabel && minRating !== '' && (
+          <span className="ml-1 text-blue-400">· {activeFilterLabel} ≥ {minRating}/10</span>
+        )}
+      </p>
 
       <div className="overflow-x-auto rounded-xl border border-gray-800">
         <table className="w-full text-sm">
@@ -113,18 +295,20 @@ function PlayersTab() {
               <th className="text-left py-3 px-4">Nationality</th>
               <th className="text-right py-3 px-4">Base (Cr)</th>
               <th className="text-right py-3 px-4">Sold (Cr)</th>
+              {phase && <th className="text-right py-3 px-4">{activeFilterLabel}</th>}
               <th className="text-left py-3 px-4">Team</th>
               <th className="text-left py-3 px-4">Status</th>
             </tr>
           </thead>
           <tbody>
-            {players.map((p) => {
+            {filtered.map((p) => {
               const displayStatus = getDisplayStatus(p);
+              const phaseVal = phase ? resolvePath(p, phase) : null;
               return (
                 <tr
                   key={p._id}
                   onClick={() => openPlayer(p._id)}
-                  className="border-b border-gray-800 hover:bg-gray-900/60 transition cursor-pointer"
+                  className="border-b border-gray-800 hover:bg-gray:900/60 transition cursor-pointer"
                 >
                   <td className="py-3 px-4 font-semibold text-white">{p.name}</td>
                   <td className="py-3 px-4 text-gray-400">{p.auctionSetName || '—'}</td>
@@ -134,6 +318,11 @@ function PlayersTab() {
                   <td className="py-3 px-4 text-right text-ipl-gold font-semibold">
                     {p.soldPrice ? `₹${p.soldPrice}` : '—'}
                   </td>
+                  {phase && (
+                    <td className="py-3 px-4 text-right font-semibold text-blue-300">
+                      {typeof phaseVal === 'number' ? `${phaseVal}/10` : '—'}
+                    </td>
+                  )}
                   <td className="py-3 px-4 text-gray-300">{p.team?.shortName || '—'}</td>
                   <td className={`py-3 px-4 font-semibold capitalize ${STATUS_COLOR[displayStatus] || 'text-gray-400'}`}>
                     {displayStatus}
@@ -141,9 +330,9 @@ function PlayersTab() {
                 </tr>
               );
             })}
-            {players.length === 0 && (
+            {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-10 text-center text-gray-600">No players found</td>
+                <td colSpan={phase ? 9 : 8} className="py-10 text-center text-gray-600">No players found</td>
               </tr>
             )}
           </tbody>

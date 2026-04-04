@@ -19,6 +19,7 @@ export const useAuction = () => {
   const [bidHistory,    setBidHistory]    = useState([]);
   const [bidError,      setBidError]      = useState('');
   const [soldFlash,     setSoldFlash]     = useState(null);
+  const [unsoldFlash,   setUnsoldFlash]   = useState(null);
   const [loading,       setLoading]       = useState(true);
 
   const tickRef = useRef(null);
@@ -161,6 +162,8 @@ export const useAuction = () => {
     const onUnsold = ({ player }) => {
       stopLocalTick();
       setTimeLeft(0);
+      setUnsoldFlash(player);
+      setTimeout(() => setUnsoldFlash(null), 2500);
       setCurrentPlayer(null);
       setCurrentBid(0);
       setMinNextBid(0);
@@ -264,6 +267,6 @@ export const useAuction = () => {
   return {
     session, currentPlayer, currentBid, minNextBid,
     highestBidder, withdrawnTeams, timeLeft, timerTotal, bidHistory, bidError,
-    soldFlash, loading, placeBid, withdraw, refetch: fetchSession,
+    soldFlash, unsoldFlash, loading, placeBid, withdraw, refetch: fetchSession,
   };
 };
