@@ -170,8 +170,8 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: {
         powerplay: 9,
-        middle: 7,
-        death: 8,
+        middle: 8,
+        death: 9,
       },
       skills: {
         variations: 9,
@@ -219,8 +219,8 @@ const MARQUEE_SET_1 = [
     },
     bowling: {
       phases: {
-        powerplay: 7,
-        middle: 7,
+        powerplay: 8,
+        middle: 8,
         death: 8,
       },
       skills: {
@@ -255,8 +255,8 @@ const MARQUEE_SET_1 = [
     age: 35,
     batting: {
       phases: {
-        powerplay: { rating: 7, strike_rate: 140 },
-        middle: { rating: 9, strike_rate: 160 },
+        powerplay: { rating: 8, strike_rate: 140 },
+        middle: { rating: 10, strike_rate: 160 },
         death: { rating: 9, strike_rate: 185 },
       },
       skills: {
@@ -297,7 +297,7 @@ const MARQUEE_SET_1 = [
     age: 28,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 150 },
+        powerplay: { rating: 9, strike_rate: 150 },
         middle: { rating: 8, strike_rate: 130 },
         death: { rating: 7, strike_rate: 155 },
       },
@@ -403,8 +403,8 @@ const MARQUEE_SET_1 = [
     },
     bowling: {
       phases: {
-        powerplay: 8,
-        middle: 7,
+        powerplay: 9,
+        middle: 8,
         death: 9,
       },
       skills: {
@@ -440,7 +440,7 @@ const MARQUEE_SET_1 = [
     batting: {
       phases: {
         powerplay: { rating: 9, strike_rate: 155 },
-        middle: { rating: 8, strike_rate: 145 },
+        middle: { rating: 9, strike_rate: 145 },
         death: { rating: 9, strike_rate: 175 },
       },
       skills: {
@@ -579,7 +579,7 @@ const MARQUEE_SET_1 = [
     batting: {
       phases: {
         powerplay: { rating: 9, strike_rate: 135 },
-        middle: { rating: 8, strike_rate: 135 },
+        middle: { rating: 9, strike_rate: 135 },
         death: { rating: 8, strike_rate: 140 },
       },
       skills: {
@@ -782,7 +782,7 @@ const MARQUEE_SET_1 = [
       phases: {
         powerplay: 9,
         middle: 8,
-        death: 8,
+        death: 7,
       },
       skills: {
         variations: 7,
@@ -1317,7 +1317,7 @@ const MARQUEE_SET_1 = [
       phases: {
         powerplay: 9,
         middle: 9,
-        death: 7,
+        death: 9,
       },
       skills: {
         variations: 10,
@@ -1351,7 +1351,7 @@ const MARQUEE_SET_1 = [
     age: 35,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 150 },
+        powerplay: { rating: 9, strike_rate: 150 },
         middle: { rating: 10, strike_rate: 170 },
         death: { rating: 9, strike_rate: 180 },
       },
@@ -1408,7 +1408,7 @@ const MARQUEE_SET_1 = [
       phases: {
         powerplay: 10,
         middle: 7,
-        death: 8,
+        death: 9,
       },
       skills: {
         variations: 8,
@@ -1490,9 +1490,9 @@ const MARQUEE_SET_1 = [
     age: 38,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 145 },
-        middle: { rating: 9, strike_rate: 140 },
-        death: { rating: 9, strike_rate: 155 },
+        powerplay: { rating: 10, strike_rate: 145 },
+        middle: { rating: 10, strike_rate: 140 },
+        death: { rating: 10, strike_rate: 155 },
       },
       skills: {
         finishing: 8,
@@ -1588,7 +1588,7 @@ const MARQUEE_SET_1 = [
       phases: {
         powerplay: 6,
         middle: 9,
-        death: 6,
+        death: 8,
       },
       skills: {
         variations: 9,
@@ -1685,7 +1685,7 @@ const MARQUEE_SET_2 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 140 },
+        middle: { rating: 7, strike_rate: 140 },
         death: { rating: 8, strike_rate: 175 },
       },
       skills: {
@@ -1867,7 +1867,7 @@ const MARQUEE_SET_2 = [
       phases: {
         powerplay: { rating: 6, strike_rate: 135 },
         middle: { rating: 8, strike_rate: 140 },
-        death: { rating: 9, strike_rate: 175 },
+        death: { rating: 8, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -1998,7 +1998,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 6, death: 3 },
+      phases: { powerplay: 5, middle: 5, death: 3 },
       skills: { variations: 6, yorker: 2, bouncer: 1 },
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
@@ -2028,7 +2028,7 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 4, middle: 5, death: 3 },
+      phases: { powerplay: 4, middle: 7, death: 3 },
       skills: { variations: 5, yorker: 2, bouncer: 2 },
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
@@ -2077,7 +2077,7 @@ const MARQUEE_SET_2 = [
       phases: {
         powerplay: { rating: 8, strike_rate: 140 },
         middle: { rating: 9, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 165 },
+        death: { rating: 9, strike_rate: 165 },
       },
       skills: {
         finishing: 8,
@@ -2108,7 +2108,7 @@ const MARQUEE_SET_2 = [
       phases: {
         powerplay: { rating: 8, strike_rate: 145 },
         middle: { rating: 9, strike_rate: 155 },
-        death: { rating: 8, strike_rate: 175 },
+        death: { rating: 9, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -2256,7 +2256,7 @@ const MARQUEE_SET_2 = [
     age: 34,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 150 },
+        powerplay: { rating: 8, strike_rate: 150 },
         middle: { rating: 7, strike_rate: 140 },
         death: { rating: 8, strike_rate: 165 },
       },
@@ -2482,7 +2482,7 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 6, death: 5 },
+      phases: { powerplay: 9, middle: 7, death: 5 },
       skills: { variations: 8, yorker: 7, bouncer: 5 },
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
@@ -2610,16 +2610,6 @@ const SET_3 = [
     tactical: { flexibility: 8, positions: [3, 4], overs: 0 },
     basePrice: 2,
   },
-  // {
-  //   name: "Tristan Stubbs",
-  //   nationality: "South African",
-  //   role: "Wicket-Keeper",
-  //   batting_style: "right-handed",
-  //   bowling_style: "Right-arm off-spin",
-  //   age: 25,
-  //   tactical: { flexibility: 9, positions: [3, 4, 5], overs: 0 },
-  //   basePrice: 2,
-  // },
   {
     name: "Washington Sundar",
     nationality: "Indian",
@@ -2661,7 +2651,7 @@ const SET_3 = [
       phases: {
         powerplay: { rating: 8, strike_rate: 150 },
         middle: { rating: 9, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 170 },
+        death: { rating: 9, strike_rate: 170 },
       },
       skills: {
         finishing: 8,
@@ -2733,7 +2723,7 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 6, death: 4 },
+      phases: { powerplay: 6, middle: 7, death: 4 },
       skills: { variations: 6, yorker: 3, bouncer: 4 },
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
