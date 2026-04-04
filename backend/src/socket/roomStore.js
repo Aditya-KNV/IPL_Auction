@@ -202,6 +202,16 @@ const getAssignedTeamIds = () => {
   return [...assignedTeamIds];
 };
 
+const isUserHost = (userId) => {
+  for (const room of rooms.values()) {
+    const hostUser = room.users.get(room.hostId);
+    if (hostUser && hostUser.userId === String(userId)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 module.exports = {
   createRoom,
   joinRoom,
@@ -215,4 +225,6 @@ module.exports = {
   getRawRoomByUserId,
   getAssignedTeamIds,
   roomExists,
+  isUserHost,
 };
+

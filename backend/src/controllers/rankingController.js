@@ -1,5 +1,9 @@
 const Team = require('../models/Team');
+const AuctionSession = require('../models/AuctionSession');
 const { scoreBreakdown } = require('../utils/teamScoring');
+const { getIO } = require('../socket');
+const { isUserHost } = require('../socket/roomStore');
+const { computePlaying12 } = require('./auctionController');
 
 const selectSquad = (team) => {
   if (team.playing12?.length) return team.playing12;
@@ -81,6 +85,26 @@ const buildVerdict = (rankings) => {
 
 exports.getRankings = async (req, res) => {
   try {
+    const session = await AuctionSession.findOne().select('latestRankings latestVerdict');
+    if (!session || !session.latestRankings) {
+      return res.json({ rankings: [], verdict: 'No rankings generated yet.' });
+    }
+    res.json({
+      rankings: session.latestRankings,
+      verdict: session.latestVerdict,
+    });
+  } catch (err) {
+    console.error('[rankingController getRankings]', err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.generateRankings = async (req, res) => {
+  try {
+    if (!isUserHost(req.user.id)) {
+      return res.status(403).json({ message: 'Only the room host can generate rankings.' });
+    }
+
     const teams = await Team.find()
       .populate('players')
       .populate('playing12')
@@ -90,15 +114,41 @@ exports.getRankings = async (req, res) => {
       return res.status(400).json({ message: 'No teams found to rank.' });
     }
 
-    const rankings = teams
-      .map((team) => {
-        const squad = selectSquad(team);
-        const breakdown = scoreBreakdown(squad);
+    const rankingsPromises = teams.map(async (team) => {
+        const prevPlaying12Ids = (team.playing12 || []).map((p) => String(p._id));
+        const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
+        const oldScore = scoreBreakdown(oldSquad).final;
+
+        const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids);
+        
+        const newPlaying12Objs = team.players.filter(p => newPlaying12Ids.some(id => String(id) === String(p._id)));
+        const newSquad = selectSquad({ ...team, playing12: newPlaying12Objs });
+        
+        const breakdown = scoreBreakdown(newSquad);
+        const newScore = breakdown.final;
+
+        const addedIds = newPlaying12Ids.map(String).filter(id => !prevPlaying12Ids.includes(id));
+        const removedIds = prevPlaying12Ids.filter(id => !newPlaying12Ids.map(String).includes(id));
+
+        const scoreDiff = newScore - oldScore;
+        let changeLog = '';
+        if (addedIds.length > 0) {
+            const addedNames = addedIds.map(id => team.players.find(p => String(p._id) === id)?.name).filter(Boolean).join(', ');
+            const removedNames = removedIds.map(id => oldSquad.find(p => String(p._id) === id)?.name).filter(Boolean).join(', ');
+            const diffPhrase = scoreDiff >= 0 ? `+${parseFloat(scoreDiff.toFixed(2))}` : `${parseFloat(scoreDiff.toFixed(2))}`;
+            if (removedNames) {
+                changeLog = `Dropped ${removedNames} for ${addedNames}. Points difference: ${diffPhrase}`;
+            } else {
+                changeLog = `Added ${addedNames} to the Playing 12. Points difference: ${diffPhrase}`;
+            }
+        } else {
+            changeLog = 'No changes made to squad.';
+        }
 
         const battingOrderMap = new Map(
           (breakdown.batting.battingOrder ?? []).map((b) => [b.playerId, b])
         );
-        const playing12 = squad
+        const playing12 = newSquad
           .map((p) => {
             const bo = battingOrderMap.get(String(p._id));
             return {
@@ -126,6 +176,8 @@ exports.getRankings = async (req, res) => {
           score: breakdown.final,
           breakdown,
           playing12,
+          newPlaying12Ids,
+          changeLog,
           summary: buildSummary({
             teamName: team.name,
             teamShortName: team.shortName,
@@ -133,7 +185,11 @@ exports.getRankings = async (req, res) => {
             breakdown,
           }),
         };
-      })
+      });
+
+    const unsortedRankings = await Promise.all(rankingsPromises);
+
+    const rankings = unsortedRankings
       .sort((a, b) => b.score - a.score)
       .map((entry, index) => ({
         rank: index + 1,
@@ -143,22 +199,43 @@ exports.getRankings = async (req, res) => {
         breakdown: entry.breakdown,
         playing12: entry.playing12,
         summary: entry.summary,
+        changeLog: entry.changeLog,
         teamId: entry.teamId,
+        newPlaying12Ids: entry.newPlaying12Ids,
       }));
 
-    await Promise.all(
-      rankings.map((entry) =>
-        Team.findByIdAndUpdate(entry.teamId, { rating: Math.round(entry.score) })
-      )
-    );
+    // Remove teamId from the output being sent/saved
+    const sanitizedRankings = rankings.map(({ teamId, newPlaying12Ids, ...entry }) => entry);
+    const verdict = buildVerdict(rankings);
+
+    await Promise.all([
+      ...rankings.map((entry) =>
+        Team.findByIdAndUpdate(entry.teamId, { 
+          rating: Math.round(entry.score),
+          playing12: entry.newPlaying12Ids
+        })
+      ),
+      AuctionSession.findOneAndUpdate({}, {
+        latestRankings: sanitizedRankings,
+        latestVerdict: verdict,
+      })
+    ]);
+
+    // Broadcast to all clients to refetch or update their view
+    try {
+       const io = getIO();
+       io.emit('auction:rankings-updated');
+    } catch (socketErr) {
+       console.error('[rankingController] Socket.io not available to emit update');
+    }
 
     res.json({
-      rankings: rankings.map(({ teamId, ...entry }) => entry),
-      verdict: buildVerdict(rankings),
+      rankings: sanitizedRankings,
+      verdict,
     });
 
   } catch (err) {
-    console.error('[rankingController]', err.message);
+    console.error('[rankingController generateRankings]', err.message);
     res.status(500).json({ message: err.message });
   }
 };

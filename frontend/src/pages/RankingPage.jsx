@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { useSocket } from '../context/SocketContext';
+import { useRoom } from '../context/RoomContext';
+import PlayerStatsModal from '../components/players/PlayerStatsModal';
+
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
@@ -210,29 +214,82 @@ const ROLE_COLOR = {
   'Wicket-Keeper': 'text-amber-400 border-amber-400/30 bg-amber-400/10',
 };
 
+const POSITION_LABEL = (pos) => {
+  if (!pos) return null;
+  if (pos <= 2) return 'Opener';
+  if (pos <= 4) return 'Top Order';
+  if (pos <= 6) return 'Middle Order';
+  if (pos <= 8) return 'Lower Order';
+  return 'Tail';
+};
+
 const Playing12 = ({ players }) => {
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [loadingId, setLoadingId] = useState(null);
+
+  const openStats = async (playerId) => {
+    if (loadingId) return;
+    setLoadingId(playerId);
+    try {
+      const { data } = await api.get(`/players/${playerId}`);
+      setSelectedPlayer(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   if (!players?.length) return <p className="text-xs text-gray-500">No squad data available.</p>;
   return (
-    <div className="space-y-1.5">
-      {players.map((p) => (
-        <div key={p._id} className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 ${p.isPreferred === false ? 'border-amber-500/30 bg-amber-500/5' : 'border-gray-800 bg-gray-950/60'}`}>
-          {/* Batting position badge */}
-          <div className={`w-8 flex-shrink-0 text-center text-xs font-bold tabular-nums ${p.battingPosition ? (p.isPreferred ? 'text-green-400' : 'text-amber-400') : 'text-gray-600'}`}>
-            {p.battingPosition ? `#${p.battingPosition}` : '—'}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold text-white">{p.name}</p>
-            <p className="truncate text-[10px] text-gray-500">
-              {p.nationality} · {p.batting_style === 'left-handed' ? 'LHB' : 'RHB'}
-              {p.isPreferred === false && <span className="ml-1 text-amber-400">· out of position</span>}
-            </p>
-          </div>
-          <span className={`flex-shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold ${ROLE_COLOR[p.role] ?? 'text-gray-400 border-gray-700 bg-gray-800'}`}>
-            {p.role === 'Wicket-Keeper' ? 'WK' : p.role === 'All-Rounder' ? 'AR' : p.role === 'Batsman' ? 'BAT' : 'BWL'}
-          </span>
-        </div>
-      ))}
-    </div>
+    <>
+      {selectedPlayer && (
+        <PlayerStatsModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+      )}
+      <div className="space-y-1.5">
+        {players.map((p) => {
+          const posLabel = POSITION_LABEL(p.battingPosition);
+          const isLoading = loadingId === String(p._id);
+          return (
+            <div
+              key={p._id}
+              onClick={() => openStats(String(p._id))}
+              className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 cursor-pointer transition hover:bg-gray-800/60 ${
+                p.isPreferred === false
+                  ? 'border-gray-700 bg-gray-900/60'
+                  : 'border-gray-800 bg-gray-950/60'
+              } ${isLoading ? 'opacity-60' : ''}`}
+            >
+              {/* Position badge */}
+              <div className="w-6 flex-shrink-0 text-center text-xs font-black tabular-nums text-ipl-gold">
+                {p.battingPosition ? `${p.battingPosition}` : '—'}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-white">{p.name}</p>
+                <p className="truncate text-[10px] text-gray-500">
+                  {p.nationality} · {p.batting_style === 'left-handed' ? 'LHB' : 'RHB'}
+                  {posLabel && <span className="ml-1 text-gray-600">· {posLabel}</span>}
+                  {p.isPreferred === false && <span className="ml-1 text-amber-400">· out of pos</span>}
+                </p>
+              </div>
+
+              {/* Role — plain monochrome badge, no phase colors */}
+              <span className="flex-shrink-0 rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-[9px] font-bold text-gray-300">
+                {p.role === 'Wicket-Keeper' ? 'WK' : p.role === 'All-Rounder' ? 'AR' : p.role === 'Batsman' ? 'BAT' : 'BWL'}
+              </span>
+
+              {isLoading && (
+                <svg className="w-3 h-3 animate-spin text-ipl-gold flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 };
 
@@ -292,8 +349,15 @@ const TeamCard = ({ entry }) => {
               <>
                 <p className="text-sm leading-relaxed text-gray-300">{entry.summary}</p>
 
+                {entry.changeLog && entry.changeLog !== 'No changes made to squad.' && (
+                  <div className="mt-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
+                    <p className="font-bold text-xs uppercase tracking-wider mb-1">Recent Squad Changes</p>
+                    <p>{entry.changeLog}</p>
+                  </div>
+                )}
+
                 {/* Top-level */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mt-4">
                   <BreakdownRow label="Batting" value={b.batting.total} max={43} />
                   <BreakdownRow label="Bowling" value={b.bowling.total} max={43} />
                   <BreakdownRow label="Fitness" value={b.fitness} max={5} explanation={explainFitness(b.fitness)} />
@@ -341,6 +405,9 @@ export default function RankingPage() {
   const [error, setError] = useState('');
   const [showInfo, setShowInfo] = useState(false);
 
+  const { socket } = useSocket();
+  const { room } = useRoom();
+
   const fetchRankings = async () => {
     setLoading(true);
     setError('');
@@ -353,6 +420,35 @@ export default function RankingPage() {
       setLoading(false);
     }
   };
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      // POST triggers a new generation on the backend, which will then emit a socket event
+      const res = await api.post('/ranking');
+      setData(res.data);
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Failed to generate rankings.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRankings();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    const onRankingsUpdated = () => fetchRankings();
+    socket.on('auction:rankings-updated', onRankingsUpdated);
+    return () => {
+      socket.off('auction:rankings-updated', onRankingsUpdated);
+    };
+  }, [socket]);
+
+  const amHost = room?.hostId === socket?.id;
 
   return (
     <div className="mx-auto max-w-2xl p-6">
@@ -377,28 +473,30 @@ export default function RankingPage() {
         </button>
       </div>
 
-      <button
-        onClick={fetchRankings}
-        disabled={loading}
-        className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl bg-ipl-gold py-3.5 text-sm font-bold text-gray-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {loading ? (
-          <>
-            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            Calculating team scores…
-          </>
-        ) : (
-          <>
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            {data ? 'Recalculate Rankings' : 'Create Rankings'}
-          </>
-        )}
-      </button>
+      {amHost && (
+        <button
+          onClick={handleGenerate}
+          disabled={loading}
+          className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl bg-ipl-gold py-3.5 text-sm font-bold text-gray-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              Calculating team scores…
+            </>
+          ) : (
+            <>
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {data && data.rankings?.length ? 'Recalculate Rankings' : 'Create Rankings'}
+            </>
+          )}
+        </button>
+      )}
 
       {error && (
         <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
@@ -406,7 +504,15 @@ export default function RankingPage() {
         </div>
       )}
 
-      {data && (
+      {data && data.rankings?.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-700 bg-gray-900/50 p-12 text-center">
+          <svg className="mb-4 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <p className="text-lg font-bold text-gray-400">No ratings generated yet</p>
+          <p className="mt-1 text-sm text-gray-500">Wait for the auctioneer to calculate the squad scores.</p>
+        </div>
+      ) : data && data.rankings?.length > 0 ? (
         <>
           <div className="mb-5 rounded-2xl border border-ipl-blue/30 bg-ipl-blue/10 p-5">
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-ipl-gold">Ranking Verdict</p>
@@ -419,7 +525,7 @@ export default function RankingPage() {
             ))}
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -13,162 +13,105 @@ import AuctionControls from "./AuctionControls";
 import OtherTeamsPanel from "./OtherTeamsPanel";
 import { hasBattingStats, hasBowlingStats } from "../../utils/playerDisplay";
 
-const METRIC_STYLES = {
-  blue: "border-blue-500/20 bg-blue-500/10 text-blue-200",
-  red: "border-red-500/20 bg-red-500/10 text-red-200",
-  gold: "border-amber-500/20 bg-amber-500/10 text-amber-100",
-  green: "border-emerald-500/20 bg-emerald-500/10 text-emerald-200",
-};
 
-const RatingMetric = ({ label, value, tone = "gold", compact = false }) => (
-  <div className={`rounded-xl border ${compact ? "px-2.5 py-1.5" : "px-3 py-2"} ${METRIC_STYLES[tone] ?? METRIC_STYLES.gold}`}>
-    <p className={`${compact ? "text-[9px]" : "text-[10px]"} uppercase tracking-[0.18em] opacity-70`}>{label}</p>
-    <p className={`${compact ? "mt-0.5 text-base" : "mt-1 text-lg"} font-black leading-none`}>
-      {value ?? 0}
-      <span className={`${compact ? "text-[10px]" : "text-xs"} ml-0.5 font-semibold opacity-70`}>/10</span>
-    </p>
-  </div>
-);
-
-const SubRatingRow = ({ label, value, tone = "gold", compact = false }) => (
-  <div className={`flex items-center justify-between rounded-lg border ${compact ? "px-2.5 py-1.5 text-[11px]" : "px-3 py-2 text-xs"} ${METRIC_STYLES[tone] ?? METRIC_STYLES.gold}`}>
-    <span className="uppercase tracking-[0.16em] opacity-75">{label}</span>
-    <span className={`${compact ? "text-xs" : "text-sm"} font-bold`}>
-      {value ?? 0}
-      <span className={`${compact ? "text-[9px]" : "text-[10px]"} ml-0.5 opacity-70`}>/10</span>
-    </span>
-  </div>
-);
-
-const StatChip = ({ label, value, compact = false }) => (
-  <div className={`rounded-lg border border-gray-800 bg-gray-950/60 ${compact ? "px-2 py-1.5" : "px-3 py-2"}`}>
-    <p className={`${compact ? "text-[9px]" : "text-[10px]"} uppercase tracking-[0.16em] text-gray-500`}>{label}</p>
-    <p className={`${compact ? "mt-0.5 text-xs" : "mt-1 text-sm"} font-semibold text-white break-words`}>
-      {value || "—"}
-    </p>
-  </div>
-);
-
-const buildRatings = (player) => {
+// ── Role-based section builder ────────────────────────────────────────────────
+// Builds an ordered list of sections (phases + skills) based on player role.
+// Batters  → Batting Phases + Batting Skills
+// Bowlers  → Bowling Phases + Bowling Skills
+// All-Rounders → both batting sections then both bowling sections
+// No impact / fitness / tactical — those clutter the right panel.
+const buildSections = (player) => {
   if (!player) return [];
-
-  const average = (values) => {
-    const safeValues = values.map((value) => value ?? 0);
-    if (!safeValues.length) return 0;
-    return Math.round((safeValues.reduce((sum, value) => sum + value, 0) / safeValues.length) * 10) / 10;
-  };
-
-  const batting = [
-    ["Powerplay Bat", player.batting?.phases?.powerplay?.rating, "blue"],
-    ["Middle Bat", player.batting?.phases?.middle?.rating, "blue"],
-    ["Death Bat", player.batting?.phases?.death?.rating, "blue"],
-  ];
-  const bowling = [
-    ["Powerplay Bowl", player.bowling?.phases?.powerplay, "red"],
-    ["Middle Bowl", player.bowling?.phases?.middle, "red"],
-    ["Death Bowl", player.bowling?.phases?.death, "red"],
-  ];
-  const impact = [
-    ["Match Winner", player.role_impact?.match_winner, "gold"],
-    ["Clutch", player.role_impact?.clutch, "gold"],
-    ["Consistency", player.role_impact?.consistency, "green"],
-  ];
-
-  if (!hasBattingStats(player.role)) return [...bowling, ...impact];
-  if (!hasBowlingStats(player.role)) return [...batting, ...impact];
-  return [
-    ["Batting", average(batting.map(([, value]) => value)), "blue"],
-    ["Bowling", average(bowling.map(([, value]) => value)), "red"],
-    ...impact,
-  ];
-};
-
-const buildSubRatings = (player) => {
-  if (!player) return [];
-
-  const battingSkills = [
-    ["Finishing", player.batting?.skills?.finishing, "blue"],
-    ["Power Hitting", player.batting?.skills?.power_hitting, "blue"],
-    ["Anchor", player.batting?.skills?.anchor, "blue"],
-    ["Spin Play", player.batting?.skills?.spin_play, "blue"],
-    ["Pace Play", player.batting?.skills?.pace_play, "blue"],
-  ];
-  const bowlingSkills = [
-    ["Variations", player.bowling?.skills?.variations, "red"],
-    ["Yorker", player.bowling?.skills?.yorker, "red"],
-    ["Bouncer", player.bowling?.skills?.bouncer, "red"],
-  ];
-  const generalSkills = [
-    ["Stamina", player.fitness?.stamina, "green"],
-    ["Flexibility", player.tactical?.flexibility, "green"],
-  ];
-
-  if (!hasBattingStats(player.role)) {
-    return [
-      { title: "Bowling Skills", items: bowlingSkills },
-      { title: "General", items: generalSkills },
-    ];
-  }
-
-  if (!hasBowlingStats(player.role)) {
-    return [
-      { title: "Batting Skills", items: battingSkills },
-      { title: "General", items: generalSkills },
-    ];
-  }
-
-  return [
-    { title: "Batting Skills", items: battingSkills },
-    { title: "Bowling Skills", items: bowlingSkills },
-    { title: "General", items: generalSkills },
-  ];
-};
-
-const buildProfileStats = (player) => [
-  ["Batting Style", player.batting_style],
-  ["Bowling Style", player.bowling_style],
-  ["Positions", Array.isArray(player.tactical?.positions) && player.tactical.positions.length ? player.tactical.positions.join(", ") : ""],
-  ["Overs", player.tactical?.overs != null ? `${player.tactical.overs}` : ""],
-];
-
-const buildPhaseDetails = (player) => {
-  const battingPhases = [
-    ["Powerplay", player.batting?.phases?.powerplay?.rating, player.batting?.phases?.powerplay?.strike_rate],
-    ["Middle", player.batting?.phases?.middle?.rating, player.batting?.phases?.middle?.strike_rate],
-    ["Death", player.batting?.phases?.death?.rating, player.batting?.phases?.death?.strike_rate],
-  ];
-  const bowlingPhases = [
-    ["Powerplay", player.bowling?.phases?.powerplay],
-    ["Middle", player.bowling?.phases?.middle],
-    ["Death", player.bowling?.phases?.death],
-  ];
-
-  return { battingPhases, bowlingPhases };
-};
-
-const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
-  if (!player) return null;
-
-  const ratings = buildRatings(player);
-  const subRatings = buildSubRatings(player);
-  const profileStats = buildProfileStats(player);
-  const { battingPhases, bowlingPhases } = buildPhaseDetails(player);
+  const sections = [];
   const showBatting = hasBattingStats(player.role);
   const showBowling = hasBowlingStats(player.role);
 
+  if (showBatting) {
+    sections.push({
+      title: "Batting Phases",
+      type: "batting",
+      color: "text-blue-300",
+      border: "border-blue-500/20",
+      bg: "bg-blue-500/10",
+      items: [
+        { label: "Powerplay", rating: player.batting?.phases?.powerplay?.rating ?? 0, sr: player.batting?.phases?.powerplay?.strike_rate },
+        { label: "Middle",    rating: player.batting?.phases?.middle?.rating    ?? 0, sr: player.batting?.phases?.middle?.strike_rate    },
+        { label: "Death",     rating: player.batting?.phases?.death?.rating     ?? 0, sr: player.batting?.phases?.death?.strike_rate     },
+      ],
+    });
+    sections.push({
+      title: "Batting Skills",
+      type: "batting-skills",
+      color: "text-sky-300",
+      border: "border-sky-500/20",
+      bg: "bg-sky-500/10",
+      items: [
+        { label: "Finishing",  rating: player.batting?.skills?.finishing      ?? 0 },
+        { label: "Power Hit",  rating: player.batting?.skills?.power_hitting  ?? 0 },
+        { label: "Anchor",     rating: player.batting?.skills?.anchor         ?? 0 },
+        { label: "Spin Play",  rating: player.batting?.skills?.spin_play      ?? 0 },
+        { label: "Pace Play",  rating: player.batting?.skills?.pace_play      ?? 0 },
+      ],
+    });
+  }
+
+  if (showBowling) {
+    sections.push({
+      title: "Bowling Phases",
+      type: "bowling",
+      color: "text-red-300",
+      border: "border-red-500/20",
+      bg: "bg-red-500/10",
+      items: [
+        { label: "Powerplay", rating: player.bowling?.phases?.powerplay ?? 0 },
+        { label: "Middle",    rating: player.bowling?.phases?.middle    ?? 0 },
+        { label: "Death",     rating: player.bowling?.phases?.death     ?? 0 },
+      ],
+    });
+    sections.push({
+      title: "Bowling Skills",
+      type: "bowling-skills",
+      color: "text-rose-300",
+      border: "border-rose-500/20",
+      bg: "bg-rose-500/10",
+      items: [
+        { label: "Variations", rating: player.bowling?.skills?.variations ?? 0 },
+        { label: "Yorker",     rating: player.bowling?.skills?.yorker     ?? 0 },
+        { label: "Bouncer",    rating: player.bowling?.skills?.bouncer    ?? 0 },
+      ],
+      overs: player.tactical?.overs,
+    });
+  }
+
+  return sections;
+};
+
+const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
+  const [showJson, setShowJson] = useState(false);
+  if (!player) return null;
+
+  const sections = buildSections(player);
+  const gap = expanded ? "gap-1.5" : "gap-2";
+  const titleSize = expanded ? "text-[9px]" : "text-[10px]";
+  const valSize = expanded ? "text-xs" : "text-sm";
+
   return (
-    <div className={`rounded-2xl border border-gray-800 bg-gray-900/80 ${expanded ? "h-full p-3" : "p-4"}`}>
-      <div className={`${expanded ? "mb-2" : "mb-3"} flex items-center justify-between gap-3`}>
+    <div className={`rounded-2xl border border-gray-800 bg-gray-900/80 flex flex-col ${expanded ? "h-full p-3" : "p-4"}`}>
+      {/* Header */}
+      <div className={`${expanded ? "mb-2" : "mb-3"} flex items-center justify-between gap-3 flex-shrink-0`}>
         <div>
           <SectionLabel>Player Ratings</SectionLabel>
           <p className={`${expanded ? "text-xs" : "text-sm"} font-semibold text-white truncate`}>{player.name}</p>
         </div>
-        <div className="flex items-center gap-3">
-          {typeof player.fitness?.injury_risk === "number" && (
-            <p className={`${expanded ? "text-[10px]" : "text-[11px]"} text-gray-500 text-right`}>
-              Injury risk <span className="font-semibold text-amber-300">{player.fitness.injury_risk}/10</span>
-            </p>
-          )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowJson(!showJson)}
+            className={`rounded-lg border ${showJson ? 'border-ipl-gold text-ipl-gold bg-ipl-gold/10' : 'border-gray-700 text-gray-500'} ${expanded ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-xs"} font-semibold transition hover:border-ipl-gold hover:text-ipl-gold focus:outline-none`}
+          >
+            {showJson ? 'GUI' : 'JSON'}
+          </button>
+          
           {onClose && (
             <button
               type="button"
@@ -181,72 +124,48 @@ const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
         </div>
       </div>
 
-      <div className={`grid grid-cols-2 ${expanded ? "gap-1.5" : "gap-2"}`}>
-        {ratings.map(([label, value, tone]) => (
-          <RatingMetric key={label} label={label} value={value} tone={tone} compact={expanded} />
-        ))}
-      </div>
-
-      <div className={`${expanded ? "mt-3 space-y-2" : "mt-4 space-y-3"}`}>
-        {expanded && (
-          <div>
-            <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
-              Profile
-            </p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {profileStats.map(([label, value]) => (
-                <StatChip key={label} label={label} value={value} compact />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {expanded && showBatting && (
-          <div>
-            <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
-              Batting Phases
-            </p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {battingPhases.map(([label, rating, strikeRate]) => (
-                <div key={label} className="rounded-lg border border-gray-800 bg-gray-950/60 px-2 py-1.5">
-                  <p className="text-[9px] uppercase tracking-[0.16em] text-gray-500">{label}</p>
-                  <p className="mt-0.5 text-xs font-bold text-blue-200">{rating ?? 0}/10</p>
-                  <p className="text-[10px] text-gray-400">SR {strikeRate ?? 0}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {expanded && showBowling && (
-          <div>
-            <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
-              Bowling Phases
-            </p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {bowlingPhases.map(([label, rating]) => (
-                <div key={label} className="rounded-lg border border-gray-800 bg-gray-950/60 px-2 py-1.5">
-                  <p className="text-[9px] uppercase tracking-[0.16em] text-gray-500">{label}</p>
-                  <p className="mt-0.5 text-xs font-bold text-red-200">{rating ?? 0}/10</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {subRatings.map((section) => (
+      {showJson ? (
+        <div className="flex-1 overflow-auto rounded-xl bg-gray-950 p-4 border border-gray-800 custom-scrollbar mt-2">
+          <pre className="text-[10px] sm:text-[11px] text-green-400 font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap word-break">
+            {JSON.stringify(player, null, 2)}
+          </pre>
+        </div>
+      ) : (
+        /* Sections: phases then skills, role-gated */
+        <div className={`${expanded ? "space-y-3" : "space-y-4"} flex-1 overflow-y-auto custom-scrollbar pr-1`}>
+          {sections.map((section) => (
           <div key={section.title}>
-            <p className={`${expanded ? "mb-1.5 text-[9px]" : "mb-2 text-[10px]"} font-bold uppercase tracking-[0.2em] text-gray-500`}>
+            <p className={`mb-1.5 ${titleSize} font-bold uppercase tracking-[0.2em] ${section.color}`}>
               {section.title}
             </p>
-            <div className={`grid grid-cols-1 ${expanded ? "gap-1.5" : "gap-2"}`}>
-              {section.items.map(([label, value, tone]) => (
-                <SubRatingRow key={label} label={label} value={value} tone={tone} compact={expanded} />
+            <div className={`grid grid-cols-3 ${gap}`}>
+              {section.items.map((item) => (
+                <div
+                  key={item.label}
+                  className={`rounded-lg border ${section.border} ${section.bg} px-2 py-1.5`}
+                >
+                  <p className={`${expanded ? "text-[9px]" : "text-[10px]"} uppercase tracking-[0.16em] opacity-70`}>
+                    {item.label}
+                  </p>
+                  <p className={`mt-0.5 ${valSize} font-black leading-none ${section.color}`}>
+                    {item.rating ?? 0}
+                    <span className="text-[10px] ml-0.5 font-semibold opacity-60">/10</span>
+                  </p>
+                  {item.sr != null && (
+                    <p className="text-[10px] text-gray-500 mt-0.5">SR {item.sr}</p>
+                  )}
+                </div>
               ))}
             </div>
+            {section.overs != null && (
+              <p className={`mt-1.5 ${titleSize} text-gray-500`}>
+                Overs quota: <span className="font-semibold text-white">{section.overs}</span>
+              </p>
+            )}
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -45,10 +45,13 @@ const resetAuctionState = async (io) => {
   session.unsoldPlayers = [];
   session.withdrawnTeams = [];
   session.timerEndsAt = null;
+  session.latestRankings = null;
+  session.latestVerdict = null;
   await session.save();
 
   if (io) {
     io.emit('auction:status', { status: 'waiting' });
+    io.emit('auction:rankings-updated');
   }
 
   return session;

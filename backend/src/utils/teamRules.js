@@ -1,8 +1,7 @@
 const Player = require('../models/Player');
+const Team   = require('../models/Team');
 
-const MAX_OVERSEAS_SQUAD   = 8;  // max overseas in the whole squad
-const MAX_OVERSEAS_PLAYING = 4;  // max overseas in the playing 12
-const MAX_OVERSEAS_PLAYERS = MAX_OVERSEAS_SQUAD; // legacy alias
+const MAX_OVERSEAS_PLAYING = 4;  // max overseas allowed in the playing 12
 
 const isOverseasPlayer = (player) =>
   !!player && String(player.nationality || '').trim().toLowerCase() !== 'indian';
@@ -13,36 +12,51 @@ const getOverseasCount = async (teamId) =>
 const getTotalSquadCount = async (teamId) =>
   Player.countDocuments({ team: teamId, status: 'sold' });
 
+/**
+ * Dynamic overseas squad cap:
+ *  - maxPlayers >= 25  → 8 overseas allowed in squad
+ *  - maxPlayers <= 18  → 6 overseas allowed in squad
+ *  - anything in between → 8 (default to IPL standard)
+ */
+const getOverseasSquadCap = (maxPlayers) => {
+  if (maxPlayers <= 18) return 6;
+  return 8;
+};
+
 const canTeamBuyPlayer = async (teamId, player) => {
   if (!isOverseasPlayer(player)) {
     return { allowed: true, overseasCount: 0 };
   }
+
+  const team = await Team.findById(teamId).select('maxPlayers').lean();
+  const maxOverseasSquad = getOverseasSquadCap(team?.maxPlayers ?? 25);
 
   const [overseasCount, totalCount] = await Promise.all([
     getOverseasCount(teamId),
     getTotalSquadCount(teamId),
   ]);
 
-  // Hard squad cap
-  if (overseasCount >= MAX_OVERSEAS_SQUAD) {
-    return { allowed: false, reason: 'squad', overseasCount, totalCount };
-  }
-
-  // Playing-12 cap: once a team fills their first 12 spots they are free to
-  // add bench overseas up to the squad cap.  While still building the playing
-  // 12 (fewer than 12 players owned) they may hold at most 4 overseas so the
-  // playing XI can always include at most 4 foreigners.
-  if (totalCount < 12 && overseasCount >= MAX_OVERSEAS_PLAYING) {
-    return { allowed: false, reason: 'playing12', overseasCount, totalCount };
+  // Enforce dynamic squad-level overseas cap only — no early playing-12 cap
+  // during bidding. The playing-12 overseas constraint (max 4) is enforced
+  // when selecting the playing 12, not at purchase time.
+  if (overseasCount >= maxOverseasSquad) {
+    return {
+      allowed: false,
+      reason: 'squad',
+      overseasCount,
+      totalCount,
+      cap: maxOverseasSquad,
+    };
   }
 
   return { allowed: true, overseasCount, totalCount };
 };
 
 module.exports = {
-  MAX_OVERSEAS_PLAYERS,
-  MAX_OVERSEAS_SQUAD,
+  MAX_OVERSEAS_PLAYERS: 8,  // legacy alias kept for safety
+  MAX_OVERSEAS_SQUAD: 8,    // legacy alias kept for safety
   MAX_OVERSEAS_PLAYING,
+  getOverseasSquadCap,
   isOverseasPlayer,
   getOverseasCount,
   getTotalSquadCount,

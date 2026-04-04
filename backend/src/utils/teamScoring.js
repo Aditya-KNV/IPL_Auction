@@ -90,10 +90,16 @@ const optimizeBattingOrder = (players) => {
       if (usedMask & (1 << playerIndex)) continue;
 
       const player = players[playerIndex];
+
       const preferred = player.tactical?.positions ?? [];
-      const slotScore = preferred.includes(position)
+      let slotScore = preferred.includes(position)
         ? playerBattingScoreForPosition(player, position)
         : playerBattingScoreForPosition(player, position) - 3;
+
+      // If a pure bowler is forced to bat in the top 8, apply a severe penalty
+      if (player.role === 'Bowler' && position < 9) {
+        slotScore -= 5;
+      }
 
       best = Math.max(best, slotScore + dfs(slotIndex + 1, usedMask | (1 << playerIndex)));
     }
@@ -118,10 +124,17 @@ const optimizeBattingOrder = (players) => {
     for (let pi = 0; pi < players.length; pi += 1) {
       if (usedMask & (1 << pi)) continue;
       const player = players[pi];
+
       const preferred = player.tactical?.positions ?? [];
-      const slotScore = preferred.includes(position)
+      let slotScore = preferred.includes(position)
         ? playerBattingScoreForPosition(player, position)
         : playerBattingScoreForPosition(player, position) - 3;
+
+      // Apply the same severe penalty in reconstruction
+      if (player.role === 'Bowler' && position < 9) {
+        slotScore -= 5;
+      }
+
       const candidate = slotScore + memoGet(slotIndex + 1, usedMask | (1 << pi));
       if (candidate > bestValue) { bestValue = candidate; bestPi = pi; }
     }
@@ -336,7 +349,7 @@ const scoreBreakdown = (players) => {
   const impact = impactScore(players);
   const tactical = tacticalScore(players);
   const age = ageScore(players);
-  const final = batting.total + bowling.total + fitness + impact + tactical + age;
+  const finalRaw = batting.total + bowling.total + fitness + impact + tactical + age;
 
   return {
     batting: {
@@ -359,10 +372,31 @@ const scoreBreakdown = (players) => {
     impact: round(impact),
     tactical: round(tactical),
     age: round(age),
-    final: round(final),
+    final: round(finalRaw),
+    rawFinal: finalRaw,  // full precision for hill-climbing comparisons
   };
+};
+
+// ── Per-player composite helpers (for direct player-vs-player comparison) ─────
+const playerBowlingComposite = (p) => {
+  const pp = p.bowling?.phases?.powerplay ?? 0;
+  const mid = p.bowling?.phases?.middle ?? 0;
+  const dth = p.bowling?.phases?.death ?? 0;
+  return pp + mid + dth;
+};
+
+const playerBattingCompositeFn = (p) => battingComposite(p);
+
+const playerOverallComposite = (p) => {
+  return battingComposite(p) + playerBowlingComposite(p) +
+    (p.role_impact?.match_winner ?? 0) +
+    (p.role_impact?.clutch ?? 0) +
+    (p.role_impact?.consistency ?? 0);
 };
 
 module.exports = {
   scoreBreakdown,
+  playerBowlingComposite,
+  playerBattingComposite: playerBattingCompositeFn,
+  playerOverallComposite,
 };

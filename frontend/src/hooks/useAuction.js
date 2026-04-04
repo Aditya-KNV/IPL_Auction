@@ -145,7 +145,7 @@ export const useAuction = () => {
       stopLocalTick();
       setTimeLeft(0);
       setSoldFlash({ player, team, amount: normalizeCroreAmount(amount), auto });
-      setTimeout(() => setSoldFlash(null), 3000);
+      setTimeout(() => setSoldFlash(null), 800);
       setCurrentPlayer(null);
       setCurrentBid(0);
       setMinNextBid(0);

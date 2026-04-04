@@ -9,8 +9,10 @@ const ROLE_COLOR = {
 };
 
 const ROLE_ORDER = ['Batsman', 'Wicket-Keeper', 'All-Rounder', 'Bowler'];
-const isOverseasPlayer = (player) =>
-  String(player?.nationality || '').trim().toLowerCase() !== 'indian';
+const isOverseasPlayer = (player) => {
+  const nat = String(player?.nationality || '').trim().toLowerCase();
+  return nat.length > 0 && nat !== 'indian';
+};
 
 const PurseBar = ({ remaining, total, color }) => {
   const pct = total > 0 ? Math.max(0, (remaining / total) * 100) : 0;
@@ -130,7 +132,6 @@ const TeamRow = ({ team, rank, isMyTeam }) => {
 };
 
 export default function OtherTeamsPanel({ teams, myTeamId }) {
-  const [sortBy, setSortBy] = useState('purse');
 
   if (!teams || teams.length === 0) {
     return (
@@ -143,10 +144,8 @@ export default function OtherTeamsPanel({ teams, myTeamId }) {
   const myTeam = teams.find((t) => String(t._id) === String(myTeamId));
   const others = teams.filter((t) => String(t._id) !== String(myTeamId));
 
-  const sorted = [...others].sort((a, b) =>
-    sortBy === 'purse'
-      ? (b.remainingPurse ?? 0) - (a.remainingPurse ?? 0)
-      : (b.players?.length ?? 0) - (a.players?.length ?? 0)
+  const sorted = [...others].sort(
+    (a, b) => (b.remainingPurse ?? 0) - (a.remainingPurse ?? 0)
   );
 
   const displayList = myTeam ? [myTeam, ...sorted] : sorted;
@@ -157,20 +156,6 @@ export default function OtherTeamsPanel({ teams, myTeamId }) {
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">All Teams</p>
           <p className="text-xs text-gray-600 mt-0.5">{teams.length} teams · click to view squad</p>
-        </div>
-
-        <div className="flex bg-gray-800 rounded-lg p-0.5 gap-0.5">
-          {[{ key: 'purse', label: 'Purse' }, { key: 'players', label: 'Squad' }].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setSortBy(key)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
-                sortBy === key ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
         </div>
       </div>
 

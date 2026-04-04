@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { formatCroreAmount, normalizeCroreAmount } from '../../utils/currency';
+import PlayerStatsModal from '../players/PlayerStatsModal';
 
 const ROLE_ORDER = ['Batsman', 'Wicket-Keeper', 'All-Rounder', 'Bowler'];
-const isOverseasPlayer = (player) =>
-  String(player?.nationality || '').trim().toLowerCase() !== 'indian';
+const isOverseasPlayer = (player) => {
+  const nat = String(player?.nationality || '').trim().toLowerCase();
+  return nat.length > 0 && nat !== 'indian';
+};
 
 const ROLE_STYLE = {
   Batsman: { label: 'BAT', text: 'text-blue-400', bg: 'bg-blue-500/15', border: 'border-blue-500/30', dot: 'bg-blue-500' },
@@ -55,7 +58,10 @@ const PlayerRow = ({ player }) => {
   const style = ROLE_STYLE[player.role] ?? ROLE_STYLE.Batsman;
 
   return (
-    <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-800/60 transition group">
+    <div 
+      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-800/60 transition group cursor-pointer"
+      onClick={() => player.onClick(player)}
+    >
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0 uppercase">
           {player.name?.[0] ?? '?'}
@@ -85,7 +91,7 @@ const PlayerRow = ({ player }) => {
   );
 };
 
-const RoleSection = ({ role, players }) => {
+const RoleSection = ({ role, players, onPlayerClick }) => {
   const [open, setOpen] = useState(true);
   const style = ROLE_STYLE[role] ?? ROLE_STYLE.Batsman;
 
@@ -106,12 +112,13 @@ const RoleSection = ({ role, players }) => {
         </div>
       </button>
 
-      {open && <div className="flex flex-col">{players.map((p) => <PlayerRow key={p._id} player={p} />)}</div>}
+      {open && <div className="flex flex-col">{players.map((p) => <PlayerRow key={p._id} player={{...p, onClick: onPlayerClick}} />)}</div>}
     </div>
   );
 };
 
 export default function MyTeamPanel({ team, squadByRole }) {
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const totalPlayers = team?.players?.length ?? 0;
 
   if (!team) {
@@ -127,8 +134,12 @@ export default function MyTeamPanel({ team, squadByRole }) {
   }
 
   return (
-    <div className="bg-gray-900/60 rounded-2xl border border-gray-800 overflow-hidden">
-      <div className="px-5 py-4 flex items-center justify-between" style={{ borderLeft: `4px solid ${team.color || '#004BA0'}` }}>
+    <>
+      {selectedPlayer && (
+        <PlayerStatsModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+      )}
+      <div className="bg-gray-900/60 rounded-2xl border border-gray-800 overflow-hidden">
+        <div className="px-5 py-4 flex items-center justify-between" style={{ borderLeft: `4px solid ${team.color || '#004BA0'}` }}>
         <div>
           <p className="text-xs text-gray-500 uppercase tracking-wider">My Team</p>
           <h2 className="text-xl font-black text-white mt-0.5">{team.name}</h2>
@@ -151,12 +162,13 @@ export default function MyTeamPanel({ team, squadByRole }) {
           ) : (
             <div className="flex flex-col gap-1">
               {ROLE_ORDER.map((role) => (
-                <RoleSection key={role} role={role} players={squadByRole[role]} />
+                <RoleSection key={role} role={role} players={squadByRole[role]} onPlayerClick={setSelectedPlayer} />
               ))}
             </div>
           )}
         </div>
       </div>
     </div>
+    </>
   );
 }

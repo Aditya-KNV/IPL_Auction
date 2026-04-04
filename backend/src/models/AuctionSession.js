@@ -21,6 +21,8 @@ const auctionSessionSchema = new mongoose.Schema({
   withdrawnTeams:       [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
   timerDuration:        { type: Number, default: 10 },   // seconds for the first window
   timerEndsAt:          { type: Date,   default: null },  // absolute deadline, for reconnects
+  latestRankings:       { type: mongoose.Schema.Types.Mixed, default: null }, // Persisted latest ranking data
+  latestVerdict:        { type: String, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('AuctionSession', auctionSessionSchema);
