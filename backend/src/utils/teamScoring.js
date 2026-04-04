@@ -91,15 +91,17 @@ const optimizeBattingOrder = (players) => {
 
       const player = players[playerIndex];
 
+      // Hard position constraints:
+      //   Bowlers can ONLY bat at positions 8–12 (lower order)
+      //   Batsmen/Wicket-Keepers can ONLY bat at positions 1–8 (top/middle order)
+      //   All-Rounders are unconstrained
+      if (player.role === 'Bowler' && position < 8) continue;
+      if ((player.role === 'Batsman' || player.role === 'Wicket-Keeper') && position > 8) continue;
+
       const preferred = player.tactical?.positions ?? [];
-      let slotScore = preferred.includes(position)
+      const slotScore = preferred.includes(position)
         ? playerBattingScoreForPosition(player, position)
         : playerBattingScoreForPosition(player, position) - 3;
-
-      // If a pure bowler is forced to bat in the top 8, apply a severe penalty
-      if (player.role === 'Bowler' && position < 9) {
-        slotScore -= 5;
-      }
 
       best = Math.max(best, slotScore + dfs(slotIndex + 1, usedMask | (1 << playerIndex)));
     }
@@ -125,15 +127,14 @@ const optimizeBattingOrder = (players) => {
       if (usedMask & (1 << pi)) continue;
       const player = players[pi];
 
+      // Same hard constraints in reconstruction pass
+      if (player.role === 'Bowler' && position < 8) continue;
+      if ((player.role === 'Batsman' || player.role === 'Wicket-Keeper') && position > 8) continue;
+
       const preferred = player.tactical?.positions ?? [];
-      let slotScore = preferred.includes(position)
+      const slotScore = preferred.includes(position)
         ? playerBattingScoreForPosition(player, position)
         : playerBattingScoreForPosition(player, position) - 3;
-
-      // Apply the same severe penalty in reconstruction
-      if (player.role === 'Bowler' && position < 9) {
-        slotScore -= 5;
-      }
 
       const candidate = slotScore + memoGet(slotIndex + 1, usedMask | (1 << pi));
       if (candidate > bestValue) { bestValue = candidate; bestPi = pi; }

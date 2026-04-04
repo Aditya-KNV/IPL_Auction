@@ -165,9 +165,9 @@ const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
     let bestJ = -1;
 
     for (let i = 0; i < playing.length; i++) {
-      // Yield to Node.js Event Loop to prevent the Express server from freezing 
+      // Yield to Node.js Event Loop to prevent the Express server from freezing
       // during heavy DP math, keeping the auction sockets instantly responsive.
-      await new Promise(resolve => setImmediate(resolve)); 
+      await new Promise(resolve => setImmediate(resolve));
 
       for (let j = 0; j < bench.length; j++) {
         const candidate = [...playing];
@@ -175,6 +175,14 @@ const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
 
         // STRICT 4-overseas cap
         if (candidate.filter(isOverseas).length > MAX_OVERSEAS_PLAYING) continue;
+
+        // Role-score protection: for same-role swaps, never allow the dominant
+        // role metric to regress. This prevents hill-climbing from swapping out
+        // a 10/10/10 bowler in favour of an 8/8/8 bowler just because the
+        // latter has better batting stats that inflate the raw team score.
+        const outgoing = playing[i];
+        const incoming = bench[j];
+        if (outgoing.role === incoming.role && roleScore(incoming) < roleScore(outgoing)) continue;
 
         const swapScore = teamScore(candidate);
         if (swapScore > bestSwapScore) {
