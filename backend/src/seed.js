@@ -936,7 +936,7 @@ const MARQUEE_SET_1 = [
   {
     name: "Rashid Khan",
     nationality: "Afghan",
-    role: "Bowler",
+    role: "All-Rounder",
     batting_style: "right-handed",
     bowling_style: "Right-arm leg-break",
     age: 27,
