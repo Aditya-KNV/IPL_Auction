@@ -126,6 +126,7 @@ function PlayersTab() {
   const [auctionSetName, setAuctionSetName] = useState('');
   const [phase, setPhase]                 = useState('');
   const [minRating, setMinRating]         = useState('');
+  const [search, setSearch]               = useState('');
   const [selected, setSelected]           = useState(null);
   const [loadingPlayer, setLoadingPlayer] = useState(false);
 
@@ -156,14 +157,22 @@ function PlayersTab() {
   const allFilterOptions = filterGroups.flatMap((g) => g.options);
 
   const filtered = useMemo(() => {
-    if (!phase || minRating === '') return players;
-    const min = Number(minRating);
-    if (!Number.isFinite(min)) return players;
-    return players.filter((p) => {
-      const val = resolvePath(p, phase);
-      return typeof val === 'number' && val >= min;
-    });
-  }, [players, phase, minRating]);
+    let result = players;
+    if (phase && minRating !== '') {
+      const min = Number(minRating);
+      if (Number.isFinite(min)) {
+        result = result.filter((p) => {
+          const val = resolvePath(p, phase);
+          return typeof val === 'number' && val >= min;
+        });
+      }
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    return result;
+  }, [players, phase, minRating, search]);
 
   const activeFilterLabel = allFilterOptions.find((o) => o.key === phase)?.label;
 
@@ -194,6 +203,27 @@ function PlayersTab() {
       <h2 className="text-2xl font-bold text-ipl-gold mb-6">Players</h2>
 
       <div className="flex flex-wrap gap-3 mb-4">
+        {/* Search by name */}
+        <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2">
+          <svg className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search player…"
+            className="bg-transparent text-white text-sm outline-none w-36 placeholder-gray-500"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="text-gray-500 hover:text-white ml-1">
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
         {/* Role */}
         <select
           value={role}
@@ -267,9 +297,9 @@ function PlayersTab() {
         )}
 
         {/* Clear */}
-        {(role || status || auctionSetName || phase) && (
+        {(role || status || auctionSetName || phase || search) && (
           <button
-            onClick={() => { setRole(''); setStatus(''); setAuctionSetName(''); setPhase(''); setMinRating(''); }}
+            onClick={() => { setRole(''); setStatus(''); setAuctionSetName(''); setPhase(''); setMinRating(''); setSearch(''); }}
             className="text-xs text-gray-400 border border-gray-700 rounded-lg px-3 py-2 hover:border-gray-500 hover:text-white transition"
           >
             Clear filters
@@ -376,7 +406,127 @@ function TeamsTab() {
   );
 }
 
-const TABS = ['Lobby', 'Auction', 'Teams', 'Players', 'Dashboard', 'Rankings'];
+function SettingsTab() {
+  const { room, transferHost } = useRoom();
+  const { socket } = useSocket();
+  const [timerDuration, setTimerDuration] = useState(10);
+  const [timerSaved, setTimerSaved] = useState(false);
+  const [selectedSocketId, setSelectedSocketId] = useState('');
+
+  const mySocketId = socket?.id;
+  const amHost = room?.hostId === mySocketId;
+
+  // Load current timer duration from session
+  useEffect(() => {
+    api.get('/auction/session').then((r) => {
+      if (r.data?.timerDuration) setTimerDuration(r.data.timerDuration);
+    }).catch(() => {});
+  }, []);
+
+  // Keep timer in sync when host changes it
+  useEffect(() => {
+    if (!socket) return;
+    const onTimerUpdated = ({ timerDuration: d }) => setTimerDuration(d);
+    socket.on('settings:timer-updated', onTimerUpdated);
+    return () => socket.off('settings:timer-updated', onTimerUpdated);
+  }, [socket]);
+
+  const saveTimer = () => {
+    socket?.emit('settings:update-timer', { duration: timerDuration });
+    setTimerSaved(true);
+    setTimeout(() => setTimerSaved(false), 2000);
+  };
+
+  const handleTransferHost = () => {
+    if (!selectedSocketId) return;
+    transferHost(selectedSocketId);
+    setSelectedSocketId('');
+  };
+
+  const otherUsers = room?.users.filter((u) => u.socketId !== mySocketId) || [];
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <h2 className="text-2xl font-bold text-ipl-gold">Settings</h2>
+
+      {!amHost && (
+        <div className="rounded-xl border border-gray-700 bg-gray-900 p-4 text-center text-gray-500 text-sm">
+          Only the host can change room settings.
+        </div>
+      )}
+
+      {/* Timer */}
+      <div className={`bg-gray-900 border rounded-2xl p-6 ${amHost ? 'border-gray-700' : 'border-gray-800 opacity-50 pointer-events-none'}`}>
+        <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider mb-1">Auction Timer</h3>
+        <p className="text-gray-500 text-xs mb-4">
+          Initial bidding window duration when a player enters auction. Each bid extends the clock by 10 s regardless.
+        </p>
+        <div className="flex items-center gap-4">
+          <input
+            type="range"
+            min={5}
+            max={120}
+            step={5}
+            value={timerDuration}
+            onChange={(e) => setTimerDuration(Number(e.target.value))}
+            className="flex-1 accent-ipl-gold"
+          />
+          <div className="flex items-center gap-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+            <input
+              type="number"
+              min={5}
+              max={120}
+              step={1}
+              value={timerDuration}
+              onChange={(e) => setTimerDuration(Number(e.target.value))}
+              className="bg-transparent text-white text-sm w-10 outline-none text-center tabular-nums"
+            />
+            <span className="text-gray-500 text-sm">s</span>
+          </div>
+          <button
+            onClick={saveTimer}
+            className="bg-ipl-gold text-black font-bold px-4 py-2 rounded-xl text-sm hover:brightness-110 transition"
+          >
+            {timerSaved ? 'Saved!' : 'Save'}
+          </button>
+        </div>
+      </div>
+
+      {/* Transfer Host */}
+      <div className={`bg-gray-900 border rounded-2xl p-6 ${amHost ? 'border-gray-700' : 'border-gray-800 opacity-50 pointer-events-none'}`}>
+        <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider mb-1">Transfer Host</h3>
+        <p className="text-gray-500 text-xs mb-4">
+          Hand off host controls to another user in the room. You will become a regular participant.
+        </p>
+        {otherUsers.length === 0 ? (
+          <p className="text-gray-600 text-sm text-center py-2">No other users in the room.</p>
+        ) : (
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedSocketId}
+              onChange={(e) => setSelectedSocketId(e.target.value)}
+              className="flex-1 bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
+            >
+              <option value="">Select user…</option>
+              {otherUsers.map((u) => (
+                <option key={u.socketId} value={u.socketId}>{u.username}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleTransferHost}
+              disabled={!selectedSocketId}
+              className="bg-ipl-blue text-white font-bold px-4 py-2 rounded-xl text-sm hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Transfer
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const TABS = ['Lobby', 'Auction', 'Teams', 'Players', 'Dashboard', 'Rankings', 'Settings'];
 
 function InRoomLayout() {
   const { room, teamAssignments } = useRoom();
@@ -394,12 +544,12 @@ function InRoomLayout() {
   return (
     <div className="h-full bg-ipl-dark overflow-hidden">
       <div className="fixed top-[72px] inset-x-0 z-40 bg-gray-950 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-6 flex items-center gap-1">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 flex items-center gap-1 overflow-x-auto scrollbar-none">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative px-4 py-3 text-sm font-semibold transition border-b-2 ${
+              className={`relative flex-shrink-0 px-4 py-3 text-sm font-semibold transition border-b-2 ${
                 activeTab === tab
                   ? 'text-ipl-gold border-ipl-gold'
                   : 'text-gray-400 border-transparent hover:text-white hover:border-gray-600'
@@ -412,8 +562,8 @@ function InRoomLayout() {
             </button>
           ))}
 
-          <div className="ml-auto flex items-center gap-2 pb-1">
-            <span className="text-xs text-gray-500">Room:</span>
+          <div className="flex-shrink-0 ml-2 flex items-center gap-2 pb-1">
+            <span className="text-xs text-gray-500 hidden sm:inline">Room:</span>
             <span className="font-mono font-bold text-ipl-gold text-sm bg-gray-900 px-2 py-0.5 rounded-lg border border-gray-700">
               {room?.code}
             </span>
@@ -474,6 +624,11 @@ function InRoomLayout() {
         {activeTab === 'Rankings' && (
           <div className="h-full overflow-y-auto">
             <RankingPage />
+          </div>
+        )}
+        {activeTab === 'Settings' && (
+          <div className="h-full overflow-y-auto">
+            <SettingsTab />
           </div>
         )}
       </div>

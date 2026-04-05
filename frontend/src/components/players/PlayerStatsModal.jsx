@@ -24,8 +24,36 @@ export default function PlayerStatsModal({ player, onClose }) {
       >
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-start justify-between border-b border-gray-800 bg-gray-900 px-5 py-4">
-          <div>
-            <h2 className="text-xl font-black text-white">{player.name}</h2>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xl font-black text-white">{player.name}</h2>
+              {player.tactical?.positions?.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  {player.tactical.positions.map((pos) => (
+                    <span
+                      key={pos}
+                      className="rounded-full border border-ipl-gold/40 bg-ipl-gold/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-ipl-gold"
+                    >
+                      #{pos}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {player.bowling?.positions?.some((v) => v === 1) && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  {[['PP', 0], ['MID', 1], ['DEATH', 2]].map(([label, idx]) =>
+                    player.bowling.positions[idx] === 1 ? (
+                      <span
+                        key={label}
+                        className="rounded-full border border-red-400/40 bg-red-400/10 px-1.5 py-0.5 text-[10px] font-bold text-red-400"
+                      >
+                        {label}
+                      </span>
+                    ) : null
+                  )}
+                </div>
+              )}
+            </div>
             <p className="mt-0.5 text-xs text-gray-500">
               {player.nationality} · {player.age} yrs · {player.batting_style === 'left-handed' ? 'Left-handed' : 'Right-handed'}
               {player.bowling_style ? ` · ${player.bowling_style}` : ''}
@@ -104,6 +132,17 @@ export default function PlayerStatsModal({ player, onClose }) {
               <span className="text-gray-400">Overs quota: </span>
               <span className="font-semibold text-white">{player.tactical?.overs ?? 0} overs</span>
             </div>
+            {player.bowling?.positions?.some((v) => v === 1) && (
+              <div className="mt-2 rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 text-sm">
+                <span className="text-gray-400">Designated phases: </span>
+                <span className="font-semibold text-white">
+                  {[['Powerplay', 0], ['Middle', 1], ['Death', 2]]
+                    .filter(([, idx]) => player.bowling.positions[idx] === 1)
+                    .map(([label]) => label)
+                    .join(', ')}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Role Impact */}
@@ -124,10 +163,26 @@ export default function PlayerStatsModal({ player, onClose }) {
               <StatBar label="Injury Risk (lower = better)" value={10 - (player.fitness?.injury_risk ?? 5)} color="bg-green-500" />
               <StatBar label="Tactical Flexibility" value={player.tactical?.flexibility ?? 0} color="bg-emerald-500" />
             </div>
+            <div className="mt-3 rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 text-sm">
+              <span className="text-gray-400">Captaincy rating: </span>
+              <span className="font-semibold text-white">{player.tactical?.captaincy ?? 0}</span>
+              <span className="ml-2 text-[10px] text-gray-600">(0 – 1.25 scale)</span>
+            </div>
             {player.tactical?.positions?.length > 0 && (
-              <div className="mt-3 rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 text-sm">
+              <div className="mt-2 rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 text-sm">
                 <span className="text-gray-400">Preferred batting positions: </span>
                 <span className="font-semibold text-white">{player.tactical.positions.join(', ')}</span>
+              </div>
+            )}
+            {player.bowling?.positions?.some((v) => v === 1) && (
+              <div className="mt-2 rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 text-sm">
+                <span className="text-gray-400">Bowling phases: </span>
+                <span className="font-semibold text-white">
+                  {[['Powerplay', 0], ['Middle', 1], ['Death', 2]]
+                    .filter(([, idx]) => (player.bowling.positions[idx] ?? 0) === 1)
+                    .map(([label]) => label)
+                    .join(', ')}
+                </span>
               </div>
             )}
           </div>

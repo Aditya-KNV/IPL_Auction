@@ -115,8 +115,12 @@ export const RoomProvider = ({ children }) => {
     socket?.emit('room:pick-team', teamInfo);
   }, [socket]);
 
+  const transferHost = useCallback((targetSocketId) => {
+    socket?.emit('room:transfer-host', { targetSocketId });
+  }, [socket]);
+
   return (
-    <RoomContext.Provider value={{ ...state, createRoom, joinRoom, leaveRoom, kickUser, pickTeam }}>
+    <RoomContext.Provider value={{ ...state, createRoom, joinRoom, leaveRoom, kickUser, pickTeam, transferHost }}>
       {children}
     </RoomContext.Provider>
   );

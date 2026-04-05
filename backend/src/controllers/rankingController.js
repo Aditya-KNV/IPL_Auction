@@ -37,7 +37,7 @@ const explainBatting = (b) => {
   else if (b.positions >= 15) parts.push('most batters reasonably placed in the order');
   else parts.push('several batters out of their natural position');
 
-  return `Batting (${b.total}/43): ${parts.join('; ')}.`;
+  return `Batting (${b.total}/40): ${parts.join('; ')}.`;
 };
 
 const explainBowling = (b) => {
@@ -60,7 +60,7 @@ const explainBowling = (b) => {
   else if (phaseAvg >= 0.5) parts.push('solid phase bowling');
   else parts.push('bowling phases need improvement');
 
-  return `Bowling (${b.total}/43): ${parts.join('; ')}.`;
+  return `Bowling (${b.total}/40): ${parts.join('; ')}.`;
 };
 
 const buildSummary = (entry) => {
@@ -132,15 +132,53 @@ exports.generateRankings = async (req, res) => {
 
         const scoreDiff = newScore - oldScore;
         let changeLog = '';
-        if (addedIds.length > 0) {
-            const addedNames = addedIds.map(id => team.players.find(p => String(p._id) === id)?.name).filter(Boolean).join(', ');
-            const removedNames = removedIds.map(id => oldSquad.find(p => String(p._id) === id)?.name).filter(Boolean).join(', ');
-            const diffPhrase = scoreDiff >= 0 ? `+${parseFloat(scoreDiff.toFixed(2))}` : `${parseFloat(scoreDiff.toFixed(2))}`;
-            if (removedNames) {
-                changeLog = `Dropped ${removedNames} for ${addedNames}. Points difference: ${diffPhrase}`;
-            } else {
-                changeLog = `Added ${addedNames} to the Playing 12. Points difference: ${diffPhrase}`;
+        if (addedIds.length > 0 || removedIds.length > 0) {
+            let currentTempSquad = [...oldSquad];
+            let currentTempScore = oldScore;
+            const logSteps = [];
+            
+            let remainingAdded = addedIds.map(id => team.players.find(p => String(p._id) === id)).filter(Boolean);
+            let remainingRemoved = removedIds.map(id => oldSquad.find(p => String(p._id) === id)).filter(Boolean);
+
+            while (remainingAdded.length > 0 && remainingRemoved.length > 0) {
+                let addIdx = remainingAdded.findIndex(p => p.role === remainingRemoved[0].role);
+                if (addIdx === -1) addIdx = 0;
+                
+                const remPlayer = remainingRemoved.splice(0, 1)[0];
+                const addPlayer = remainingAdded.splice(addIdx, 1)[0];
+                
+                currentTempSquad = currentTempSquad.filter(p => String(p._id) !== String(remPlayer._id));
+                currentTempSquad.push(addPlayer);
+                
+                const nextScore = scoreBreakdown(currentTempSquad).final;
+                const delta = nextScore - currentTempScore;
+                const diffStr = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
+                
+                logSteps.push(`Dropped ${remPlayer.name} for ${addPlayer.name} (${diffStr})`);
+                currentTempScore = nextScore;
             }
+            
+            for (const addPlayer of remainingAdded) {
+                currentTempSquad.push(addPlayer);
+                const nextScore = scoreBreakdown(currentTempSquad).final;
+                const delta = nextScore - currentTempScore;
+                const diffStr = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
+                logSteps.push(`Added ${addPlayer.name} (${diffStr})`);
+                currentTempScore = nextScore;
+            }
+            
+            for (const remPlayer of remainingRemoved) {
+                currentTempSquad = currentTempSquad.filter(p => String(p._id) !== String(remPlayer._id));
+                const nextScore = scoreBreakdown(currentTempSquad).final;
+                const delta = nextScore - currentTempScore;
+                const diffStr = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
+                logSteps.push(`Dropped ${remPlayer.name} (${diffStr})`);
+                currentTempScore = nextScore;
+            }
+            
+            const totalDiff = newScore - oldScore;
+            const totalStr = totalDiff >= 0 ? `+${totalDiff.toFixed(2)}` : totalDiff.toFixed(2);
+            changeLog = logSteps.join('. ') + `. Total change: ${totalStr}`;
         } else {
             changeLog = 'No changes made to squad.';
         }

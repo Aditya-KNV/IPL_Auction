@@ -1,4 +1,4 @@
-const { createRoom, joinRoom, leaveRoom, leaveRoomExplicit, pickTeam, getRoomBySocket } = require('./roomStore');
+const { createRoom, joinRoom, leaveRoom, leaveRoomExplicit, pickTeam, transferHost, getRoomBySocket } = require('./roomStore');
 const { resetAuctionState } = require('../services/auctionReset');
 
 /**
@@ -103,6 +103,20 @@ const registerRoomHandlers = (io, socket) => {
       targetSocket.emit('room:kicked', { message: 'You were removed from the room by the host' });
       _leaveExplicit(io, targetSocket, { releaseTeam: true });
     }
+  });
+
+  // ── room:transfer-host ─────────────────────────────────────────────────────
+  // Host transfers host role to another user. Client sends: { targetSocketId }
+  socket.on('room:transfer-host', ({ targetSocketId }) => {
+    const result = transferHost(socket.id, targetSocketId);
+    if (result.error) return socket.emit('room:error', { message: result.error });
+
+    io.to(result.room.code).emit('room:users', {
+      users: result.room.users,
+      hostId: result.room.hostId,
+    });
+
+    console.log(`[room] ${username} transferred host to ${targetSocketId} in ${result.room.code}`);
   });
 
   // ── disconnect ─────────────────────────────────────────────────────────────

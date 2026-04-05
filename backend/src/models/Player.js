@@ -41,6 +41,7 @@ const playerSchema = new mongoose.Schema({
       yorker:     { type: Number, default: 0 },
       bouncer:    { type: Number, default: 0 },
     },
+    positions: [{ type: Number }],  // [powerplay, middle, death] — 1 = designated, 0 = not
   },
 
   // ── Impact ──────────────────────────────────────────────────────────────────
@@ -61,6 +62,7 @@ const playerSchema = new mongoose.Schema({
     flexibility:   { type: Number, default: 5 },
     positions:     [{ type: Number }],    // batting positions e.g. [1,2]
     overs:         { type: Number, default: 0 },
+    captaincy:     { type: Number, default: 0 },
   },
 
   // ── Auction ─────────────────────────────────────────────────────────────────

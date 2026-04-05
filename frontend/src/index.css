@@ -6,3 +6,11 @@ body {
   @apply bg-ipl-dark text-white;
   font-family: 'Inter', sans-serif;
 }
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

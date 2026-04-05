@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuction } from "../../hooks/useAuction";
 import { useMyTeam } from "../../hooks/useMyTeam";
 import { useAuth } from "../../context/AuthContext";
@@ -6,12 +6,14 @@ import { useRoom } from "../../context/RoomContext";
 import { useSocket } from "../../context/SocketContext";
 import { formatCroreAmount } from "../../utils/currency";
 import PlayerCard from "../players/PlayerCard";
+import PlayerStatsModal from "../players/PlayerStatsModal";
 import BidPanel from "./BidPanel";
 import BidFeed from "./BidFeed";
 import AuctionTimer from "./AuctionTimer";
 import AuctionControls from "./AuctionControls";
 import OtherTeamsPanel from "./OtherTeamsPanel";
 import { hasBattingStats, hasBowlingStats } from "../../utils/playerDisplay";
+import { setAudioMuted, isAudioMuted, playSoldSound } from "../../utils/auctionAudio";
 
 
 // ── Role-based section builder ────────────────────────────────────────────────
@@ -80,6 +82,11 @@ const buildSections = (player) => {
         { label: "Bouncer",    rating: player.bowling?.skills?.bouncer    ?? 0 },
       ],
       overs: player.tactical?.overs,
+      bowlingPhases: Array.isArray(player.bowling?.positions)
+        ? [['PP', 0], ['MID', 1], ['DEATH', 2]]
+            .filter(([, i]) => player.bowling.positions[i] === 1)
+            .map(([l]) => l)
+        : [],
     });
   }
 
@@ -144,6 +151,12 @@ const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
                 Overs quota: <span className="font-semibold text-white">{section.overs}</span>
               </p>
             )}
+            {section.bowlingPhases?.length > 0 && (
+              <p className={`mt-1 ${titleSize} text-gray-500`}>
+                Phases:{' '}
+                <span className="font-semibold text-red-300">{section.bowlingPhases.join(', ')}</span>
+              </p>
+            )}
           </div>
         ))}
 
@@ -189,7 +202,23 @@ const PlayerRatingsPanel = ({ player, expanded = false, onClose }) => {
               </div>
               {player.tactical?.positions?.length > 0 && (
                 <p className={`mt-1.5 ${titleSize} text-gray-500`}>
-                  Positions: <span className="font-semibold text-white">{player.tactical.positions.join(', ')}</span>
+                  Bat positions: <span className="font-semibold text-white">{player.tactical.positions.join(', ')}</span>
+                </p>
+              )}
+              {(player.tactical?.captaincy ?? 0) > 0 && (
+                <p className={`mt-1 ${titleSize} text-gray-500`}>
+                  Captaincy: <span className="font-semibold text-white">{player.tactical.captaincy}</span>
+                </p>
+              )}
+              {player.bowling?.positions?.some((v) => v === 1) && (
+                <p className={`mt-1 ${titleSize} text-gray-500`}>
+                  Bowl phases:{' '}
+                  <span className="font-semibold text-red-300">
+                    {[['PP', 0], ['MID', 1], ['DEATH', 2]]
+                      .filter(([, i]) => (player.bowling.positions[i] ?? 0) === 1)
+                      .map(([l]) => l)
+                      .join(', ')}
+                  </span>
                 </p>
               )}
             </div>
@@ -282,7 +311,8 @@ const EmptySlot = ({ status }) => (
 );
 
 export default function AuctionBoard() {
-  const [showStatsPanel, setShowStatsPanel] = useState(false);
+  const [modalPlayer, setModalPlayer] = useState(null);
+  const [muted, setMuted] = useState(isAudioMuted());
   const { user } = useAuth();
   const { room, teamAssignments } = useRoom();
   const { socket } = useSocket();
@@ -308,6 +338,21 @@ export default function AuctionBoard() {
     refetch,
   } = useAuction();
 
+  // Play sold sound whenever a new sold flash appears
+  const prevSoldFlash = useRef(null);
+  useEffect(() => {
+    if (soldFlash && soldFlash !== prevSoldFlash.current) {
+      playSoldSound();
+    }
+    prevSoldFlash.current = soldFlash;
+  }, [soldFlash]);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setAudioMuted(next);
+  };
+
   const { myTeam, allTeams, loading: teamLoading } = useMyTeam();
 
   if (auctionLoading || teamLoading) return <Spinner />;
@@ -323,11 +368,11 @@ export default function AuctionBoard() {
   );
   const liveFrameColor = highestBidder?.color || (amLeading ? '#D4AF37' : '#374151');
 
-  const openStatsPanel = () => setShowStatsPanel(true);
-  const closeStatsPanel = () => setShowStatsPanel(false);
-
   return (
     <>
+      {modalPlayer && (
+        <PlayerStatsModal player={modalPlayer} onClose={() => setModalPlayer(null)} />
+      )}
       <SoldFlash soldFlash={soldFlash} />
       <UnsoldFlash player={unsoldFlash} />
 
@@ -339,6 +384,24 @@ export default function AuctionBoard() {
                 {soldCount} sold · {unsoldCount} unsold
               </p>
             </div>
+            <button
+              onClick={toggleMute}
+              title={muted ? 'Unmute sounds' : 'Mute sounds'}
+              className="flex items-center justify-center w-7 h-7 rounded-full border border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-white transition"
+            >
+              {muted ? (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-4.243-4.243M12 18l4.243-4.243M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15z" />
+                </svg>
+              )}
+            </button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -356,24 +419,17 @@ export default function AuctionBoard() {
         </div>
 
         <div className="lg:flex-1 lg:overflow-hidden grid grid-cols-1 lg:grid-cols-5">
-          <div className="lg:order-2 lg:col-span-3 border-b lg:border-b-0 lg:border-l border-gray-800 lg:overflow-y-auto lg:h-full">
+          <div className="order-2 lg:order-2 lg:col-span-3 border-t lg:border-t-0 lg:border-l border-gray-800 lg:overflow-y-auto lg:h-full">
             <div className="p-5 space-y-5">
-              {showStatsPanel && currentPlayer ? (
-                <PlayerRatingsPanel player={currentPlayer} expanded onClose={closeStatsPanel} />
-              ) : (
-                <>
-                  {currentPlayer && <PlayerRatingsPanel player={currentPlayer} />}
-
-                  <div>
-                    <SectionLabel>{amHost ? "All Teams" : "Other Teams"}</SectionLabel>
-                    <OtherTeamsPanel teams={allTeams} myTeamId={myTeam?._id} />
-                  </div>
-                </>
-              )}
+              {currentPlayer && <PlayerRatingsPanel player={currentPlayer} />}
+              <div>
+                <SectionLabel>{amHost ? "All Teams" : "Other Teams"}</SectionLabel>
+                <OtherTeamsPanel teams={allTeams} myTeamId={myTeam?._id} />
+              </div>
             </div>
           </div>
 
-          <div className="lg:order-1 lg:col-span-2 lg:h-full lg:overflow-y-auto">
+          <div className="order-1 lg:order-1 lg:col-span-2 lg:h-full lg:overflow-y-auto">
             <div className="p-5 space-y-4">
               <div className="rounded-3xl p-4 space-y-4 transition-all duration-300">
                 <div>
@@ -384,7 +440,7 @@ export default function AuctionBoard() {
                       currentBid={currentBid}
                       highlighted
                       compact
-                      onViewStats={openStatsPanel}
+                      onViewStats={() => setModalPlayer(currentPlayer)}
                     />
                   ) : (
                     <EmptySlot status={session?.status} />

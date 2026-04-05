@@ -70,6 +70,12 @@ export default function PlayerCard({ player, currentBid, highlighted, compact, o
   const positions = Array.isArray(player.tactical?.positions) && player.tactical.positions.length
     ? player.tactical.positions.join(', ')
     : null;
+  const bowlingPhases = Array.isArray(player.bowling?.positions)
+    ? [['PP', 0], ['MID', 1], ['DEATH', 2]].filter(([, i]) => player.bowling.positions[i] === 1).map(([l]) => l)
+    : [];
+
+  const captaincy = player.tactical?.captaincy ?? 0;
+  const hasFooter = player.auctionSetName || positions || bowlingPhases.length > 0 || captaincy > 0 || onViewStats;
 
   return (
     <div
@@ -91,7 +97,7 @@ export default function PlayerCard({ player, currentBid, highlighted, compact, o
         isLive={isLive}
       />
 
-      {(player.auctionSetName || positions) && (
+      {hasFooter && (
         <div className="flex items-center gap-2 flex-wrap px-4 pb-3 border-t border-gray-800/60 pt-2.5">
           {player.auctionSetName && (
             <span className="inline-flex items-center rounded-full border border-ipl-gold/30 bg-ipl-gold/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ipl-gold">
@@ -100,9 +106,22 @@ export default function PlayerCard({ player, currentBid, highlighted, compact, o
           )}
           {positions && (
             <span className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 px-2.5 py-0.5 text-[10px] font-medium text-gray-400">
-              {positions}
+              Bat: {positions}
             </span>
           )}
+          {captaincy > 0 && (
+            <span className="inline-flex items-center rounded-full border border-teal-400/30 bg-teal-400/10 px-2 py-0.5 text-[10px] font-bold text-teal-400">
+              C {captaincy}
+            </span>
+          )}
+          {bowlingPhases.map((phase) => (
+            <span
+              key={phase}
+              className="inline-flex items-center rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[10px] font-bold text-red-400"
+            >
+              {phase}
+            </span>
+          ))}
           {onViewStats && (
             <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-gray-600">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -70,7 +70,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: {
         powerplay: 9,
-        middle: 8,
+        middle: 9,
         death: 9,
       },
       skills: {
@@ -78,6 +78,7 @@ const MARQUEE_SET_1 = [
         yorker: 9,
         bouncer: 6,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 7,
@@ -92,6 +93,7 @@ const MARQUEE_SET_1 = [
       flexibility: 6,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -128,6 +130,7 @@ const MARQUEE_SET_1 = [
         yorker: 4,
         bouncer: 2,
       },
+      positions: [1, 1, 0],
     },
     role_impact: {
       match_winner: 8,
@@ -142,6 +145,7 @@ const MARQUEE_SET_1 = [
       flexibility: 9,
       positions: [4, 5, 6, 7, 8],
       overs: 4,
+      captaincy: 0.75,
     },
     basePrice: 2,
   },
@@ -169,7 +173,7 @@ const MARQUEE_SET_1 = [
     },
     bowling: {
       phases: {
-        powerplay: 9,
+        powerplay: 10,
         middle: 8,
         death: 9,
       },
@@ -178,6 +182,7 @@ const MARQUEE_SET_1 = [
         yorker: 8,
         bouncer: 4,
       },
+      positions: [1, 0, 1],
     },
     role_impact: {
       match_winner: 7,
@@ -192,6 +197,7 @@ const MARQUEE_SET_1 = [
       flexibility: 6,
       positions: [8, 9, 10],
       overs: 4,
+      captaincy: 0.75,
     },
     basePrice: 2,
   },
@@ -205,9 +211,9 @@ const MARQUEE_SET_1 = [
     age: 33,
     batting: {
       phases: {
-        powerplay: { rating: 7, strike_rate: 140 },
+        powerplay: { rating: 8, strike_rate: 140 },
         middle: { rating: 8, strike_rate: 145 },
-        death: { rating: 9, strike_rate: 175 },
+        death: { rating: 10, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -228,6 +234,7 @@ const MARQUEE_SET_1 = [
         yorker: 7,
         bouncer: 7,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 8,
@@ -242,6 +249,7 @@ const MARQUEE_SET_1 = [
       flexibility: 9,
       positions: [4, 5, 6, 7],
       overs: 4,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -255,21 +263,22 @@ const MARQUEE_SET_1 = [
     age: 35,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 140 },
+        powerplay: { rating: 9, strike_rate: 140 },
         middle: { rating: 10, strike_rate: 160 },
-        death: { rating: 9, strike_rate: 185 },
+        death: { rating: 10, strike_rate: 185 },
       },
       skills: {
         finishing: 10,
         power_hitting: 10,
-        anchor: 8,
+        anchor: 9,
         spin_play: 10,
-        pace_play: 8,
+        pace_play: 9,
       },
     },
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -284,6 +293,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [3, 4, 5, 6],
       overs: 0,
+      captaincy: 0.75,
     },
     basePrice: 2,
   },
@@ -303,7 +313,7 @@ const MARQUEE_SET_1 = [
       },
       skills: {
         finishing: 7,
-        power_hitting: 8,
+        power_hitting: 9,
         anchor: 6,
         spin_play: 6,
         pace_play: 8,
@@ -312,6 +322,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 7,
@@ -326,6 +337,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [1, 2, 3],
       overs: 0,
+      captaincy: 0.5,
     },
     basePrice: 2,
   },
@@ -362,6 +374,7 @@ const MARQUEE_SET_1 = [
         yorker: 10,
         bouncer: 8,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 10,
@@ -376,6 +389,7 @@ const MARQUEE_SET_1 = [
       flexibility: 8,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0.75,
     },
     basePrice: 2,
   },
@@ -404,7 +418,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: {
         powerplay: 9,
-        middle: 9,
+        middle: 8,
         death: 8,
       },
       skills: {
@@ -412,6 +426,7 @@ const MARQUEE_SET_1 = [
         yorker: 9,
         bouncer: 10,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 8,
@@ -426,6 +441,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [8, 9, 10],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -440,20 +456,21 @@ const MARQUEE_SET_1 = [
     batting: {
       phases: {
         powerplay: { rating: 9, strike_rate: 155 },
-        middle: { rating: 9, strike_rate: 145 },
+        middle: { rating: 10, strike_rate: 145 },
         death: { rating: 9, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
         power_hitting: 9,
-        anchor: 8,
-        spin_play: 8,
+        anchor: 9,
+        spin_play: 9,
         pace_play: 9,
       },
     },
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -468,6 +485,7 @@ const MARQUEE_SET_1 = [
       flexibility: 8,
       positions: [1, 2, 3, 4, 5, 6],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -503,6 +521,7 @@ const MARQUEE_SET_1 = [
         yorker: 8,
         bouncer: 7,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 8,
@@ -517,6 +536,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -552,6 +572,7 @@ const MARQUEE_SET_1 = [
         yorker: 9,
         bouncer: 9,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 9,
@@ -566,6 +587,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [8, 9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -593,6 +615,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 7,
@@ -607,6 +630,7 @@ const MARQUEE_SET_1 = [
       flexibility: 9,
       positions: [1, 2, 3, 4],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -633,15 +657,16 @@ const MARQUEE_SET_1 = [
     },
     bowling: {
       phases: {
-        powerplay: 6,
+        powerplay: 7,
         middle: 9,
-        death: 6,
+        death: 7,
       },
       skills: {
         variations: 10,
         yorker: 3,
         bouncer: 1,
       },
+      positions: [0, 1, 0],
     },
     role_impact: {
       match_winner: 8,
@@ -656,6 +681,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -691,6 +717,7 @@ const MARQUEE_SET_1 = [
         yorker: 10,
         bouncer: 9,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 9,
@@ -705,6 +732,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [8, 9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -733,13 +761,14 @@ const MARQUEE_SET_1 = [
       phases: {
         powerplay: 9,
         middle: 8,
-        death: 7,
+        death: 8,
       },
       skills: {
         variations: 8,
         yorker: 9,
         bouncer: 7,
       },
+      positions: [1, 1, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -754,6 +783,7 @@ const MARQUEE_SET_1 = [
       flexibility: 6,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -780,15 +810,16 @@ const MARQUEE_SET_1 = [
     },
     bowling: {
       phases: {
-        powerplay: 9,
+        powerplay: 8,
         middle: 8,
-        death: 7,
+        death: 8,
       },
       skills: {
         variations: 7,
         yorker: 7,
         bouncer: 8,
       },
+      positions: [1, 1, 0],
     },
     role_impact: {
       match_winner: 7,
@@ -803,6 +834,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -816,7 +848,7 @@ const MARQUEE_SET_1 = [
     age: 30,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 145 },
+        powerplay: { rating: 10, strike_rate: 145 },
         middle: { rating: 10, strike_rate: 155 },
         death: { rating: 9, strike_rate: 185 },
       },
@@ -824,13 +856,14 @@ const MARQUEE_SET_1 = [
         finishing: 10,
         power_hitting: 10,
         anchor: 6,
-        spin_play: 9,
+        spin_play: 10,
         pace_play: 9,
       },
     },
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -845,6 +878,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [3, 4, 5, 6],
       overs: 0,
+      captaincy: 0.5,
     },
     basePrice: 2,
   },
@@ -880,6 +914,7 @@ const MARQUEE_SET_1 = [
         yorker: 9,
         bouncer: 9,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 9,
@@ -894,6 +929,7 @@ const MARQUEE_SET_1 = [
       flexibility: 9,
       positions: [8, 9, 10, 11, 12],
       overs: 4,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -929,6 +965,7 @@ const MARQUEE_SET_1 = [
         yorker: 6,
         bouncer: 3,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 10,
@@ -943,6 +980,7 @@ const MARQUEE_SET_1 = [
       flexibility: 8,
       positions: [8, 9, 10, 11, 12],
       overs: 4,
+      captaincy: 0.75,
     },
     basePrice: 2,
   },
@@ -978,6 +1016,7 @@ const MARQUEE_SET_1 = [
         yorker: 4,
         bouncer: 2,
       },
+      positions: [0, 1, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -992,6 +1031,7 @@ const MARQUEE_SET_1 = [
       flexibility: 10,
       positions: [5, 6, 7, 8],
       overs: 4,
+      captaincy: 0.5,
     },
     basePrice: 2,
   },
@@ -1019,6 +1059,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -1033,6 +1074,7 @@ const MARQUEE_SET_1 = [
       flexibility: 9,
       positions: [1, 2, 3, 4, 5],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -1060,6 +1102,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -1074,6 +1117,7 @@ const MARQUEE_SET_1 = [
       flexibility: 8,
       positions: [1, 2],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -1087,9 +1131,9 @@ const MARQUEE_SET_1 = [
     age: 29,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 140 },
+        powerplay: { rating: 8, strike_rate: 140 },
         middle: { rating: 8, strike_rate: 140 },
-        death: { rating: 7, strike_rate: 150 },
+        death: { rating: 8, strike_rate: 150 },
       },
       skills: {
         finishing: 7,
@@ -1102,6 +1146,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 8,
@@ -1116,6 +1161,7 @@ const MARQUEE_SET_1 = [
       flexibility: 8,
       positions: [1, 2, 3, 4],
       overs: 0,
+      captaincy: 0.75,
     },
     basePrice: 2,
   },
@@ -1143,6 +1189,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 8,
@@ -1155,8 +1202,9 @@ const MARQUEE_SET_1 = [
     },
     tactical: {
       flexibility: 8,
-      positions: [1, 2, 3, 4],
+      positions: [1, 2, 3, 4, 5],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -1170,9 +1218,9 @@ const MARQUEE_SET_1 = [
     age: 32,
     batting: {
       phases: {
-        powerplay: { rating: 6, strike_rate: 135 },
+        powerplay: { rating: 7, strike_rate: 135 },
         middle: { rating: 9, strike_rate: 150 },
-        death: { rating: 8, strike_rate: 175 },
+        death: { rating: 9, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -1193,6 +1241,7 @@ const MARQUEE_SET_1 = [
         yorker: 2,
         bouncer: 2,
       },
+      positions: [1, 1, 0],
     },
     role_impact: {
       match_winner: 8,
@@ -1207,6 +1256,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [4, 5, 6],
       overs: 2,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -1219,8 +1269,8 @@ const MARQUEE_SET_1 = [
     age: 32,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 135 },
-        middle: { rating: 9, strike_rate: 140 },
+        powerplay: { rating: 9, strike_rate: 135 },
+        middle: { rating: 10, strike_rate: 140 },
         death: { rating: 8, strike_rate: 150 },
       },
       skills: {
@@ -1234,6 +1284,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 8,
@@ -1248,6 +1299,7 @@ const MARQUEE_SET_1 = [
       flexibility: 8,
       positions: [3, 4],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -1261,8 +1313,8 @@ const MARQUEE_SET_1 = [
     batting: {
       phases: {
         powerplay: { rating: 9, strike_rate: 145 },
-        middle: { rating: 8, strike_rate: 140 },
-        death: { rating: 8, strike_rate: 155 },
+        middle: { rating: 9, strike_rate: 140 },
+        death: { rating: 9, strike_rate: 155 },
       },
       skills: {
         finishing: 8,
@@ -1275,6 +1327,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -1289,6 +1342,7 @@ const MARQUEE_SET_1 = [
       flexibility: 9,
       positions: [1, 2],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -1324,6 +1378,7 @@ const MARQUEE_SET_1 = [
         yorker: 4,
         bouncer: 1,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 9,
@@ -1338,6 +1393,7 @@ const MARQUEE_SET_1 = [
       flexibility: 10,
       positions: [1, 2, 7, 8, 9, 10],
       overs: 4,
+      captaincy: 0.5,
     },
     basePrice: 2,
   },
@@ -1351,14 +1407,14 @@ const MARQUEE_SET_1 = [
     age: 35,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 150 },
+        powerplay: { rating: 10, strike_rate: 150 },
         middle: { rating: 10, strike_rate: 170 },
-        death: { rating: 9, strike_rate: 180 },
+        death: { rating: 10, strike_rate: 180 },
       },
       skills: {
         finishing: 9,
         power_hitting: 9,
-        anchor: 7,
+        anchor: 9,
         spin_play: 10,
         pace_play: 10,
       },
@@ -1366,6 +1422,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 10,
@@ -1380,6 +1437,7 @@ const MARQUEE_SET_1 = [
       flexibility: 10,
       positions: [3, 4],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -1415,6 +1473,7 @@ const MARQUEE_SET_1 = [
         yorker: 9,
         bouncer: 7,
       },
+      positions: [1, 1, 1],
     },
     role_impact: {
       match_winner: 9,
@@ -1429,6 +1488,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -1464,6 +1524,7 @@ const MARQUEE_SET_1 = [
         yorker: 3,
         bouncer: 1,
       },
+      positions: [0, 1, 0],
     },
     role_impact: {
       match_winner: 8,
@@ -1478,6 +1539,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -1505,6 +1567,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 10,
@@ -1519,6 +1582,7 @@ const MARQUEE_SET_1 = [
       flexibility: 9,
       positions: [1, 2, 3],
       overs: 0,
+      captaincy: 1,
     },
     basePrice: 2,
   },
@@ -1532,8 +1596,8 @@ const MARQUEE_SET_1 = [
     batting: {
       phases: {
         powerplay: { rating: 9, strike_rate: 155 },
-        middle: { rating: 8, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 165 },
+        middle: { rating: 9, strike_rate: 145 },
+        death: { rating: 9, strike_rate: 165 },
       },
       skills: {
         finishing: 8,
@@ -1546,6 +1610,7 @@ const MARQUEE_SET_1 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -1560,6 +1625,7 @@ const MARQUEE_SET_1 = [
       flexibility: 8,
       positions: [1, 2],
       overs: 0,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -1595,6 +1661,7 @@ const MARQUEE_SET_1 = [
         yorker: 3,
         bouncer: 1,
       },
+      positions: [0, 1, 0],
     },
     role_impact: {
       match_winner: 9,
@@ -1609,6 +1676,7 @@ const MARQUEE_SET_1 = [
       flexibility: 7,
       positions: [9, 10, 11, 12],
       overs: 4,
+      captaincy: 0,
     },
     basePrice: 2,
   },
@@ -1637,12 +1705,18 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 7, death: 3 },
+      phases: { powerplay: 6, middle: 6, death: 3 },
       skills: { variations: 6, yorker: 2, bouncer: 1 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 8 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4], overs: 2 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4],
+      overs: 2,
+      captaincy: 0.5,
+    },
     basePrice: 2,
   },
   {
@@ -1667,12 +1741,18 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 8 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 10 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 5 },
     fitness: { injury_risk: 8, stamina: 6 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -1685,8 +1765,8 @@ const MARQUEE_SET_2 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 140 },
-        middle: { rating: 7, strike_rate: 140 },
-        death: { rating: 8, strike_rate: 175 },
+        middle: { rating: 8, strike_rate: 140 },
+        death: { rating: 9, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -1699,10 +1779,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 6, middle: 6, death: 6 },
       skills: { variations: 5, yorker: 4, bouncer: 5 },
+      positions: [0, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 6, stamina: 7 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4, 5, 6, 7, 8], overs: 2 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4, 5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -1714,8 +1800,8 @@ const MARQUEE_SET_2 = [
     age: 34,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 150 },
-        middle: { rating: 7, strike_rate: 145 },
+        powerplay: { rating: 9, strike_rate: 150 },
+        middle: { rating: 8, strike_rate: 145 },
         death: { rating: 8, strike_rate: 165 },
       },
       skills: {
@@ -1729,10 +1815,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 5, middle: 5, death: 4 },
       skills: { variations: 5, yorker: 4, bouncer: 6 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 7, stamina: 7 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4], overs: 2 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -1759,10 +1851,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 6, middle: 9, death: 7 },
       skills: { variations: 9, yorker: 3, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -1774,8 +1872,8 @@ const MARQUEE_SET_2 = [
     age: 29,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 160 },
-        middle: { rating: 7, strike_rate: 150 },
+        powerplay: { rating: 10, strike_rate: 160 },
+        middle: { rating: 8, strike_rate: 150 },
         death: { rating: 8, strike_rate: 175 },
       },
       skills: {
@@ -1789,10 +1887,11 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 8 },
-    tactical: { flexibility: 8, positions: [1, 2], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2], overs: 0, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -1811,7 +1910,7 @@ const MARQUEE_SET_2 = [
       skills: {
         finishing: 10,
         power_hitting: 9,
-        anchor: 7,
+        anchor: 8,
         spin_play: 8,
         pace_play: 9,
       },
@@ -1819,10 +1918,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 9, clutch: 10, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 8 },
-    tactical: { flexibility: 8, positions: [4, 5, 6, 7, 8], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [4, 5, 6, 7, 8],
+      overs: 0,
+      captaincy: 0.5,
+    },
     basePrice: 2,
   },
   {
@@ -1834,8 +1939,8 @@ const MARQUEE_SET_2 = [
     age: 27,
     batting: {
       phases: {
-        powerplay: { rating: 7, strike_rate: 130 },
-        middle: { rating: 8, strike_rate: 135 },
+        powerplay: { rating: 6, strike_rate: 130 },
+        middle: { rating: 7, strike_rate: 135 },
         death: { rating: 7, strike_rate: 155 },
       },
       skills: {
@@ -1849,10 +1954,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 7, middle: 6, death: 7 },
       skills: { variations: 8, yorker: 8, bouncer: 5 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 7 },
     fitness: { injury_risk: 5, stamina: 8 },
-    tactical: { flexibility: 9, positions: [3, 4, 5, 6, 7, 8], overs: 3 },
+    tactical: {
+      flexibility: 9,
+      positions: [3, 4, 5, 6, 7, 8],
+      overs: 3,
+      captaincy: 0.5,
+    },
     basePrice: 2,
   },
 
@@ -1865,7 +1976,7 @@ const MARQUEE_SET_2 = [
     age: 30,
     batting: {
       phases: {
-        powerplay: { rating: 6, strike_rate: 135 },
+        powerplay: { rating: 7, strike_rate: 135 },
         middle: { rating: 8, strike_rate: 140 },
         death: { rating: 8, strike_rate: 175 },
       },
@@ -1880,10 +1991,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [3, 4, 5, 6, 7, 8], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [3, 4, 5, 6, 7, 8],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -1895,57 +2012,34 @@ const MARQUEE_SET_2 = [
     age: 32,
     batting: {
       phases: {
-        powerplay: { rating: 5, strike_rate: 130 },
-        middle: { rating: 7, strike_rate: 150 },
-        death: { rating: 9, strike_rate: 185 },
+        powerplay: { rating: 7, strike_rate: 130 },
+        middle: { rating: 8, strike_rate: 150 },
+        death: { rating: 10, strike_rate: 185 },
       },
       skills: {
         finishing: 10,
         power_hitting: 10,
         anchor: 5,
-        spin_play: 7,
+        spin_play: 10,
         pace_play: 10,
       },
     },
     bowling: {
       phases: { powerplay: 2, middle: 2, death: 1 },
       skills: { variations: 2, yorker: 1, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 9, clutch: 9, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [4, 5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 7,
+      positions: [4, 5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
-  {
-    name: "Will Jacks",
-    nationality: "England",
-    role: "All-Rounder",
-    batting_style: "right-handed",
-    bowling_style: "Right-arm off-spin",
-    age: 27,
-    batting: {
-      phases: {
-        powerplay: { rating: 8, strike_rate: 150 },
-        middle: { rating: 7, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 165 },
-      },
-      skills: {
-        finishing: 8,
-        power_hitting: 9,
-        anchor: 6,
-        spin_play: 8,
-        pace_play: 8,
-      },
-    },
-    bowling: {
-      phases: { powerplay: 6, middle: 7, death: 4 },
-      skills: { variations: 6, yorker: 2, bouncer: 2 },
-    },
-    role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
-    fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [1, 2, 3, 4, 5, 6, 7, 8], overs: 2 },
-    basePrice: 2,
-  },
+
   {
     name: "Cameron Green",
     nationality: "Australian",
@@ -1957,7 +2051,7 @@ const MARQUEE_SET_2 = [
       phases: {
         powerplay: { rating: 8, strike_rate: 140 },
         middle: { rating: 8, strike_rate: 135 },
-        death: { rating: 7, strike_rate: 155 },
+        death: { rating: 8, strike_rate: 155 },
       },
       skills: {
         finishing: 6,
@@ -1968,12 +2062,18 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 8, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 6, yorker: 6, bouncer: 7 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 10, positions: [1, 2, 3, 4, 5], overs: 3 },
+    tactical: {
+      flexibility: 10,
+      positions: [1, 2, 3, 4, 5],
+      overs: 3,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -1987,7 +2087,7 @@ const MARQUEE_SET_2 = [
       phases: {
         powerplay: { rating: 10, strike_rate: 155 },
         middle: { rating: 9, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 160 },
+        death: { rating: 9, strike_rate: 160 },
       },
       skills: {
         finishing: 7,
@@ -1998,12 +2098,13 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 5, death: 3 },
+      phases: { powerplay: 3, middle: 5, death: 3 },
       skills: { variations: 6, yorker: 2, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [1, 2], overs: 1 },
+    tactical: { flexibility: 9, positions: [1, 2], overs: 1, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -2016,7 +2117,7 @@ const MARQUEE_SET_2 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 135 },
-        middle: { rating: 8, strike_rate: 145 },
+        middle: { rating: 9, strike_rate: 145 },
         death: { rating: 8, strike_rate: 165 },
       },
       skills: {
@@ -2030,10 +2131,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 4, middle: 7, death: 3 },
       skills: { variations: 5, yorker: 2, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [3, 4, 5], overs: 2 },
+    tactical: {
+      flexibility: 9,
+      positions: [3, 4, 5],
+      overs: 2,
+      captaincy: 0.75,
+    },
     basePrice: 2,
   },
   {
@@ -2045,8 +2152,8 @@ const MARQUEE_SET_2 = [
     age: 25,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 140 },
+        powerplay: { rating: 10, strike_rate: 140 },
+        middle: { rating: 9, strike_rate: 140 },
         death: { rating: 7, strike_rate: 150 },
       },
       skills: {
@@ -2060,10 +2167,11 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
-    role_impact: { match_winner: 8, clutch: 8, consistency: 9 },
+    role_impact: { match_winner: 8, clutch: 8, consistency: 10 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -2090,10 +2198,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 3, middle: 4, death: 2 },
       skills: { variations: 4, yorker: 1, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [3, 4, 5, 6], overs: 1 },
+    tactical: {
+      flexibility: 9,
+      positions: [3, 4, 5, 6],
+      overs: 1,
+      captaincy: 0.5,
+    },
     basePrice: 2,
   },
 
@@ -2106,7 +2220,7 @@ const MARQUEE_SET_2 = [
     age: 25,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 145 },
+        powerplay: { rating: 9, strike_rate: 145 },
         middle: { rating: 9, strike_rate: 155 },
         death: { rating: 9, strike_rate: 175 },
       },
@@ -2121,10 +2235,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 3, middle: 4, death: 2 },
       skills: { variations: 4, yorker: 1, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [3, 4, 5, 6], overs: 1 },
+    tactical: {
+      flexibility: 9,
+      positions: [3, 4, 5, 6],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2136,7 +2256,7 @@ const MARQUEE_SET_2 = [
     age: 37,
     batting: {
       phases: {
-        powerplay: { rating: 6, strike_rate: 135 },
+        powerplay: { rating: 8, strike_rate: 135 },
         middle: { rating: 9, strike_rate: 140 },
         death: { rating: 9, strike_rate: 180 },
       },
@@ -2151,10 +2271,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 9, clutch: 10, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [4, 5, 6], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [4, 5, 6],
+      overs: 0,
+      captaincy: 0.5,
+    },
     basePrice: 2,
   },
   {
@@ -2179,12 +2305,18 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 7, death: 5 },
+      phases: { powerplay: 5, middle: 6, death: 5 },
       skills: { variations: 5, yorker: 3, bouncer: 4 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 9, positions: [1, 2, 3, 4, 5, 6], overs: 2 },
+    tactical: {
+      flexibility: 9,
+      positions: [1, 2, 3, 4, 5, 6],
+      overs: 2,
+      captaincy: 0.5,
+    },
     basePrice: 2,
   },
   {
@@ -2211,10 +2343,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 5, middle: 6, death: 4 },
       skills: { variations: 7, yorker: 2, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 9, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 5, stamina: 8 },
-    tactical: { flexibility: 10, positions: [3, 4, 5, 6, 7, 8], overs: 2 },
+    tactical: {
+      flexibility: 10,
+      positions: [3, 4, 5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2226,7 +2364,7 @@ const MARQUEE_SET_2 = [
     age: 27,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 160 },
+        powerplay: { rating: 8, strike_rate: 160 },
         middle: { rating: 7, strike_rate: 145 },
         death: { rating: 7, strike_rate: 170 },
       },
@@ -2241,10 +2379,11 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 5 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [1, 2], overs: 0 },
+    tactical: { flexibility: 7, positions: [1, 2], overs: 0, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -2257,7 +2396,7 @@ const MARQUEE_SET_2 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 150 },
-        middle: { rating: 7, strike_rate: 140 },
+        middle: { rating: 8, strike_rate: 140 },
         death: { rating: 8, strike_rate: 165 },
       },
       skills: {
@@ -2271,10 +2410,11 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 8, positions: [1, 2], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2], overs: 0, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -2299,12 +2439,18 @@ const MARQUEE_SET_2 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 8, death: 9 },
+      phases: { powerplay: 7, middle: 8, death: 10 },
       skills: { variations: 9, yorker: 10, bouncer: 7 },
+      positions: [0, 1, 1],
     },
     role_impact: { match_winner: 9, clutch: 9, consistency: 7 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2331,10 +2477,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 7, middle: 8, death: 7 },
       skills: { variations: 9, yorker: 3, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2361,10 +2513,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [3, 4, 5, 6], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [3, 4, 5, 6],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2391,10 +2549,16 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 8, middle: 8, death: 8 },
       skills: { variations: 7, yorker: 8, bouncer: 8 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 7, stamina: 7 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2421,15 +2585,167 @@ const MARQUEE_SET_2 = [
     bowling: {
       phases: { powerplay: 8, middle: 8, death: 9 },
       skills: { variations: 10, yorker: 8, bouncer: 4 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 7 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
+  },
+
+  {
+    name: "Dewald Brevis",
+    nationality: "South African",
+    role: "Batsman",
+    batting_style: "right-handed",
+    bowling_style: "Leg-spin",
+    age: 23,
+    batting: {
+      phases: {
+        powerplay: { rating: 8, strike_rate: 150 },
+        middle: { rating: 9, strike_rate: 145 },
+        death: { rating: 9, strike_rate: 170 },
+      },
+      skills: {
+        finishing: 8,
+        power_hitting: 9,
+        anchor: 6,
+        spin_play: 8,
+        pace_play: 9,
+      },
+    },
+    bowling: {
+      phases: { powerplay: 3, middle: 4, death: 2 },
+      skills: { variations: 4, yorker: 1, bouncer: 1 },
+      positions: [0, 0, 0],
+    },
+    role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
+    fitness: { injury_risk: 3, stamina: 9 },
+    tactical: {
+      flexibility: 9,
+      positions: [3, 4, 5, 6],
+      overs: 0,
+      captaincy: 0,
+    },
+    basePrice: 2,
+  },
+  {
+    name: "Jitesh Sharma",
+    nationality: "Indian",
+    role: "Wicket-Keeper",
+    batting_style: "right-handed",
+    bowling_style: "",
+    age: 31,
+    batting: {
+      phases: {
+        powerplay: { rating: 7, strike_rate: 140 },
+        middle: { rating: 8, strike_rate: 150 },
+        death: { rating: 9, strike_rate: 175 },
+      },
+      skills: {
+        finishing: 10,
+        power_hitting: 10,
+        anchor: 5,
+        spin_play: 8,
+        pace_play: 10,
+      },
+    },
+    bowling: {
+      phases: { powerplay: 0, middle: 0, death: 0 },
+      skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
+    },
+    role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
+    fitness: { injury_risk: 3, stamina: 9 },
+    tactical: {
+      flexibility: 8,
+      positions: [5, 6, 7, 8],
+      overs: 0,
+      captaincy: 0.25,
+    },
+    basePrice: 2,
+  },
+
+  {
+    name: "T Natarajan",
+    nationality: "Indian",
+    role: "Bowler",
+    batting_style: "left-handed",
+    bowling_style: "Left-arm fast-medium",
+    age: 34,
+    batting: {
+      phases: {
+        powerplay: { rating: 2, strike_rate: 90 },
+        middle: { rating: 2, strike_rate: 85 },
+        death: { rating: 3, strike_rate: 100 },
+      },
+      skills: {
+        finishing: 2,
+        power_hitting: 2,
+        anchor: 1,
+        spin_play: 2,
+        pace_play: 3,
+      },
+    },
+    bowling: {
+      phases: { powerplay: 8, middle: 8, death: 9 },
+      skills: { variations: 8, yorker: 10, bouncer: 5 },
+      positions: [1, 1, 1],
+    },
+    role_impact: { match_winner: 9, clutch: 9, consistency: 7 },
+    fitness: { injury_risk: 7, stamina: 7 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
+    basePrice: 1,
   },
 ];
 
 const SET_3 = [
+  {
+    name: "Will Jacks",
+    nationality: "England",
+    role: "All-Rounder",
+    batting_style: "right-handed",
+    bowling_style: "Right-arm off-spin",
+    age: 27,
+    batting: {
+      phases: {
+        powerplay: { rating: 7, strike_rate: 150 },
+        middle: { rating: 7, strike_rate: 145 },
+        death: { rating: 7, strike_rate: 165 },
+      },
+      skills: {
+        finishing: 8,
+        power_hitting: 9,
+        anchor: 6,
+        spin_play: 8,
+        pace_play: 8,
+      },
+    },
+    bowling: {
+      phases: { powerplay: 6, middle: 6, death: 4 },
+      skills: { variations: 6, yorker: 2, bouncer: 2 },
+      positions: [1, 1, 0],
+    },
+    role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
+    fitness: { injury_risk: 3, stamina: 9 },
+    tactical: {
+      flexibility: 9,
+      positions: [1, 2, 3, 4, 5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
+    basePrice: 2,
+  },
   {
     name: "Dhruv Jurel",
     nationality: "Indian",
@@ -2439,25 +2755,31 @@ const SET_3 = [
     age: 25,
     batting: {
       phases: {
-        powerplay: { rating: 7, strike_rate: 130 },
+        powerplay: { rating: 8, strike_rate: 130 },
         middle: { rating: 8, strike_rate: 135 },
         death: { rating: 8, strike_rate: 165 },
       },
       skills: {
-        finishing: 6,
+        finishing: 8,
         power_hitting: 7,
         anchor: 9,
-        spin_play: 7,
-        pace_play: 7,
+        spin_play: 8,
+        pace_play: 8,
       },
     },
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [4, 5, 6], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [3, 4, 5, 6, 7],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2484,10 +2806,16 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 9, middle: 7, death: 5 },
       skills: { variations: 8, yorker: 7, bouncer: 5 },
+      positions: [1, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 8, stamina: 7 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2501,7 +2829,7 @@ const SET_3 = [
       phases: {
         powerplay: { rating: 6, strike_rate: 125 },
         middle: { rating: 7, strike_rate: 135 },
-        death: { rating: 6, strike_rate: 150 },
+        death: { rating: 7, strike_rate: 150 },
       },
       skills: {
         finishing: 7,
@@ -2514,10 +2842,16 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 8, yorker: 4, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 9, positions: [6, 7, 8], overs: 4 },
+    tactical: {
+      flexibility: 9,
+      positions: [6, 7, 8],
+      overs: 4,
+      captaincy: 0.25,
+    },
     basePrice: 2,
   },
   {
@@ -2544,10 +2878,16 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 6, middle: 7, death: 9 },
       skills: { variations: 10, yorker: 8, bouncer: 4 },
+      positions: [0, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 5, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2572,12 +2912,18 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 9, death: 7 },
+      phases: { powerplay: 7, middle: 9, death: 8 },
       skills: { variations: 6, yorker: 8, bouncer: 8 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2589,9 +2935,9 @@ const SET_3 = [
     age: 32,
     batting: {
       phases: {
-        powerplay: { rating: 7, strike_rate: 140 },
+        powerplay: { rating: 8, strike_rate: 140 },
         middle: { rating: 9, strike_rate: 145 },
-        death: { rating: 7, strike_rate: 155 },
+        death: { rating: 8, strike_rate: 155 },
       },
       skills: {
         finishing: 7,
@@ -2604,10 +2950,11 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [3, 4], overs: 0 },
+    tactical: { flexibility: 8, positions: [3, 4], overs: 0, captaincy: 1 },
     basePrice: 2,
   },
   {
@@ -2634,70 +2981,16 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 5 },
       skills: { variations: 8, yorker: 3, bouncer: 2 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 9, positions: [4, 5, 6, 7, 8], overs: 3 },
-    basePrice: 2,
-  },
-  {
-    name: "Dewald Brevis",
-    nationality: "South African",
-    role: "Batsman",
-    batting_style: "right-handed",
-    bowling_style: "Leg-spin",
-    age: 23,
-    batting: {
-      phases: {
-        powerplay: { rating: 8, strike_rate: 150 },
-        middle: { rating: 9, strike_rate: 145 },
-        death: { rating: 9, strike_rate: 170 },
-      },
-      skills: {
-        finishing: 8,
-        power_hitting: 9,
-        anchor: 6,
-        spin_play: 8,
-        pace_play: 9,
-      },
+    tactical: {
+      flexibility: 9,
+      positions: [4, 5, 6, 7, 8],
+      overs: 3,
+      captaincy: 0,
     },
-    bowling: {
-      phases: { powerplay: 3, middle: 4, death: 2 },
-      skills: { variations: 4, yorker: 1, bouncer: 1 },
-    },
-    role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
-    fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [3, 4, 5, 6], overs: 0 },
-    basePrice: 2,
-  },
-  {
-    name: "Jitesh Sharma",
-    nationality: "Indian",
-    role: "Wicket-Keeper",
-    batting_style: "right-handed",
-    bowling_style: "",
-    age: 31,
-    batting: {
-      phases: {
-        powerplay: { rating: 6, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 150 },
-        death: { rating: 9, strike_rate: 175 },
-      },
-      skills: {
-        finishing: 9,
-        power_hitting: 9,
-        anchor: 5,
-        spin_play: 7,
-        pace_play: 9,
-      },
-    },
-    bowling: {
-      phases: { powerplay: 0, middle: 0, death: 0 },
-      skills: { variations: 0, yorker: 0, bouncer: 0 },
-    },
-    role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
-    fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [5, 6, 7, 8], overs: 0 },
     basePrice: 2,
   },
 
@@ -2711,7 +3004,7 @@ const SET_3 = [
     batting: {
       phases: {
         powerplay: { rating: 7, strike_rate: 140 },
-        middle: { rating: 7, strike_rate: 145 },
+        middle: { rating: 8, strike_rate: 145 },
         death: { rating: 7, strike_rate: 165 },
       },
       skills: {
@@ -2725,10 +3018,11 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 4 },
       skills: { variations: 6, yorker: 3, bouncer: 4 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [4, 5, 6], overs: 3 },
+    tactical: { flexibility: 9, positions: [4, 5, 6], overs: 3, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -2755,10 +3049,16 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 2, middle: 3, death: 2 },
       skills: { variations: 3, yorker: 1, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 9, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 8 },
-    tactical: { flexibility: 7, positions: [4, 5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 7,
+      positions: [4, 5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2770,9 +3070,9 @@ const SET_3 = [
     age: 26,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 150 },
+        powerplay: { rating: 9, strike_rate: 150 },
         middle: { rating: 8, strike_rate: 140 },
-        death: { rating: 7, strike_rate: 165 },
+        death: { rating: 8, strike_rate: 165 },
       },
       skills: {
         finishing: 7,
@@ -2785,10 +3085,11 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [1, 2], overs: 0 },
+    tactical: { flexibility: 7, positions: [1, 2], overs: 0, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -2813,12 +3114,18 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 8, death: 7 },
+      phases: { powerplay: 6, middle: 8, death: 6 },
       skills: { variations: 9, yorker: 5, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 9, clutch: 8, consistency: 8 },
     fitness: { injury_risk: 5, stamina: 9 },
-    tactical: { flexibility: 9, positions: [8, 9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 9,
+      positions: [8, 9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2845,10 +3152,11 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 5, stamina: 8 },
-    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -2873,12 +3181,18 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 8, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 10 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 5 },
     fitness: { injury_risk: 8, stamina: 7 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2903,12 +3217,18 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 8, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 5 },
       skills: { variations: 9, yorker: 4, bouncer: 1 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2933,12 +3253,18 @@ const SET_3 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 7, death: 5 },
+      phases: { powerplay: 5, middle: 7, death: 5 },
       skills: { variations: 8, yorker: 3, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -2952,7 +3278,7 @@ const SET_3 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 125 },
         middle: { rating: 6, strike_rate: 130 },
-        death: { rating: 7, strike_rate: 155 },
+        death: { rating: 8, strike_rate: 155 },
       },
       skills: {
         finishing: 8,
@@ -2965,10 +3291,11 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 8 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 7 },
     fitness: { injury_risk: 5, stamina: 9 },
-    tactical: { flexibility: 9, positions: [6, 7, 8], overs: 4 },
+    tactical: { flexibility: 9, positions: [6, 7, 8], overs: 4, captaincy: 0 },
     basePrice: 2,
   },
   {
@@ -2995,15 +3322,85 @@ const SET_3 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 2,
+  },
+
+  {
+    name: "Devdutt Padikkal",
+    nationality: "Indian",
+    role: "Batsman",
+    batting_style: "left-handed",
+    bowling_style: "",
+    age: 26,
+    batting: {
+      phases: {
+        powerplay: { rating: 8, strike_rate: 140 },
+        middle: { rating: 8, strike_rate: 135 },
+        death: { rating: 6, strike_rate: 145 },
+      },
+      skills: {
+        finishing: 6,
+        power_hitting: 7,
+        anchor: 8,
+        spin_play: 8,
+        pace_play: 8,
+      },
+    },
+    bowling: {
+      phases: { powerplay: 0, middle: 0, death: 0 },
+      skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
+    },
+    role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
+    fitness: { injury_risk: 4, stamina: 8 },
+    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0, captaincy: 0 },
+    basePrice: 1,
   },
 ];
 
 const SET_4 = [
+  {
+    name: "Mayank Yadav",
+    nationality: "Indian",
+    role: "Bowler",
+    batting_style: "right-handed",
+    bowling_style: "Right-arm fast",
+    age: 23,
+    batting: {
+      phases: {
+        powerplay: { rating: 2, strike_rate: 95 },
+        middle: { rating: 2, strike_rate: 90 },
+        death: { rating: 3, strike_rate: 105 },
+      },
+      skills: {
+        finishing: 3,
+        power_hitting: 4,
+        anchor: 1,
+        spin_play: 2,
+        pace_play: 4,
+      },
+    },
+    bowling: {
+      phases: { powerplay: 7, middle: 8, death: 6 },
+      skills: { variations: 6, yorker: 8, bouncer: 10 },
+      positions: [0, 1, 0],
+    },
+    role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
+    fitness: { injury_risk: 7, stamina: 8 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
+    basePrice: 1,
+  },
+
   {
     name: "MS Dhoni",
     nationality: "Indian",
@@ -3013,7 +3410,7 @@ const SET_4 = [
     age: 44,
     batting: {
       phases: {
-        powerplay: { rating: 4, strike_rate: 120 },
+        powerplay: { rating: 5, strike_rate: 120 },
         middle: { rating: 7, strike_rate: 135 },
         death: { rating: 9, strike_rate: 165 },
       },
@@ -3028,10 +3425,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 10, clutch: 10, consistency: 8 },
     fitness: { injury_risk: 6, stamina: 7 },
-    tactical: { flexibility: 10, positions: [5, 6, 7, 8], overs: 0 },
+    tactical: {
+      flexibility: 10,
+      positions: [5, 6, 7, 8],
+      overs: 0,
+      captaincy: 1,
+    },
     basePrice: 1,
   },
   {
@@ -3056,12 +3459,18 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 8, death: 8 },
+      phases: { powerplay: 7, middle: 7, death: 8 },
       skills: { variations: 7, yorker: 8, bouncer: 7 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 5, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3088,10 +3497,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 7, middle: 9, death: 6 },
       skills: { variations: 8, yorker: 3, bouncer: 2 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [6, 7, 8, 9], overs: 4 },
+    tactical: {
+      flexibility: 9,
+      positions: [6, 7, 8, 9],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 2,
   },
   {
@@ -3116,12 +3531,13 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 7, death: 7 },
+      phases: { powerplay: 5, middle: 7, death: 6 },
       skills: { variations: 6, yorker: 7, bouncer: 8 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 8, positions: [6, 7, 8], overs: 4 },
+    tactical: { flexibility: 8, positions: [6, 7, 8], overs: 4, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -3134,8 +3550,8 @@ const SET_4 = [
     batting: {
       phases: {
         powerplay: { rating: 6, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 180 },
+        middle: { rating: 7, strike_rate: 145 },
+        death: { rating: 7, strike_rate: 180 },
       },
       skills: {
         finishing: 9,
@@ -3148,10 +3564,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 2, middle: 3, death: 2 },
       skills: { variations: 3, yorker: 1, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 7,
+      positions: [5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3176,44 +3598,21 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 5 },
       skills: { variations: 7, yorker: 6, bouncer: 7 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 5 },
     fitness: { injury_risk: 5, stamina: 8 },
-    tactical: { flexibility: 9, positions: [8, 9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 9,
+      positions: [8, 9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
-  {
-    name: "T Natarajan",
-    nationality: "Indian",
-    role: "Bowler",
-    batting_style: "left-handed",
-    bowling_style: "Left-arm fast-medium",
-    age: 34,
-    batting: {
-      phases: {
-        powerplay: { rating: 2, strike_rate: 90 },
-        middle: { rating: 2, strike_rate: 85 },
-        death: { rating: 3, strike_rate: 100 },
-      },
-      skills: {
-        finishing: 2,
-        power_hitting: 2,
-        anchor: 1,
-        spin_play: 2,
-        pace_play: 3,
-      },
-    },
-    bowling: {
-      phases: { powerplay: 8, middle: 7, death: 9 },
-      skills: { variations: 8, yorker: 10, bouncer: 5 },
-    },
-    role_impact: { match_winner: 9, clutch: 9, consistency: 7 },
-    fitness: { injury_risk: 7, stamina: 7 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
-    basePrice: 1,
-  },
+
   {
     name: "Sherfane Rutherford",
     nationality: "West Indian",
@@ -3238,10 +3637,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 2, middle: 3, death: 2 },
       skills: { variations: 3, yorker: 1, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 7,
+      positions: [5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3266,12 +3671,13 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 7 },
+      phases: { powerplay: 5, middle: 6, death: 7 },
       skills: { variations: 6, yorker: 7, bouncer: 7 },
+      positions: [0, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 8, positions: [6, 7, 8], overs: 3 },
+    tactical: { flexibility: 8, positions: [6, 7, 8], overs: 3, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -3296,12 +3702,18 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 6, death: 4 },
+      phases: { powerplay: 4, middle: 6, death: 4 },
       skills: { variations: 6, yorker: 2, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [3, 4, 5, 6, 7, 8], overs: 2 },
+    tactical: {
+      flexibility: 9,
+      positions: [3, 4, 5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 
@@ -3329,10 +3741,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 6, middle: 7, death: 8 },
       skills: { variations: 9, yorker: 9, bouncer: 7 },
+      positions: [0, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 8 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0.5,
+    },
     basePrice: 1,
   },
   {
@@ -3359,10 +3777,11 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -3387,12 +3806,18 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 3, middle: 4, death: 2 },
+      phases: { powerplay: 4, middle: 4, death: 2 },
       skills: { variations: 4, yorker: 1, bouncer: 1 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [3, 4], overs: 1 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4],
+      overs: 1,
+      captaincy: 0.75,
+    },
     basePrice: 2,
   },
   {
@@ -3417,44 +3842,21 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 8, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 6 },
       skills: { variations: 7, yorker: 8, bouncer: 8 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
-  {
-    name: "Devdutt Padikkal",
-    nationality: "Indian",
-    role: "Batsman",
-    batting_style: "left-handed",
-    bowling_style: "",
-    age: 26,
-    batting: {
-      phases: {
-        powerplay: { rating: 8, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 135 },
-        death: { rating: 6, strike_rate: 145 },
-      },
-      skills: {
-        finishing: 6,
-        power_hitting: 7,
-        anchor: 8,
-        spin_play: 8,
-        pace_play: 8,
-      },
-    },
-    bowling: {
-      phases: { powerplay: 0, middle: 0, death: 0 },
-      skills: { variations: 0, yorker: 0, bouncer: 0 },
-    },
-    role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
-    fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0 },
-    basePrice: 1,
-  },
+
   {
     name: "Sai Kishore",
     nationality: "Indian",
@@ -3477,12 +3879,18 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 8, death: 7 },
+      phases: { powerplay: 6, middle: 8, death: 6 },
       skills: { variations: 8, yorker: 3, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 9 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3507,12 +3915,18 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 9 },
+      phases: { powerplay: 7, middle: 7, death: 8 },
       skills: { variations: 8, yorker: 7, bouncer: 5 },
+      positions: [1, 0, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3526,7 +3940,7 @@ const SET_4 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 130 },
         middle: { rating: 7, strike_rate: 140 },
-        death: { rating: 9, strike_rate: 175 },
+        death: { rating: 8, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -3539,10 +3953,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 2, middle: 3, death: 2 },
       skills: { variations: 3, yorker: 1, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 7,
+      positions: [5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3554,7 +3974,7 @@ const SET_4 = [
     age: 27,
     batting: {
       phases: {
-        powerplay: { rating: 5, strike_rate: 135 },
+        powerplay: { rating: 6, strike_rate: 135 },
         middle: { rating: 8, strike_rate: 150 },
         death: { rating: 8, strike_rate: 180 },
       },
@@ -3569,10 +3989,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 9, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 7, positions: [5, 6, 7, 8], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [5, 6, 7, 8],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3597,12 +4023,18 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 8, death: 7 },
+      phases: { powerplay: 7, middle: 8, death: 6 },
       skills: { variations: 6, yorker: 6, bouncer: 6 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 8 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 
@@ -3616,7 +4048,7 @@ const SET_4 = [
     batting: {
       phases: {
         powerplay: { rating: 6, strike_rate: 135 },
-        middle: { rating: 8, strike_rate: 135 },
+        middle: { rating: 7, strike_rate: 135 },
         death: { rating: 7, strike_rate: 150 },
       },
       skills: {
@@ -3630,10 +4062,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 8 },
-    tactical: { flexibility: 6, positions: [3, 4, 5, 6], overs: 0 },
+    tactical: {
+      flexibility: 6,
+      positions: [3, 4, 5, 6],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3646,7 +4084,7 @@ const SET_4 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 145 },
-        middle: { rating: 6, strike_rate: 140 },
+        middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 155 },
       },
       skills: {
@@ -3660,10 +4098,11 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -3677,7 +4116,7 @@ const SET_4 = [
       phases: {
         powerplay: { rating: 6, strike_rate: 135 },
         middle: { rating: 7, strike_rate: 140 },
-        death: { rating: 8, strike_rate: 165 },
+        death: { rating: 7, strike_rate: 165 },
       },
       skills: {
         finishing: 8,
@@ -3690,10 +4129,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 3, middle: 4, death: 3 },
       skills: { variations: 5, yorker: 3, bouncer: 4 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [5, 6, 7, 8], overs: 2 },
+    tactical: {
+      flexibility: 8,
+      positions: [5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3706,7 +4151,7 @@ const SET_4 = [
     batting: {
       phases: {
         powerplay: { rating: 6, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 145 },
+        middle: { rating: 7, strike_rate: 145 },
         death: { rating: 7, strike_rate: 165 },
       },
       skills: {
@@ -3720,10 +4165,16 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 7, positions: [3, 4, 5, 6, 7, 8], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [3, 4, 5, 6, 7, 8],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3750,10 +4201,11 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 6, positions: [1, 2], overs: 0 },
+    tactical: { flexibility: 6, positions: [1, 2], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -3765,7 +4217,7 @@ const SET_4 = [
     age: 23,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 145 },
+        powerplay: { rating: 7, strike_rate: 145 },
         middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 160 },
       },
@@ -3780,10 +4232,11 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -3795,7 +4248,7 @@ const SET_4 = [
     age: 23,
     batting: {
       phases: {
-        powerplay: { rating: 9, strike_rate: 180 },
+        powerplay: { rating: 8, strike_rate: 180 },
         middle: { rating: 6, strike_rate: 160 },
         death: { rating: 8, strike_rate: 175 },
       },
@@ -3810,10 +4263,11 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 9, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -3826,7 +4280,7 @@ const SET_4 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 140 },
-        middle: { rating: 9, strike_rate: 140 },
+        middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 150 },
       },
       skills: {
@@ -3840,10 +4294,11 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 9 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -3855,8 +4310,8 @@ const SET_4 = [
     age: 27,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 145 },
-        middle: { rating: 8, strike_rate: 140 },
+        powerplay: { rating: 7, strike_rate: 145 },
+        middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 155 },
       },
       skills: {
@@ -3868,12 +4323,18 @@ const SET_4 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 7, death: 5 },
+      phases: { powerplay: 5, middle: 7, death: 5 },
       skills: { variations: 7, yorker: 3, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [1, 2, 3, 4], overs: 2 },
+    tactical: {
+      flexibility: 9,
+      positions: [1, 2, 3, 4],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3885,8 +4346,8 @@ const SET_4 = [
     age: 32,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 150 },
-        middle: { rating: 8, strike_rate: 145 },
+        powerplay: { rating: 7, strike_rate: 150 },
+        middle: { rating: 7, strike_rate: 145 },
         death: { rating: 7, strike_rate: 155 },
       },
       skills: {
@@ -3900,10 +4361,48 @@ const SET_4 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0, captaincy: 0 },
+    basePrice: 1,
+  },
+
+  {
+    name: "Kartik Tyagi",
+    nationality: "Indian",
+    role: "Bowler",
+    batting_style: "right-handed",
+    bowling_style: "Right-arm fast",
+    age: 25,
+    batting: {
+      phases: {
+        powerplay: { rating: 2, strike_rate: 95 },
+        middle: { rating: 2, strike_rate: 90 },
+        death: { rating: 3, strike_rate: 105 },
+      },
+      skills: {
+        finishing: 3,
+        power_hitting: 4,
+        anchor: 1,
+        spin_play: 2,
+        pace_play: 4,
+      },
+    },
+    bowling: {
+      phases: { powerplay: 7, middle: 7, death: 8 },
+      skills: { variations: 6, yorker: 8, bouncer: 8 },
+      positions: [0, 1, 1],
+    },
+    role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
+    fitness: { injury_risk: 5, stamina: 9 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 ];
@@ -3918,7 +4417,7 @@ const SET_5 = [
     age: 25,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 145 },
+        powerplay: { rating: 7, strike_rate: 145 },
         middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 165 },
       },
@@ -3933,10 +4432,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4, 5, 6], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4, 5, 6],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3961,12 +4466,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 7, death: 6 },
+      phases: { powerplay: 7, middle: 7, death: 6 },
       skills: { variations: 6, yorker: 7, bouncer: 7 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -3991,12 +4502,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 9, middle: 7, death: 7 },
+      phases: { powerplay: 8, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 7 },
+      positions: [1, 0, 1],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4021,12 +4538,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 7, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 9 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4038,7 +4561,7 @@ const SET_5 = [
     age: 37,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 135 },
+        powerplay: { rating: 7, strike_rate: 135 },
         middle: { rating: 8, strike_rate: 135 },
         death: { rating: 6, strike_rate: 140 },
       },
@@ -4053,10 +4576,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 2, middle: 3, death: 1 },
       skills: { variations: 3, yorker: 1, bouncer: 1 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 10 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 9, positions: [1, 2, 3, 4], overs: 0 },
+    tactical: {
+      flexibility: 9,
+      positions: [1, 2, 3, 4],
+      overs: 0,
+      captaincy: 1,
+    },
     basePrice: 1,
   },
   {
@@ -4068,7 +4597,7 @@ const SET_5 = [
     age: 34,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 140 },
+        powerplay: { rating: 7, strike_rate: 140 },
         middle: { rating: 7, strike_rate: 135 },
         death: { rating: 6, strike_rate: 145 },
       },
@@ -4083,10 +4612,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [1, 2, 3], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [1, 2, 3],
+      overs: 0,
+      captaincy: 0.5,
+    },
     basePrice: 1,
   },
   {
@@ -4099,8 +4634,8 @@ const SET_5 = [
     batting: {
       phases: {
         powerplay: { rating: 7, strike_rate: 140 },
-        middle: { rating: 8, strike_rate: 140 },
-        death: { rating: 8, strike_rate: 160 },
+        middle: { rating: 7, strike_rate: 140 },
+        death: { rating: 7, strike_rate: 160 },
       },
       skills: {
         finishing: 8,
@@ -4113,10 +4648,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 4, middle: 5, death: 4 },
       skills: { variations: 6, yorker: 4, bouncer: 5 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 8 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 9, positions: [3, 4, 5, 6, 7, 8], overs: 2 },
+    tactical: {
+      flexibility: 9,
+      positions: [3, 4, 5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4129,8 +4670,8 @@ const SET_5 = [
     batting: {
       phases: {
         powerplay: { rating: 7, strike_rate: 150 },
-        middle: { rating: 8, strike_rate: 150 },
-        death: { rating: 8, strike_rate: 175 },
+        middle: { rating: 7, strike_rate: 150 },
+        death: { rating: 7, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -4143,10 +4684,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 4, middle: 5, death: 3 },
       skills: { variations: 5, yorker: 2, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 9, clutch: 8, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 10 },
-    tactical: { flexibility: 10, positions: [3, 4, 5, 6], overs: 2 },
+    tactical: {
+      flexibility: 10,
+      positions: [3, 4, 5, 6],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4173,10 +4720,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 6 },
       skills: { variations: 6, yorker: 7, bouncer: 7 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [3, 4, 5, 6, 7, 8], overs: 4 },
+    tactical: {
+      flexibility: 9,
+      positions: [3, 4, 5, 6, 7, 8],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4203,10 +4756,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 8, middle: 6, death: 7 },
       skills: { variations: 7, yorker: 7, bouncer: 7 },
+      positions: [1, 0, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 
@@ -4232,12 +4791,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 5 },
       skills: { variations: 7, yorker: 7, bouncer: 8 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 5, stamina: 9 },
-    tactical: { flexibility: 8, positions: [8, 9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 8,
+      positions: [8, 9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4264,10 +4829,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 8, yorker: 8, bouncer: 4 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4281,7 +4852,7 @@ const SET_5 = [
       phases: {
         powerplay: { rating: 4, strike_rate: 120 },
         middle: { rating: 5, strike_rate: 125 },
-        death: { rating: 6, strike_rate: 145 },
+        death: { rating: 7, strike_rate: 145 },
       },
       skills: {
         finishing: 6,
@@ -4294,10 +4865,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 6, yorker: 7, bouncer: 8 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 5, stamina: 9 },
-    tactical: { flexibility: 8, positions: [8, 9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 8,
+      positions: [8, 9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4324,10 +4901,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 8, middle: 7, death: 8 },
       skills: { variations: 8, yorker: 8, bouncer: 5 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4341,7 +4924,7 @@ const SET_5 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 130 },
         middle: { rating: 7, strike_rate: 145 },
-        death: { rating: 9, strike_rate: 175 },
+        death: { rating: 8, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -4354,10 +4937,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 4, middle: 5, death: 3 },
       skills: { variations: 6, yorker: 2, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 9, clutch: 10, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 9,
+      positions: [5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0.25,
+    },
     basePrice: 1,
   },
   {
@@ -4384,10 +4973,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 9 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4],
+      overs: 0,
+      captaincy: 1,
+    },
     basePrice: 1,
   },
   {
@@ -4414,10 +5009,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 8 },
-    tactical: { flexibility: 7, positions: [1, 2, 3, 4], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [1, 2, 3, 4],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4444,10 +5045,11 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 6, middle: 7, death: 5 },
       skills: { variations: 7, yorker: 3, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [7, 8, 9], overs: 3 },
+    tactical: { flexibility: 9, positions: [7, 8, 9], overs: 3, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -4474,10 +5076,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 8, middle: 6, death: 7 },
       skills: { variations: 7, yorker: 7, bouncer: 7 },
+      positions: [1, 0, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4504,24 +5112,25 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
 
   {
     name: "Angkrish Raghuvanshi",
     nationality: "Indian",
-    role: "Batsman",
+    role: "Wicket-Keeper",
     batting_style: "right-handed",
     bowling_style: "",
     age: 21,
     batting: {
       phases: {
         powerplay: { rating: 7, strike_rate: 145 },
-        middle: { rating: 8, strike_rate: 140 },
+        middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 155 },
       },
       skills: {
@@ -4535,10 +5144,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 7, positions: [1, 2, 3, 4, 5, 6], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [1, 2, 3, 4, 5, 6],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4565,10 +5180,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 4, middle: 5, death: 3 },
       skills: { variations: 5, yorker: 2, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [4, 5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 8,
+      positions: [4, 5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4581,7 +5202,7 @@ const SET_5 = [
     batting: {
       phases: {
         powerplay: { rating: 8, strike_rate: 140 },
-        middle: { rating: 6, strike_rate: 140 },
+        middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 160 },
       },
       skills: {
@@ -4595,10 +5216,11 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 6, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 6, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -4623,12 +5245,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 4, middle: 5, death: 3 },
+      phases: { powerplay: 3, middle: 5, death: 3 },
       skills: { variations: 5, yorker: 2, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [4, 5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 8,
+      positions: [4, 5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4653,12 +5281,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 6, death: 8 },
+      phases: { powerplay: 6, middle: 6, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 8 },
+      positions: [0, 0, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4670,7 +5304,7 @@ const SET_5 = [
     age: 22,
     batting: {
       phases: {
-        powerplay: { rating: 6, strike_rate: 135 },
+        powerplay: { rating: 5, strike_rate: 135 },
         middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 160 },
       },
@@ -4685,10 +5319,11 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 4, middle: 7, death: 4 },
       skills: { variations: 6, yorker: 2, bouncer: 2 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [7, 8], overs: 3 },
+    tactical: { flexibility: 8, positions: [7, 8, 9], overs: 3, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -4715,10 +5350,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 4, middle: 5, death: 3 },
       skills: { variations: 5, yorker: 2, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 8, positions: [3, 4, 5, 6], overs: 1 },
+    tactical: {
+      flexibility: 8,
+      positions: [3, 4, 5, 6],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4745,10 +5386,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 8 },
-    tactical: { flexibility: 7, positions: [2, 2, 3, 4], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [2, 2, 3, 4],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4773,12 +5420,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 8, death: 7 },
+      phases: { powerplay: 6, middle: 6, death: 7 },
       skills: { variations: 7, yorker: 9, bouncer: 10 },
+      positions: [1, 0, 1],
     },
     role_impact: { match_winner: 9, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 6, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4803,12 +5456,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 7, death: 8 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 8, yorker: 8, bouncer: 6 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4822,7 +5481,7 @@ const SET_5 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 135 },
         middle: { rating: 7, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 175 },
+        death: { rating: 7, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -4835,10 +5494,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [5, 6, 7, 8], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [5, 6, 7, 8],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4865,10 +5530,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 6, positions: [4, 5, 6, 7, 8], overs: 0 },
+    tactical: {
+      flexibility: 6,
+      positions: [4, 5, 6, 7, 8],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 
@@ -4894,12 +5565,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 6, death: 7 },
+      phases: { powerplay: 7, middle: 6, death: 6 },
       skills: { variations: 6, yorker: 7, bouncer: 7 },
+      positions: [1, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4924,12 +5601,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 4, middle: 7, death: 3 },
+      phases: { powerplay: 4, middle: 6, death: 3 },
       skills: { variations: 5, yorker: 3, bouncer: 3 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 7, positions: [5, 6, 7, 8], overs: 3 },
+    tactical: {
+      flexibility: 7,
+      positions: [5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4956,10 +5639,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 7, positions: [4, 5, 6, 7, 8], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [4, 5, 6, 7, 8],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -4971,7 +5660,7 @@ const SET_5 = [
     age: 34,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 145 },
+        powerplay: { rating: 7, strike_rate: 145 },
         middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 150 },
       },
@@ -4986,10 +5675,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5002,7 +5697,7 @@ const SET_5 = [
     batting: {
       phases: {
         powerplay: { rating: 6, strike_rate: 135 },
-        middle: { rating: 8, strike_rate: 140 },
+        middle: { rating: 7, strike_rate: 140 },
         death: { rating: 7, strike_rate: 165 },
       },
       skills: {
@@ -5016,10 +5711,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 5, middle: 7, death: 4 },
       skills: { variations: 6, yorker: 2, bouncer: 2 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [4, 5, 6, 7, 8], overs: 3 },
+    tactical: {
+      flexibility: 9,
+      positions: [4, 5, 6, 7, 8],
+      overs: 3,
+      captaincy: 0.25,
+    },
     basePrice: 1,
   },
   {
@@ -5049,7 +5750,7 @@ const SET_5 = [
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 9, positions: [1, 2, 3], overs: 2 },
+    tactical: { flexibility: 9, positions: [1, 2, 3], overs: 2, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -5076,10 +5777,11 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2, 3], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -5106,10 +5808,16 @@ const SET_5 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 7, bouncer: 5 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 5, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5134,12 +5842,18 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 6, death: 6 },
+      phases: { powerplay: 7, middle: 6, death: 6 },
       skills: { variations: 6, yorker: 8, bouncer: 9 },
+      positions: [1, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 7, stamina: 8 },
-    tactical: { flexibility: 8, positions: [8, 9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 8,
+      positions: [8, 9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5164,47 +5878,23 @@ const SET_5 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 6, death: 6 },
+      phases: { powerplay: 7, middle: 6, death: 6 },
       skills: { variations: 6, yorker: 7, bouncer: 9 },
+      positions: [1, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 5, stamina: 7 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 ];
 
 const SET_6 = [
-  {
-    name: "Mayank Yadav",
-    nationality: "Indian",
-    role: "Bowler",
-    batting_style: "right-handed",
-    bowling_style: "Right-arm fast",
-    age: 23,
-    batting: {
-      phases: {
-        powerplay: { rating: 2, strike_rate: 95 },
-        middle: { rating: 2, strike_rate: 90 },
-        death: { rating: 3, strike_rate: 105 },
-      },
-      skills: {
-        finishing: 3,
-        power_hitting: 4,
-        anchor: 1,
-        spin_play: 2,
-        pace_play: 4,
-      },
-    },
-    bowling: {
-      phases: { powerplay: 7, middle: 8, death: 7 },
-      skills: { variations: 6, yorker: 8, bouncer: 10 },
-    },
-    role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
-    fitness: { injury_risk: 7, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
-    basePrice: 1,
-  },
   {
     name: "Allah Ghazanfar",
     nationality: "Afghan",
@@ -5227,12 +5917,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 8, death: 6 },
+      phases: { powerplay: 7, middle: 7, death: 6 },
       skills: { variations: 8, yorker: 3, bouncer: 1 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5257,12 +5953,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 7, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 9 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5289,10 +5991,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 5, middle: 5, death: 4 },
       skills: { variations: 8, yorker: 2, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 10, positions: [3, 4, 5, 6, 7, 8], overs: 2 },
+    tactical: {
+      flexibility: 10,
+      positions: [3, 4, 5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5317,12 +6025,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 5, death: 4 },
+      phases: { powerplay: 4, middle: 5, death: 4 },
       skills: { variations: 5, yorker: 4, bouncer: 5 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4, 5, 6, 7, 8], overs: 2 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4, 5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5347,12 +6061,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 7, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 9 },
+      positions: [1, 0, 1],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 5, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5377,12 +6097,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 8 },
+      phases: { powerplay: 7, middle: 6, death: 7 },
       skills: { variations: 8, yorker: 9, bouncer: 6 },
+      positions: [1, 0, 1],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5409,10 +6135,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 7 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5437,12 +6169,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 6, death: 7 },
+      phases: { powerplay: 7, middle: 6, death: 6 },
       skills: { variations: 6, yorker: 7, bouncer: 8 },
+      positions: [1, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 6, stamina: 7 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5469,10 +6207,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 6, middle: 6, death: 5 },
       skills: { variations: 7, yorker: 3, bouncer: 2 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 8, positions: [8, 9, 10, 11, 12], overs: 3 },
+    tactical: {
+      flexibility: 8,
+      positions: [8, 9, 10, 11, 12],
+      overs: 3,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 
@@ -5486,7 +6230,7 @@ const SET_6 = [
     batting: {
       phases: {
         powerplay: { rating: 6, strike_rate: 130 },
-        middle: { rating: 8, strike_rate: 130 },
+        middle: { rating: 7, strike_rate: 130 },
         death: { rating: 6, strike_rate: 135 },
       },
       skills: {
@@ -5500,10 +6244,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 4, stamina: 7 },
-    tactical: { flexibility: 8, positions: [3, 4, 5], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [3, 4, 5],
+      overs: 0,
+      captaincy: 0.25,
+    },
     basePrice: 1,
   },
   {
@@ -5528,12 +6278,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 7 },
+      phases: { powerplay: 6, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 7 },
+      positions: [0, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5558,12 +6314,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 8, death: 6 },
+      phases: { powerplay: 6, middle: 7, death: 6 },
       skills: { variations: 5, yorker: 7, bouncer: 10 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 5 },
     fitness: { injury_risk: 5, stamina: 9 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5577,7 +6339,7 @@ const SET_6 = [
       phases: {
         powerplay: { rating: 5, strike_rate: 130 },
         middle: { rating: 7, strike_rate: 145 },
-        death: { rating: 8, strike_rate: 175 },
+        death: { rating: 7, strike_rate: 175 },
       },
       skills: {
         finishing: 9,
@@ -5590,10 +6352,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 3, middle: 4, death: 2 },
       skills: { variations: 4, yorker: 1, bouncer: 2 },
+      positions: [0, 2, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 7,
+      positions: [5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5618,12 +6386,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 6, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 7 },
       skills: { variations: 6, yorker: 7, bouncer: 7 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 6, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 6,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5650,10 +6424,11 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 6, middle: 6, death: 5 },
       skills: { variations: 7, yorker: 2, bouncer: 1 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [7, 8, 9], overs: 3 },
+    tactical: { flexibility: 8, positions: [7, 8, 9], overs: 3, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -5666,7 +6441,7 @@ const SET_6 = [
     batting: {
       phases: {
         powerplay: { rating: 7, strike_rate: 140 },
-        middle: { rating: 7, strike_rate: 135 },
+        middle: { rating: 6, strike_rate: 135 },
         death: { rating: 6, strike_rate: 155 },
       },
       skills: {
@@ -5680,10 +6455,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5708,12 +6489,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 7, death: 7 },
+      phases: { powerplay: 7, middle: 6, death: 7 },
       skills: { variations: 7, yorker: 9, bouncer: 6 },
+      positions: [1, 0, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5738,12 +6525,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 6, death: 5 },
+      phases: { powerplay: 7, middle: 7, death: 6 },
       skills: { variations: 7, yorker: 2, bouncer: 1 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 6, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [8, 9, 10, 11, 12], overs: 3 },
+    tactical: {
+      flexibility: 8,
+      positions: [8, 9, 10, 11, 12],
+      overs: 3,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5770,10 +6563,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 6, middle: 7, death: 8 },
       skills: { variations: 8, yorker: 8, bouncer: 7 },
+      positions: [0, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 
@@ -5786,9 +6585,9 @@ const SET_6 = [
     age: 27,
     batting: {
       phases: {
-        powerplay: { rating: 6, strike_rate: 135 },
-        middle: { rating: 8, strike_rate: 140 },
-        death: { rating: 6, strike_rate: 155 },
+        powerplay: { rating: 7, strike_rate: 135 },
+        middle: { rating: 7, strike_rate: 140 },
+        death: { rating: 7, strike_rate: 155 },
       },
       skills: {
         finishing: 7,
@@ -5801,10 +6600,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [3, 4, 5, 6], overs: 0 },
+    tactical: {
+      flexibility: 7,
+      positions: [3, 4, 5, 6],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5829,12 +6634,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 6, middle: 6, death: 7 },
+      phases: { powerplay: 6, middle: 6, death: 6 },
       skills: { variations: 6, yorker: 7, bouncer: 7 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [5, 6, 7, 8], overs: 4 },
+    tactical: {
+      flexibility: 8,
+      positions: [5, 6, 7, 8],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5861,10 +6672,11 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2], overs: 0 },
+    tactical: { flexibility: 8, positions: [1, 2], overs: 0, captaincy: 0 },
     basePrice: 1,
   },
   {
@@ -5889,12 +6701,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 7, middle: 6, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 6 },
       skills: { variations: 6, yorker: 7, bouncer: 8 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 6 },
     fitness: { injury_risk: 6, stamina: 8 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5921,10 +6739,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 8, middle: 7, death: 7 },
       skills: { variations: 8, yorker: 8, bouncer: 6 },
+      positions: [1, 0, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 7,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5951,10 +6775,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 7, middle: 7, death: 6 },
       skills: { variations: 8, yorker: 3, bouncer: 1 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 9 },
     fitness: { injury_risk: 2, stamina: 9 },
-    tactical: { flexibility: 8, positions: [8, 9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 8,
+      positions: [8, 9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5979,12 +6809,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 8, middle: 8, death: 7 },
+      phases: { powerplay: 7, middle: 7, death: 6 },
       skills: { variations: 10, yorker: 3, bouncer: 1 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 9, clutch: 8, consistency: 8 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 8,
+      positions: [9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -5998,7 +6834,7 @@ const SET_6 = [
       phases: {
         powerplay: { rating: 6, strike_rate: 140 },
         middle: { rating: 7, strike_rate: 140 },
-        death: { rating: 8, strike_rate: 165 },
+        death: { rating: 7, strike_rate: 165 },
       },
       skills: {
         finishing: 8,
@@ -6011,10 +6847,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 4, middle: 5, death: 3 },
       skills: { variations: 5, yorker: 2, bouncer: 1 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [4, 5, 6, 7, 8], overs: 1 },
+    tactical: {
+      flexibility: 8,
+      positions: [4, 5, 6, 7, 8],
+      overs: 1,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -6041,42 +6883,14 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 5, middle: 5, death: 4 },
       skills: { variations: 5, yorker: 4, bouncer: 4 },
+      positions: [1, 1, 0],
     },
     role_impact: { match_winner: 7, clutch: 6, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 8, positions: [4, 5, 6], overs: 2 },
+    tactical: { flexibility: 8, positions: [4, 5, 6], overs: 2, captaincy: 0 },
     basePrice: 1,
   },
-  {
-    name: "Kartik Tyagi",
-    nationality: "Indian",
-    role: "Bowler",
-    batting_style: "right-handed",
-    bowling_style: "Right-arm fast",
-    age: 25,
-    batting: {
-      phases: {
-        powerplay: { rating: 2, strike_rate: 95 },
-        middle: { rating: 2, strike_rate: 90 },
-        death: { rating: 3, strike_rate: 105 },
-      },
-      skills: {
-        finishing: 3,
-        power_hitting: 4,
-        anchor: 1,
-        spin_play: 2,
-        pace_play: 4,
-      },
-    },
-    bowling: {
-      phases: { powerplay: 7, middle: 7, death: 8 },
-      skills: { variations: 6, yorker: 8, bouncer: 8 },
-    },
-    role_impact: { match_winner: 7, clutch: 7, consistency: 6 },
-    fitness: { injury_risk: 5, stamina: 9 },
-    tactical: { flexibility: 7, positions: [9, 10, 11, 12], overs: 4 },
-    basePrice: 1,
-  },
+
   {
     name: "Sean Abbott",
     nationality: "Australian",
@@ -6101,10 +6915,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 6, middle: 6, death: 8 },
       skills: { variations: 7, yorker: 8, bouncer: 7 },
+      positions: [0, 0, 1],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 7 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 9, positions: [8, 9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 9,
+      positions: [8, 9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -6129,12 +6949,18 @@ const SET_6 = [
       },
     },
     bowling: {
-      phases: { powerplay: 5, middle: 5, death: 6 },
+      phases: { powerplay: 5, middle: 5, death: 5 },
       skills: { variations: 5, yorker: 6, bouncer: 6 },
+      positions: [0, 1, 0],
     },
     role_impact: { match_winner: 8, clutch: 8, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 8 },
-    tactical: { flexibility: 9, positions: [5, 6, 7, 8], overs: 2 },
+    tactical: {
+      flexibility: 9,
+      positions: [5, 6, 7, 8],
+      overs: 2,
+      captaincy: 0.75,
+    },
     basePrice: 1,
   },
   {
@@ -6161,10 +6987,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 6, middle: 7, death: 7 },
       skills: { variations: 7, yorker: 8, bouncer: 7 },
+      positions: [1, 1, 1],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 6 },
     fitness: { injury_risk: 4, stamina: 9 },
-    tactical: { flexibility: 9, positions: [8, 9, 10, 11, 12], overs: 4 },
+    tactical: {
+      flexibility: 9,
+      positions: [8, 9, 10, 11, 12],
+      overs: 4,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
   {
@@ -6176,7 +7008,7 @@ const SET_6 = [
     age: 27,
     batting: {
       phases: {
-        powerplay: { rating: 8, strike_rate: 165 },
+        powerplay: { rating: 7, strike_rate: 165 },
         middle: { rating: 7, strike_rate: 145 },
         death: { rating: 7, strike_rate: 165 },
       },
@@ -6191,10 +7023,16 @@ const SET_6 = [
     bowling: {
       phases: { powerplay: 0, middle: 0, death: 0 },
       skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
     },
     role_impact: { match_winner: 8, clutch: 7, consistency: 5 },
     fitness: { injury_risk: 3, stamina: 9 },
-    tactical: { flexibility: 8, positions: [1, 2, 3, 4, 5], overs: 0 },
+    tactical: {
+      flexibility: 8,
+      positions: [1, 2, 3, 4, 5],
+      overs: 0,
+      captaincy: 0,
+    },
     basePrice: 1,
   },
 ];

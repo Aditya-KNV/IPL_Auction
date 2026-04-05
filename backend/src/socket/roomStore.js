@@ -161,6 +161,19 @@ const pickTeam = (socketId, teamInfo) => {
   return { room: serializeRoom(room) };
 };
 
+const transferHost = (fromSocketId, toSocketId) => {
+  const code = socketToRoom.get(fromSocketId);
+  if (!code) return { error: 'Not in a room' };
+
+  const room = rooms.get(code);
+  if (!room) return { error: 'Room not found' };
+  if (room.hostId !== fromSocketId) return { error: 'Only the host can transfer host' };
+  if (!room.users.has(toSocketId)) return { error: 'Target user is not in the room' };
+
+  room.hostId = toSocketId;
+  return { room: serializeRoom(room) };
+};
+
 const getRoom = (code) => {
   const room = rooms.get(code);
   return room ? serializeRoom(room) : null;
@@ -218,6 +231,7 @@ module.exports = {
   leaveRoom,
   leaveRoomExplicit,
   pickTeam,
+  transferHost,
   getRoom,
   getRoomBySocket,
   getRawRoom,

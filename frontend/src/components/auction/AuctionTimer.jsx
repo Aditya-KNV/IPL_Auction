@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
+import { playTickBeep, playTimeUpSound } from '../../utils/auctionAudio';
 
-const SIZE      = 120;
-const STROKE    = 8;
-const RADIUS    = (SIZE - STROKE) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const SIZE           = 120;
+const STROKE         = 8;
+const RADIUS         = (SIZE - STROKE) / 2;
+const CIRCUMFERENCE  = 2 * Math.PI * RADIUS;
 
 /**
  * SVG circular countdown ring.
@@ -14,13 +15,25 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 export default function AuctionTimer({ timeLeft, totalDuration = 30, active }) {
   const pct    = totalDuration > 0 ? Math.min(1, Math.max(0, timeLeft / totalDuration)) : 0;
   const offset = CIRCUMFERENCE * (1 - pct);
-  const display = Math.min(timeLeft, 99); // guard against stale ms values reaching the UI
+  const display = Math.min(timeLeft, 99);
+
+  // ── Beep on every second tick (intensity scales with urgency) ───────────────
+  const prevTimeLeft = useRef(timeLeft);
+  useEffect(() => {
+    const prev = prevTimeLeft.current;
+    prevTimeLeft.current = timeLeft;
+    // Fire only when active, timer is running, and a whole second has elapsed
+    if (!active || timeLeft >= prev) return;
+    if (timeLeft === 0 && prev > 0) { playTimeUpSound(); return; }
+    if (timeLeft <= 0) return;
+    playTickBeep(timeLeft, totalDuration);
+  }, [timeLeft, totalDuration, active]);
 
   const ringColor = useMemo(() => {
-    if (!active || timeLeft === 0) return '#4B5563';  // gray-600
-    if (pct > 0.5) return '#22c55e';                  // green
-    if (pct > 0.25) return '#f59e0b';                 // amber
-    return '#ef4444';                                  // red
+    if (!active || timeLeft === 0) return '#4B5563';
+    if (pct > 0.5) return '#22c55e';
+    if (pct > 0.25) return '#f59e0b';
+    return '#ef4444';
   }, [active, pct, timeLeft]);
 
   const textColor = useMemo(() => {

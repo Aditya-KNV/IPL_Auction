@@ -48,27 +48,50 @@ const initSocket = (server) => {
     socket.on('bid:place', async ({ amount }) => {
       try {
         const normalizedAmount = normalizeBidAmount(amount);
-        const now = Date.now();
+        const now = Date.now(); // captured once — used for ALL timer checks below
 
         if (typeof amount !== 'number' || !Number.isFinite(amount) || normalizedAmount <= 0) {
           return socket.emit('bid:error', { message: 'Invalid bid amount' });
         }
 
+        // ── Timer gate (must happen before any DB work) ───────────────────────
+        // If the timer is still running we proceed normally.
+        // If it has already fired we must be within the grace window AND we
+        // immediately hold the expiry (bump _generation) so _onExpire cannot
+        // run concurrently while we do DB validation.  Any early return after
+        // this point MUST call timer.releaseGrace() to trigger the expiry.
+        let graceHeld = false;
+        if (!timer.isRunning()) {
+          const expiresAt = timer.getExpiresAt();
+          if (!expiresAt || now > expiresAt + timer.EXPIRE_GRACE_MS) {
+            return socket.emit('bid:error', { message: 'Bidding window just closed' });
+          }
+          if (!timer.holdGrace(now)) {
+            return socket.emit('bid:error', { message: 'Bidding window just closed' });
+          }
+          graceHeld = true;
+        }
+
+        // Convenience: reject with error and, if we held the grace window,
+        // release it so the expiry fires and the player is sold correctly.
+        const reject = async (message) => {
+          if (graceHeld) await timer.releaseGrace();
+          socket.emit('bid:error', { message });
+        };
+
         const assigned = getAssignedTeamForSocket(socket);
         if (!assigned) {
-          return socket.emit('bid:error', { message: 'You have not picked a team yet' });
+          return reject('You have not picked a team yet');
         }
 
         const teamId = assigned.teamId;
         const team = await Team.findById(teamId);
         if (!team) {
-          return socket.emit('bid:error', { message: 'Team not found' });
+          return reject('Team not found');
         }
 
         if (team.remainingPurse < normalizedAmount) {
-          return socket.emit('bid:error', {
-            message: `Insufficient purse (Rs ${team.remainingPurse} Cr remaining)`,
-          });
+          return reject(`Insufficient purse (Rs ${team.remainingPurse} Cr remaining)`);
         }
 
         const currentSession = await AuctionSession.findOne()
@@ -76,16 +99,10 @@ const initSocket = (server) => {
           .populate('currentPlayer', 'nationality name');
 
         if (!currentSession || !currentSession.currentPlayer) {
-          return socket.emit('bid:error', { message: 'Auction is not active' });
+          return reject('Auction is not active');
         }
         if (currentSession.status !== 'active') {
-          return socket.emit('bid:error', {
-            message: currentSession.status === 'paused' ? 'Auction is paused' : 'Auction is not active',
-          });
-        }
-
-        if (!timer.isRunning() && timer.getExpiresAt() && now > timer.getExpiresAt() + timer.EXPIRE_GRACE_MS) {
-          return socket.emit('bid:error', { message: 'Bidding window just closed' });
+          return reject(currentSession.status === 'paused' ? 'Auction is paused' : 'Auction is not active');
         }
 
         const eligibility = await canTeamBuyPlayer(teamId, currentSession.currentPlayer);
@@ -93,13 +110,13 @@ const initSocket = (server) => {
           const message = eligibility.reason === 'playing12'
             ? `Playing-12 overseas limit reached (${MAX_OVERSEAS_PLAYING}). Buy more Indian players to unlock the bench slots.`
             : `Overseas squad limit reached (${MAX_OVERSEAS_SQUAD}). ${team.name} cannot buy more overseas players.`;
-          return socket.emit('bid:error', { message });
+          return reject(message);
         }
 
         const hasExistingBid = !!currentSession.currentHighestBidder;
         const minRequired = getMinNextBid(currentSession.currentBid, hasExistingBid);
         if (normalizedAmount < minRequired) {
-          return socket.emit('bid:error', { message: `Minimum bid is Rs ${minRequired} Cr` });
+          return reject(`Minimum bid is Rs ${minRequired} Cr`);
         }
 
         const updated = await AuctionSession.findOneAndUpdate(
@@ -128,16 +145,15 @@ const initSocket = (server) => {
         if (!updated) {
           const fresh = await AuctionSession.findOne().select('currentBid status');
           if (!fresh || fresh.status !== 'active') {
-            return socket.emit('bid:error', {
-              message: fresh?.status === 'paused' ? 'Auction is paused' : 'Auction is not active',
-            });
+            return reject(fresh?.status === 'paused' ? 'Auction is paused' : 'Auction is not active');
           }
-          return socket.emit('bid:error', {
-            message: `Bid too low - minimum is Rs ${getMinNextBid(fresh.currentBid)} Cr`,
-          });
+          return reject(`Bid too low - minimum is Rs ${getMinNextBid(fresh.currentBid)} Cr`);
         }
 
-        timer.extend();
+        // Bid committed — extend the timer using the original `now` so that
+        // DB latency cannot silently push us past the grace window.
+        timer.extend(now);
+        graceHeld = false; // extend() took ownership; no need to release
         const timerEndsAt = timer.getExpiresAt() ? new Date(timer.getExpiresAt()) : null;
         if (timerEndsAt) {
           updated.timerEndsAt = timerEndsAt;
@@ -181,6 +197,29 @@ const initSocket = (server) => {
       } catch (err) {
         console.error('[auction:withdraw] error:', err.message);
         socket.emit('bid:error', { message: 'Server error processing withdraw' });
+      }
+    });
+
+    // ── settings:update-timer ────────────────────────────────────────────────
+    // Host-only: update how long the initial bidding window lasts.
+    socket.on('settings:update-timer', async ({ duration }) => {
+      try {
+        const rawRoom = getRawRoom(socket.id);
+        if (!rawRoom || rawRoom.hostId !== socket.id) {
+          return socket.emit('room:error', { message: 'Only the host can change settings' });
+        }
+
+        const d = Number(duration);
+        if (!Number.isFinite(d) || d < 5 || d > 120) {
+          return socket.emit('room:error', { message: 'Timer must be between 5 and 120 seconds' });
+        }
+
+        await AuctionSession.findOneAndUpdate({}, { $set: { timerDuration: d } });
+        io.emit('settings:timer-updated', { timerDuration: d });
+        console.log(`[settings] ${socket.user.username} set timer to ${d}s`);
+      } catch (err) {
+        console.error('[settings:update-timer] error:', err.message);
+        socket.emit('room:error', { message: 'Failed to update timer' });
       }
     });
 

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { formatCroreAmount, normalizeCroreAmount } from '../../utils/currency';
+import PlayerStatsModal from '../players/PlayerStatsModal';
+import api from '../../services/api';
 
 const ROLE_COLOR = {
   Batsman: '#3b82f6',
@@ -27,7 +29,7 @@ const PurseBar = ({ remaining, total, color }) => {
   );
 };
 
-const SquadList = ({ players }) => {
+const SquadList = ({ players, onPlayerClick, loadingId }) => {
   if (!players || players.length === 0) {
     return <p className="text-gray-600 text-xs text-center py-3">No players bought yet</p>;
   }
@@ -52,22 +54,42 @@ const SquadList = ({ players }) => {
             {role}s ({byRole[role].length})
           </p>
           <div className="flex flex-col gap-0.5">
-            {byRole[role].map((p) => (
-              <div key={p._id} className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-gray-800/50">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: ROLE_COLOR[p.role] || '#6b7280' }} />
-                  <span className="text-sm text-gray-200 truncate">
-                    {p.name}
-                    {isOverseasPlayer(p) && <span className="ml-1 text-sky-400">✈</span>}
-                  </span>
-                </div>
-                {p.soldPrice != null && (
-                  <span className="text-xs text-ipl-gold font-semibold tabular-nums flex-shrink-0 ml-2">
-                    Rs {formatCroreAmount(p.soldPrice)} Cr
-                  </span>
-                )}
-              </div>
-            ))}
+            {byRole[role].map((p) => {
+              const isLoading = loadingId === String(p._id);
+              return (
+                <button
+                  key={p._id}
+                  onClick={() => onPlayerClick(p._id)}
+                  disabled={!!loadingId}
+                  className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-gray-800/50 hover:bg-gray-700/60 transition text-left w-full cursor-pointer disabled:opacity-60"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: ROLE_COLOR[p.role] || '#6b7280' }} />
+                    <span className="text-sm text-gray-200 truncate">
+                      {p.name}
+                      {isOverseasPlayer(p) && <span className="ml-1 text-sky-400">✈</span>}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                    {p.soldPrice != null && (
+                      <span className="text-xs text-ipl-gold font-semibold tabular-nums">
+                        Rs {formatCroreAmount(p.soldPrice)} Cr
+                      </span>
+                    )}
+                    {isLoading ? (
+                      <svg className="w-3 h-3 animate-spin text-ipl-gold" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}
@@ -75,7 +97,7 @@ const SquadList = ({ players }) => {
   );
 };
 
-const TeamRow = ({ team, rank, isMyTeam }) => {
+const TeamRow = ({ team, rank, isMyTeam, onPlayerClick, loadingId }) => {
   const [expanded, setExpanded] = useState(false);
   const remaining = normalizeCroreAmount(team.remainingPurse ?? 0);
   const total = normalizeCroreAmount(team.purse ?? 0);
@@ -124,7 +146,7 @@ const TeamRow = ({ team, rank, isMyTeam }) => {
       {expanded && (
         <div className="px-4 pb-4 border-t border-gray-800/40">
           <div className="h-0.5 w-12 rounded-full mb-3 mt-3" style={{ backgroundColor: team.color || '#374151' }} />
-          <SquadList players={team.players} />
+          <SquadList players={team.players} onPlayerClick={onPlayerClick} loadingId={loadingId} />
         </div>
       )}
     </div>
@@ -132,6 +154,21 @@ const TeamRow = ({ team, rank, isMyTeam }) => {
 };
 
 export default function OtherTeamsPanel({ teams, myTeamId }) {
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [loadingId, setLoadingId] = useState(null);
+
+  const openPlayer = async (playerId) => {
+    if (loadingId) return;
+    setLoadingId(String(playerId));
+    try {
+      const { data } = await api.get(`/players/${playerId}`);
+      setSelectedPlayer(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   if (!teams || teams.length === 0) {
     return (
@@ -151,21 +188,36 @@ export default function OtherTeamsPanel({ teams, myTeamId }) {
   const displayList = myTeam ? [myTeam, ...sorted] : sorted;
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+    <>
+      {selectedPlayer && (
+        <PlayerStatsModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+      )}
+
+      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">All Teams</p>
+            <p className="text-xs text-gray-600 mt-0.5">{teams.length} teams · click to view squad</p>
+          </div>
+        </div>
+
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">All Teams</p>
-          <p className="text-xs text-gray-600 mt-0.5">{teams.length} teams · click to view squad</p>
+          {displayList.map((team) => {
+            const isMyTeam = String(team._id) === String(myTeamId);
+            const rank = isMyTeam ? '-' : sorted.indexOf(team) + 1;
+            return (
+              <TeamRow
+                key={team._id}
+                team={team}
+                rank={rank}
+                isMyTeam={isMyTeam}
+                onPlayerClick={openPlayer}
+                loadingId={loadingId}
+              />
+            );
+          })}
         </div>
       </div>
-
-      <div>
-        {displayList.map((team) => {
-          const isMyTeam = String(team._id) === String(myTeamId);
-          const rank = isMyTeam ? '-' : sorted.indexOf(team) + 1;
-          return <TeamRow key={team._id} team={team} rank={rank} isMyTeam={isMyTeam} />;
-        })}
-      </div>
-    </div>
+    </>
   );
 }
