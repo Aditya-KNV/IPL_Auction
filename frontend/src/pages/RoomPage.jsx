@@ -651,7 +651,7 @@ function RulesTab() {
         <Table
           headers={['Condition', 'Points']}
           rows={[
-            ['2 fit keepers', '4.0'],
+            ['2+ keepers in squad', '3.0'],
             ['1 keeper, injury risk ≤ 3', '2.5'],
             ['1 keeper, normal risk', '2.0'],
             ['No keeper', '0'],
@@ -665,21 +665,68 @@ function RulesTab() {
         <p className="text-gray-500 text-xs">Counts batters and all-rounders only. Zero if only one handedness exists.</p>
 
         <h3 className="text-white font-semibold text-sm mt-5 mb-2">3. Position Fit Score (Max 34 pts)</h3>
-        <p className="text-gray-400 text-xs mb-3">Dynamic programming assigns players to optimal batting slots. Each slot has a maximum:</p>
-        <Table
-          headers={['Position', 'Slot Max', 'Dominant Rating Weights']}
-          rows={[
-            ['1–2 (Openers)', '4.5 each', '50% powerplay, 15% pace play, 10% middle'],
-            ['3–4 (Top order)', '4.5 each', '40% middle, 20% powerplay, 10% pace/spin'],
-            ['5–6 (Middle order)', '4.0 each', '30% middle, 20% death, 10% pace/spin'],
-            ['7–8 (Lower middle)', '3.5 each', '40% death, 10% pace / finishing / power-hitting'],
-            ['9–12 (Tail)', '0.25 each (shared)', '60% power-hitting, 40% finishing'],
-          ]}
-        />
-        <div className="mt-3 space-y-1 text-xs text-gray-400">
+        <p className="text-gray-400 text-xs mb-3">
+          Dynamic programming assigns players to optimal batting slots. Each slot score is a <strong className="text-gray-300">weighted average</strong> of the listed ratings — weights are divided by their sum, giving a value 0–10 — then scaled to the slot max:
+        </p>
+        <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-5">
+          slot contribution = max(0, slotScore / 10) × slotMax
+        </div>
+
+        {/* Per-position weight breakdowns */}
+        {[
+          {
+            label: 'Positions 1–2 · Openers', slotMax: '4.5 each', totalW: 0.90,
+            rows: [['powerplay', 0.50, '55.6%'], ['pace_play', 0.15, '16.7%'], ['middle', 0.10, '11.1%'], ['anchor', 0.05, '5.6%'], ['spin_play', 0.05, '5.6%'], ['power_hitting', 0.05, '5.6%']],
+          },
+          {
+            label: 'Positions 3–4 · Top order', slotMax: '4.5 each', totalW: 0.90,
+            rows: [['middle', 0.40, '44.4%'], ['powerplay', 0.20, '22.2%'], ['pace_play', 0.10, '11.1%'], ['spin_play', 0.10, '11.1%'], ['anchor', 0.05, '5.6%'], ['power_hitting', 0.05, '5.6%']],
+          },
+          {
+            label: 'Positions 5–6 · Middle order', slotMax: '4.0 each', totalW: 0.80,
+            rows: [['death', 0.30, '37.5%'], ['middle', 0.20, '25.0%'], ['pace_play', 0.10, '12.5%'], ['spin_play', 0.10, '12.5%'], ['finishing', 0.05, '6.25%'], ['power_hitting', 0.05, '6.25%']],
+          },
+          {
+            label: 'Positions 7–8 · Lower middle', slotMax: '3.5 each', totalW: 0.70,
+            rows: [['death', 0.40, '57.1%'], ['pace_play', 0.10, '14.3%'], ['finishing', 0.10, '14.3%'], ['power_hitting', 0.10, '14.3%']],
+          },
+          {
+            label: 'Positions 9–12 · Tail', slotMax: '0.25 each (shared)', totalW: 1.00,
+            rows: [['power_hitting', 0.60, '60.0%'], ['finishing', 0.40, '40.0%']],
+          },
+        ].map(({ label, slotMax, totalW, rows }) => (
+          <div key={label} className="mb-4 bg-gray-800/40 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-800/80 border-b border-gray-700">
+              <span className="text-white text-xs font-semibold">{label}</span>
+              <span className="text-gray-400 text-xs">Slot max: <span className="text-ipl-gold font-mono">{slotMax}</span> &nbsp;·&nbsp; Σ weights: <span className="font-mono">{totalW.toFixed(2)}</span></span>
+            </div>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left text-gray-400 font-semibold py-1.5 px-4">Rating</th>
+                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">Raw weight</th>
+                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">Effective %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(([attr, raw, pct]) => (
+                  <tr key={attr} className="border-b border-gray-800/50">
+                    <td className="py-1.5 px-4 text-gray-300 font-mono">{attr}</td>
+                    <td className="py-1.5 px-4 text-gray-400 text-right font-mono">{raw.toFixed(2)}</td>
+                    <td className="py-1.5 px-4 text-ipl-gold text-right font-mono">{pct}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
+
+        <div className="mt-1 space-y-1 text-xs text-gray-400">
           <p>• Bowlers can only occupy positions 9–12.</p>
-          <p>• All-Rounder at position 9 receives a <span className="text-green-400">+2 bonus</span> (if total position fit ≤ 34).</p>
-          <p>• Batting outside preferred positions: <span className="text-red-400">−3 penalty</span>.</p>
+          <p>• Batsmen &amp; Wicket-Keepers can only occupy positions 1–8.</p>
+          <p>• All-Rounders can occupy positions 1–9.</p>
+          <p>• All-Rounder at position 9 receives a <span className="text-green-400">+2 bonus</span> (only applied if total position fit would not exceed 34).</p>
+          <p>• Batting outside preferred positions: <span className="text-red-400">−3 penalty</span> applied to slot score before scaling.</p>
         </div>
       </Section>
 
