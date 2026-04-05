@@ -616,13 +616,13 @@ function RulesTab() {
         <Table
           headers={['Role', 'Bats at', 'Bowls']}
           rows={[
-            ['Batsman', '1–8', 'No'],
-            ['Bowler', '9–12 only', 'Yes'],
-            ['All-Rounder', '1–9', 'Yes'],
-            ['Wicket-Keeper', '1–8', 'No'],
+            ['Batsman', '1–8', 'Optional — if tactical.overs > 0'],
+            ['Bowler', '9–12 only', 'Yes (always has overs)'],
+            ['All-Rounder', '1–9', 'Yes (always has overs)'],
+            ['Wicket-Keeper', '1–8', 'Optional — if tactical.overs > 0'],
           ]}
         />
-        <p className="text-gray-500 text-xs mt-3">All individual ratings are on a 0–10 scale.</p>
+        <p className="text-gray-500 text-xs mt-3">Any player with <span className="font-mono text-gray-400">tactical.overs &gt; 0</span> is included in bowling calculations regardless of role. All individual ratings are on a 0–10 scale.</p>
       </Section>
 
       {/* ── TEAM SCORE OVERVIEW ── */}
@@ -640,7 +640,7 @@ function RulesTab() {
             ['Impact', '5', 'avg(match_winner, clutch, consistency) × 0.7'],
             ['Tactical', '3', 'avg(flexibility of all players) × 0.3'],
             ['Age', '1', 'clamp(1 − |avg_age − 30| / 15, 0, 1)  —  optimal age = 30'],
-            ['Captaincy', '4', 'Stepped: full 4 pts when total captaincy ≥ 1.75, drops 0.5 per 0.25 below'],
+            ['Captaincy', '4', 'Stepped by 0.5 pts per 0.25 drop below total captaincy of 1.51 — see table below'],
           ]}
         />
       </Section>
@@ -772,7 +772,6 @@ function RulesTab() {
             { label: 'Impact (Max 5)', formula: 'avg(match_winner,  clutch,  consistency)  ×  0.7', attrs: 'role_impact.match_winner / clutch / consistency' },
             { label: 'Tactical (Max 3)', formula: 'avg(flexibility of all players)  ×  0.3', attrs: 'tactical.flexibility' },
             { label: 'Age (Max 1)', formula: 'clamp(1 − |avg_age − 30| / 15,  0,  1)', attrs: 'Player age — optimal team average = 30 years' },
-            { label: 'Captaincy (Max 4)', formula: 'steps = floor(max(0, 1.75 − total_cap) / 0.25)\nScore = max(0, 4 − steps × 0.5)', attrs: 'tactical.captaincy (summed across squad)' },
           ].map(({ label, formula, attrs }) => (
             <div key={label} className="bg-gray-800/40 rounded-xl p-4">
               <p className="text-white text-sm font-semibold mb-1">{label}</p>
@@ -780,6 +779,44 @@ function RulesTab() {
               <p className="text-gray-500 text-xs">Source fields: {attrs}</p>
             </div>
           ))}
+
+          {/* Captaincy — full step table */}
+          <div className="bg-gray-800/40 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-700">
+              <p className="text-white text-sm font-semibold">Captaincy (Max 4)</p>
+              <p className="text-gray-500 text-xs mt-0.5">Source: <span className="font-mono">tactical.captaincy</span> summed across all squad players</p>
+            </div>
+            <div className="px-4 py-3 border-b border-gray-700">
+              <pre className="font-mono text-xs text-ipl-gold whitespace-pre-wrap">{'steps = floor(max(0,  1.75 − total)  /  0.25)\nscore = max(0,  4  −  steps × 0.5)'}</pre>
+            </div>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left text-gray-400 font-semibold py-1.5 px-4">Total captaincy (squad sum)</th>
+                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">Steps</th>
+                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['> 1.50',       '0', '4.0'],
+                  ['1.26 – 1.50',  '1', '3.5'],
+                  ['1.01 – 1.25',  '2', '3.0'],
+                  ['0.76 – 1.00',  '3', '2.5'],
+                  ['0.51 – 0.75',  '4', '2.0'],
+                  ['0.26 – 0.50',  '5', '1.5'],
+                  ['0.01 – 0.25',  '6', '1.0'],
+                  ['≤ 0',          '—', '0.0'],
+                ].map(([range, steps, score], i) => (
+                  <tr key={i} className="border-b border-gray-800/50">
+                    <td className="py-1.5 px-4 text-gray-300 font-mono">{range}</td>
+                    <td className="py-1.5 px-4 text-gray-400 text-right font-mono">{steps}</td>
+                    <td className={`py-1.5 px-4 text-right font-mono font-semibold ${score === '4.0' ? 'text-ipl-gold' : score === '0.0' ? 'text-gray-500' : 'text-gray-300'}`}>{score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </Section>
 
