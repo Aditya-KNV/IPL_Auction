@@ -1,169 +1,184 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRoom } from '../context/RoomContext';
-import { useAuth } from '../context/AuthContext';
-import { useSocket } from '../context/SocketContext';
-import CreateRoomForm from '../components/room/CreateRoomForm';
-import JoinRoomForm from '../components/room/JoinRoomForm';
-import RoomLobby from '../components/room/RoomLobby';
-import AuctionBoard from '../components/auction/AuctionBoard';
-import { useMyTeam } from '../hooks/useMyTeam';
-import OtherTeamsPanel from '../components/auction/OtherTeamsPanel';
-import MyTeamPanel from '../components/auction/MyTeamPanel';
-import PlayerStatsModal from '../components/players/PlayerStatsModal';
-import DashboardPage from './DashboardPage';
-import RankingPage from './RankingPage';
-import api from '../services/api';
-import { STATUS_COLOR, getDisplayStatus } from '../utils/playerDisplay';
+import React, { useState, useEffect, useMemo } from "react";
+import { useRoom } from "../context/RoomContext";
+import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
+import CreateRoomForm from "../components/room/CreateRoomForm";
+import JoinRoomForm from "../components/room/JoinRoomForm";
+import RoomLobby from "../components/room/RoomLobby";
+import AuctionBoard from "../components/auction/AuctionBoard";
+import { useMyTeam } from "../hooks/useMyTeam";
+import OtherTeamsPanel from "../components/auction/OtherTeamsPanel";
+import MyTeamPanel from "../components/auction/MyTeamPanel";
+import PlayerStatsModal from "../components/players/PlayerStatsModal";
+import DashboardPage from "./DashboardPage";
+import RankingPage from "./RankingPage";
+import api from "../services/api";
+import { STATUS_COLOR, getDisplayStatus } from "../utils/playerDisplay";
 
 // Groups of filter options per role — each group renders as an <optgroup>
 const ROLE_FILTERS = {
   Batsman: [
     {
-      group: 'Batting Phases',
+      group: "Batting Phases",
       options: [
-        { label: 'Powerplay', key: 'batting.phases.powerplay.rating' },
-        { label: 'Middle',    key: 'batting.phases.middle.rating'    },
-        { label: 'Death',     key: 'batting.phases.death.rating'     },
+        { label: "Powerplay", key: "batting.phases.powerplay.rating" },
+        { label: "Middle", key: "batting.phases.middle.rating" },
+        { label: "Death", key: "batting.phases.death.rating" },
       ],
     },
     {
-      group: 'Batting Skills',
+      group: "Batting Skills",
       options: [
-        { label: 'Finishing',    key: 'batting.skills.finishing'     },
-        { label: 'Power Hitting',key: 'batting.skills.power_hitting' },
-        { label: 'Anchor',       key: 'batting.skills.anchor'        },
-        { label: 'Spin Play',    key: 'batting.skills.spin_play'     },
-        { label: 'Pace Play',    key: 'batting.skills.pace_play'     },
+        { label: "Finishing", key: "batting.skills.finishing" },
+        { label: "Power Hitting", key: "batting.skills.power_hitting" },
+        { label: "Anchor", key: "batting.skills.anchor" },
+        { label: "Spin Play", key: "batting.skills.spin_play" },
+        { label: "Pace Play", key: "batting.skills.pace_play" },
       ],
     },
   ],
   Bowler: [
     {
-      group: 'Bowling Phases',
+      group: "Bowling Phases",
       options: [
-        { label: 'Powerplay', key: 'bowling.phases.powerplay' },
-        { label: 'Middle',    key: 'bowling.phases.middle'    },
-        { label: 'Death',     key: 'bowling.phases.death'     },
+        { label: "Powerplay", key: "bowling.phases.powerplay" },
+        { label: "Middle", key: "bowling.phases.middle" },
+        { label: "Death", key: "bowling.phases.death" },
       ],
     },
     {
-      group: 'Bowling Skills',
+      group: "Bowling Skills",
       options: [
-        { label: 'Variations', key: 'bowling.skills.variations' },
-        { label: 'Yorker',     key: 'bowling.skills.yorker'     },
-        { label: 'Bouncer',    key: 'bowling.skills.bouncer'    },
-      ],
-    },
-  ],
-  'All-Rounder': [
-    {
-      group: 'Batting Phases',
-      options: [
-        { label: 'Bat Powerplay', key: 'batting.phases.powerplay.rating' },
-        { label: 'Bat Middle',    key: 'batting.phases.middle.rating'    },
-        { label: 'Bat Death',     key: 'batting.phases.death.rating'     },
-      ],
-    },
-    {
-      group: 'Batting Skills',
-      options: [
-        { label: 'Finishing',     key: 'batting.skills.finishing'     },
-        { label: 'Power Hitting', key: 'batting.skills.power_hitting' },
-        { label: 'Anchor',        key: 'batting.skills.anchor'        },
-        { label: 'Spin Play',     key: 'batting.skills.spin_play'     },
-        { label: 'Pace Play',     key: 'batting.skills.pace_play'     },
-      ],
-    },
-    {
-      group: 'Bowling Phases',
-      options: [
-        { label: 'Bowl Powerplay', key: 'bowling.phases.powerplay' },
-        { label: 'Bowl Middle',    key: 'bowling.phases.middle'    },
-        { label: 'Bowl Death',     key: 'bowling.phases.death'     },
-      ],
-    },
-    {
-      group: 'Bowling Skills',
-      options: [
-        { label: 'Variations', key: 'bowling.skills.variations' },
-        { label: 'Yorker',     key: 'bowling.skills.yorker'     },
-        { label: 'Bouncer',    key: 'bowling.skills.bouncer'    },
+        { label: "Variations", key: "bowling.skills.variations" },
+        { label: "Yorker", key: "bowling.skills.yorker" },
+        { label: "Bouncer", key: "bowling.skills.bouncer" },
       ],
     },
   ],
-  'Wicket-Keeper': [
+  "All-Rounder": [
     {
-      group: 'Batting Phases',
+      group: "Batting Phases",
       options: [
-        { label: 'Powerplay', key: 'batting.phases.powerplay.rating' },
-        { label: 'Middle',    key: 'batting.phases.middle.rating'    },
-        { label: 'Death',     key: 'batting.phases.death.rating'     },
+        { label: "Bat Powerplay", key: "batting.phases.powerplay.rating" },
+        { label: "Bat Middle", key: "batting.phases.middle.rating" },
+        { label: "Bat Death", key: "batting.phases.death.rating" },
       ],
     },
     {
-      group: 'Batting Skills',
+      group: "Batting Skills",
       options: [
-        { label: 'Finishing',     key: 'batting.skills.finishing'     },
-        { label: 'Power Hitting', key: 'batting.skills.power_hitting' },
-        { label: 'Anchor',        key: 'batting.skills.anchor'        },
-        { label: 'Spin Play',     key: 'batting.skills.spin_play'     },
-        { label: 'Pace Play',     key: 'batting.skills.pace_play'     },
+        { label: "Finishing", key: "batting.skills.finishing" },
+        { label: "Power Hitting", key: "batting.skills.power_hitting" },
+        { label: "Anchor", key: "batting.skills.anchor" },
+        { label: "Spin Play", key: "batting.skills.spin_play" },
+        { label: "Pace Play", key: "batting.skills.pace_play" },
+      ],
+    },
+    {
+      group: "Bowling Phases",
+      options: [
+        { label: "Bowl Powerplay", key: "bowling.phases.powerplay" },
+        { label: "Bowl Middle", key: "bowling.phases.middle" },
+        { label: "Bowl Death", key: "bowling.phases.death" },
+      ],
+    },
+    {
+      group: "Bowling Skills",
+      options: [
+        { label: "Variations", key: "bowling.skills.variations" },
+        { label: "Yorker", key: "bowling.skills.yorker" },
+        { label: "Bouncer", key: "bowling.skills.bouncer" },
+      ],
+    },
+  ],
+  "Wicket-Keeper": [
+    {
+      group: "Batting Phases",
+      options: [
+        { label: "Powerplay", key: "batting.phases.powerplay.rating" },
+        { label: "Middle", key: "batting.phases.middle.rating" },
+        { label: "Death", key: "batting.phases.death.rating" },
+      ],
+    },
+    {
+      group: "Batting Skills",
+      options: [
+        { label: "Finishing", key: "batting.skills.finishing" },
+        { label: "Power Hitting", key: "batting.skills.power_hitting" },
+        { label: "Anchor", key: "batting.skills.anchor" },
+        { label: "Spin Play", key: "batting.skills.spin_play" },
+        { label: "Pace Play", key: "batting.skills.pace_play" },
       ],
     },
   ],
 };
 
 const resolvePath = (obj, path) =>
-  path.split('.').reduce((cur, k) => (cur != null ? cur[k] : undefined), obj);
+  path.split(".").reduce((cur, k) => (cur != null ? cur[k] : undefined), obj);
 
-const SET_OPTIONS = ['Marquee Set 1', 'Marquee Set 2', 'Set 3', 'Set 4', 'Set 5', 'Set 6'];
+const SET_OPTIONS = [
+  "Marquee Set 1",
+  "Marquee Set 2",
+  "Set 3",
+  "Set 4",
+  "Set 5",
+  "Set 6",
+];
 
 function PlayersTab() {
   const { socket } = useSocket();
   const [players, setPlayers] = useState([]);
-  const [role, setRole]                   = useState('');
-  const [status, setStatus]               = useState('');
-  const [auctionSetName, setAuctionSetName] = useState('');
-  const [phase, setPhase]                 = useState('');
-  const [minRating, setMinRating]         = useState('');
-  const [search, setSearch]               = useState('');
-  const [selected, setSelected]           = useState(null);
+  const [role, setRole] = useState("");
+  const [status, setStatus] = useState("");
+  const [auctionSetName, setAuctionSetName] = useState("");
+  const [phase, setPhase] = useState("");
+  const [minRating, setMinRating] = useState("");
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState(null);
   const [loadingPlayer, setLoadingPlayer] = useState(false);
 
   // Reset phase/rating when role changes
-  useEffect(() => { setPhase(''); setMinRating(''); }, [role]);
+  useEffect(() => {
+    setPhase("");
+    setMinRating("");
+  }, [role]);
 
   const load = () => {
     const params = {};
     if (role) params.role = role;
     if (status) params.status = status;
     if (auctionSetName) params.auctionSetName = auctionSetName;
-    api.get('/players', { params }).then((r) => setPlayers(r.data)).catch(console.error);
+    api
+      .get("/players", { params })
+      .then((r) => setPlayers(r.data))
+      .catch(console.error);
   };
 
-  useEffect(() => { load(); }, [role, status, auctionSetName]);
+  useEffect(() => {
+    load();
+  }, [role, status, auctionSetName]);
 
   useEffect(() => {
     if (!socket) return;
-    socket.on('auction:sold', load);
-    socket.on('auction:unsold', load);
+    socket.on("auction:sold", load);
+    socket.on("auction:unsold", load);
     return () => {
-      socket.off('auction:sold', load);
-      socket.off('auction:unsold', load);
+      socket.off("auction:sold", load);
+      socket.off("auction:unsold", load);
     };
   }, [socket]);
 
-  const filterGroups = role ? (ROLE_FILTERS[role] || []) : [];
+  const filterGroups = role ? ROLE_FILTERS[role] || [] : [];
   const allFilterOptions = filterGroups.flatMap((g) => g.options);
 
   const filtered = useMemo(() => {
     let result = players;
-    if (phase && minRating !== '') {
+    if (phase && minRating !== "") {
       const min = Number(minRating);
       if (Number.isFinite(min)) {
         result = result.filter((p) => {
           const val = resolvePath(p, phase);
-          return typeof val === 'number' && val >= min;
+          return typeof val === "number" && val >= min;
         });
       }
     }
@@ -174,7 +189,9 @@ function PlayersTab() {
     return result;
   }, [players, phase, minRating, search]);
 
-  const activeFilterLabel = allFilterOptions.find((o) => o.key === phase)?.label;
+  const activeFilterLabel = allFilterOptions.find(
+    (o) => o.key === phase,
+  )?.label;
 
   const openPlayer = async (id) => {
     setLoadingPlayer(true);
@@ -190,12 +207,29 @@ function PlayersTab() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      {selected && <PlayerStatsModal player={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PlayerStatsModal player={selected} onClose={() => setSelected(null)} />
+      )}
       {loadingPlayer && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50">
-          <svg className="h-8 w-8 animate-spin text-ipl-gold" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          <svg
+            className="h-8 w-8 animate-spin text-ipl-gold"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8H4z"
+            />
           </svg>
         </div>
       )}
@@ -205,8 +239,18 @@ function PlayersTab() {
       <div className="flex flex-wrap gap-3 mb-4">
         {/* Search by name */}
         <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2">
-          <svg className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          <svg
+            className="h-4 w-4 text-gray-400 flex-shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+            />
           </svg>
           <input
             type="text"
@@ -216,9 +260,22 @@ function PlayersTab() {
             className="bg-transparent text-white text-sm outline-none w-36 placeholder-gray-500"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="text-gray-500 hover:text-white ml-1">
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <button
+              onClick={() => setSearch("")}
+              className="text-gray-500 hover:text-white ml-1"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           )}
@@ -231,8 +288,10 @@ function PlayersTab() {
           className="bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
         >
           <option value="">All Roles</option>
-          {['Batsman', 'Bowler', 'All-Rounder', 'Wicket-Keeper'].map((r) => (
-            <option key={r} value={r}>{r}</option>
+          {["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"].map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
           ))}
         </select>
 
@@ -243,8 +302,10 @@ function PlayersTab() {
           className="bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
         >
           <option value="">All Status</option>
-          {['available', 'sold', 'unsold', 'in-auction'].map((s) => (
-            <option key={s} value={s}>{s}</option>
+          {["available", "sold", "unsold", "in-auction"].map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
           ))}
         </select>
 
@@ -256,7 +317,9 @@ function PlayersTab() {
         >
           <option value="">All Sets</option>
           {SET_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>
+              {s}
+            </option>
           ))}
         </select>
 
@@ -264,14 +327,19 @@ function PlayersTab() {
         {filterGroups.length > 0 && (
           <select
             value={phase}
-            onChange={(e) => { setPhase(e.target.value); setMinRating(''); }}
+            onChange={(e) => {
+              setPhase(e.target.value);
+              setMinRating("");
+            }}
             className="bg-gray-800 border border-blue-500/40 text-white rounded-lg px-4 py-2 text-sm"
           >
             <option value="">Phase / Skill</option>
             {filterGroups.map((g) => (
               <optgroup key={g.group} label={g.group}>
                 {g.options.map((o) => (
-                  <option key={o.key} value={o.key}>{o.label}</option>
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
                 ))}
               </optgroup>
             ))}
@@ -281,7 +349,9 @@ function PlayersTab() {
         {/* Min rating — only when phase is selected */}
         {phase && (
           <div className="flex items-center gap-2 bg-gray-800 border border-blue-500/40 rounded-lg px-3 py-2">
-            <span className="text-gray-400 text-sm whitespace-nowrap">Min rating</span>
+            <span className="text-gray-400 text-sm whitespace-nowrap">
+              Min rating
+            </span>
             <input
               type="number"
               min={1}
@@ -299,7 +369,14 @@ function PlayersTab() {
         {/* Clear */}
         {(role || status || auctionSetName || phase || search) && (
           <button
-            onClick={() => { setRole(''); setStatus(''); setAuctionSetName(''); setPhase(''); setMinRating(''); setSearch(''); }}
+            onClick={() => {
+              setRole("");
+              setStatus("");
+              setAuctionSetName("");
+              setPhase("");
+              setMinRating("");
+              setSearch("");
+            }}
             className="text-xs text-gray-400 border border-gray-700 rounded-lg px-3 py-2 hover:border-gray-500 hover:text-white transition"
           >
             Clear filters
@@ -309,9 +386,11 @@ function PlayersTab() {
 
       {/* Result summary */}
       <p className="text-gray-500 text-xs mb-3">
-        {filtered.length} player{filtered.length !== 1 ? 's' : ''}
-        {activeFilterLabel && minRating !== '' && (
-          <span className="ml-1 text-blue-400">· {activeFilterLabel} ≥ {minRating}/10</span>
+        {filtered.length} player{filtered.length !== 1 ? "s" : ""}
+        {activeFilterLabel && minRating !== "" && (
+          <span className="ml-1 text-blue-400">
+            · {activeFilterLabel} ≥ {minRating}/10
+          </span>
         )}
       </p>
 
@@ -325,7 +404,9 @@ function PlayersTab() {
               <th className="text-left py-3 px-4">Nationality</th>
               <th className="text-right py-3 px-4">Base (Cr)</th>
               <th className="text-right py-3 px-4">Sold (Cr)</th>
-              {phase && <th className="text-right py-3 px-4">{activeFilterLabel}</th>}
+              {phase && (
+                <th className="text-right py-3 px-4">{activeFilterLabel}</th>
+              )}
               <th className="text-left py-3 px-4">Team</th>
               <th className="text-left py-3 px-4">Status</th>
             </tr>
@@ -340,21 +421,31 @@ function PlayersTab() {
                   onClick={() => openPlayer(p._id)}
                   className="border-b border-gray-800 hover:bg-gray:900/60 transition cursor-pointer"
                 >
-                  <td className="py-3 px-4 font-semibold text-white">{p.name}</td>
-                  <td className="py-3 px-4 text-gray-400">{p.auctionSetName || '—'}</td>
+                  <td className="py-3 px-4 font-semibold text-white">
+                    {p.name}
+                  </td>
+                  <td className="py-3 px-4 text-gray-400">
+                    {p.auctionSetName || "—"}
+                  </td>
                   <td className="py-3 px-4 text-gray-300">{p.role}</td>
                   <td className="py-3 px-4 text-gray-400">{p.nationality}</td>
-                  <td className="py-3 px-4 text-right text-gray-300">₹{p.basePrice}</td>
+                  <td className="py-3 px-4 text-right text-gray-300">
+                    ₹{p.basePrice}
+                  </td>
                   <td className="py-3 px-4 text-right text-ipl-gold font-semibold">
-                    {p.soldPrice ? `₹${p.soldPrice}` : '—'}
+                    {p.soldPrice ? `₹${p.soldPrice}` : "—"}
                   </td>
                   {phase && (
                     <td className="py-3 px-4 text-right font-semibold text-blue-300">
-                      {typeof phaseVal === 'number' ? `${phaseVal}/10` : '—'}
+                      {typeof phaseVal === "number" ? `${phaseVal}/10` : "—"}
                     </td>
                   )}
-                  <td className="py-3 px-4 text-gray-300">{p.team?.shortName || '—'}</td>
-                  <td className={`py-3 px-4 font-semibold capitalize ${STATUS_COLOR[displayStatus] || 'text-gray-400'}`}>
+                  <td className="py-3 px-4 text-gray-300">
+                    {p.team?.shortName || "—"}
+                  </td>
+                  <td
+                    className={`py-3 px-4 font-semibold capitalize ${STATUS_COLOR[displayStatus] || "text-gray-400"}`}
+                  >
                     {displayStatus}
                   </td>
                 </tr>
@@ -362,7 +453,12 @@ function PlayersTab() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={phase ? 9 : 8} className="py-10 text-center text-gray-600">No players found</td>
+                <td
+                  colSpan={phase ? 9 : 8}
+                  className="py-10 text-center text-gray-600"
+                >
+                  No players found
+                </td>
               </tr>
             )}
           </tbody>
@@ -377,7 +473,7 @@ function TeamsTab() {
   const { teamAssignments } = useRoom();
   const { myTeam, allTeams, squadByRole, loading } = useMyTeam();
 
-  const myTeamId = user ? teamAssignments?.[user.id]?.teamId ?? null : null;
+  const myTeamId = user ? (teamAssignments?.[user.id]?.teamId ?? null) : null;
 
   if (loading) {
     return (
@@ -393,13 +489,17 @@ function TeamsTab() {
 
       {myTeam && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">My Team</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">
+            My Team
+          </p>
           <MyTeamPanel team={myTeam} squadByRole={squadByRole} />
         </div>
       )}
 
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">All Teams</p>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">
+          All Teams
+        </p>
         <OtherTeamsPanel teams={allTeams} myTeamId={myTeamId} />
       </div>
     </div>
@@ -411,28 +511,31 @@ function SettingsTab() {
   const { socket } = useSocket();
   const [timerDuration, setTimerDuration] = useState(10);
   const [timerSaved, setTimerSaved] = useState(false);
-  const [selectedSocketId, setSelectedSocketId] = useState('');
+  const [selectedSocketId, setSelectedSocketId] = useState("");
 
   const mySocketId = socket?.id;
   const amHost = room?.hostId === mySocketId;
 
   // Load current timer duration from session
   useEffect(() => {
-    api.get('/auction/session').then((r) => {
-      if (r.data?.timerDuration) setTimerDuration(r.data.timerDuration);
-    }).catch(() => {});
+    api
+      .get("/auction/session")
+      .then((r) => {
+        if (r.data?.timerDuration) setTimerDuration(r.data.timerDuration);
+      })
+      .catch(() => {});
   }, []);
 
   // Keep timer in sync when host changes it
   useEffect(() => {
     if (!socket) return;
     const onTimerUpdated = ({ timerDuration: d }) => setTimerDuration(d);
-    socket.on('settings:timer-updated', onTimerUpdated);
-    return () => socket.off('settings:timer-updated', onTimerUpdated);
+    socket.on("settings:timer-updated", onTimerUpdated);
+    return () => socket.off("settings:timer-updated", onTimerUpdated);
   }, [socket]);
 
   const saveTimer = () => {
-    socket?.emit('settings:update-timer', { duration: timerDuration });
+    socket?.emit("settings:update-timer", { duration: timerDuration });
     setTimerSaved(true);
     setTimeout(() => setTimerSaved(false), 2000);
   };
@@ -440,7 +543,7 @@ function SettingsTab() {
   const handleTransferHost = () => {
     if (!selectedSocketId) return;
     transferHost(selectedSocketId);
-    setSelectedSocketId('');
+    setSelectedSocketId("");
   };
 
   const otherUsers = room?.users.filter((u) => u.socketId !== mySocketId) || [];
@@ -456,10 +559,15 @@ function SettingsTab() {
       )}
 
       {/* Timer */}
-      <div className={`bg-gray-900 border rounded-2xl p-6 ${amHost ? 'border-gray-700' : 'border-gray-800 opacity-50 pointer-events-none'}`}>
-        <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider mb-1">Auction Timer</h3>
+      <div
+        className={`bg-gray-900 border rounded-2xl p-6 ${amHost ? "border-gray-700" : "border-gray-800 opacity-50 pointer-events-none"}`}
+      >
+        <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider mb-1">
+          Auction Timer
+        </h3>
         <p className="text-gray-500 text-xs mb-4">
-          Initial bidding window duration when a player enters auction. Each bid extends the clock by 10 s regardless.
+          Initial bidding window duration when a player enters auction. Each bid
+          extends the clock by 10 s regardless.
         </p>
         <div className="flex items-center gap-4">
           <input
@@ -487,19 +595,26 @@ function SettingsTab() {
             onClick={saveTimer}
             className="bg-ipl-gold text-black font-bold px-4 py-2 rounded-xl text-sm hover:brightness-110 transition"
           >
-            {timerSaved ? 'Saved!' : 'Save'}
+            {timerSaved ? "Saved!" : "Save"}
           </button>
         </div>
       </div>
 
       {/* Transfer Host */}
-      <div className={`bg-gray-900 border rounded-2xl p-6 ${amHost ? 'border-gray-700' : 'border-gray-800 opacity-50 pointer-events-none'}`}>
-        <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider mb-1">Transfer Host</h3>
+      <div
+        className={`bg-gray-900 border rounded-2xl p-6 ${amHost ? "border-gray-700" : "border-gray-800 opacity-50 pointer-events-none"}`}
+      >
+        <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider mb-1">
+          Transfer Host
+        </h3>
         <p className="text-gray-500 text-xs mb-4">
-          Hand off host controls to another user in the room. You will become a regular participant.
+          Hand off host controls to another user in the room. You will become a
+          regular participant.
         </p>
         {otherUsers.length === 0 ? (
-          <p className="text-gray-600 text-sm text-center py-2">No other users in the room.</p>
+          <p className="text-gray-600 text-sm text-center py-2">
+            No other users in the room.
+          </p>
         ) : (
           <div className="flex items-center gap-3">
             <select
@@ -509,7 +624,9 @@ function SettingsTab() {
             >
               <option value="">Select user…</option>
               {otherUsers.map((u) => (
-                <option key={u.socketId} value={u.socketId}>{u.username}</option>
+                <option key={u.socketId} value={u.socketId}>
+                  {u.username}
+                </option>
               ))}
             </select>
             <button
@@ -526,12 +643,23 @@ function SettingsTab() {
   );
 }
 
-const TABS = ['Lobby', 'Auction', 'Teams', 'Players', 'Dashboard', 'Rankings', 'Rules', 'Settings'];
+const TABS = [
+  "Lobby",
+  "Auction",
+  "Teams",
+  "Players",
+  "Dashboard",
+  "Rankings",
+  "Rules",
+  "Settings",
+];
 
 function RulesTab() {
   const Section = ({ title, children }) => (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-      <h2 className="text-ipl-gold font-bold text-lg mb-4 border-b border-gray-800 pb-2">{title}</h2>
+      <h2 className="text-ipl-gold font-bold text-lg mb-4 border-b border-gray-800 pb-2">
+        {title}
+      </h2>
       {children}
     </div>
   );
@@ -542,7 +670,12 @@ function RulesTab() {
         <thead>
           <tr className="border-b border-gray-700">
             {headers.map((h) => (
-              <th key={h} className="text-left text-gray-400 font-semibold py-2 pr-4">{h}</th>
+              <th
+                key={h}
+                className="text-left text-gray-400 font-semibold py-2 pr-4"
+              >
+                {h}
+              </th>
             ))}
           </tr>
         </thead>
@@ -550,7 +683,9 @@ function RulesTab() {
           {rows.map((row, i) => (
             <tr key={i} className="border-b border-gray-800/50">
               {row.map((cell, j) => (
-                <td key={j} className="py-2 pr-4 text-gray-300">{cell}</td>
+                <td key={j} className="py-2 pr-4 text-gray-300">
+                  {cell}
+                </td>
               ))}
             </tr>
           ))}
@@ -561,23 +696,37 @@ function RulesTab() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-ipl-gold mb-2">Rules & Rating Schema</h1>
-      <p className="text-gray-400 text-sm mb-8">Complete reference for how bidding, budgets, squads, and player scores are calculated.</p>
+      <h1 className="text-3xl font-bold text-ipl-gold mb-2">
+        Rules & Rating Schema
+      </h1>
+      <p className="text-gray-400 text-sm mb-8">
+        Complete reference for how bidding, budgets, squads, and player scores
+        are calculated.
+      </p>
 
       {/* ── BIDDING RULES ── */}
       <Section title="Bidding Rules">
         <Table
-          headers={['Rule', 'Value']}
+          headers={["Rule", "Value"]}
           rows={[
-            ['Minimum bid increment', '0.2 Crores (20 Lakhs)'],
-            ['Quick bid buttons', '+0.2 Cr, +0.5 Cr, +1 Cr'],
-            ['First bid', 'Must be ≥ player\'s base price (no increment needed)'],
-            ['Subsequent bids', 'Must be ≥ current bid + 0.2 Cr'],
-            ['Bid timer', '10 seconds default (configurable 5–120s, host only)'],
-            ['Timer reset', 'Each valid bid resets the countdown'],
-            ['Withdrawal', 'Highest bidder cannot withdraw; others can at any time'],
-            ['All withdraw', 'Player marked UNSOLD'],
-            ['One team left', 'Player SOLD to remaining bidder'],
+            ["Minimum bid increment", "0.2 Crores (20 Lakhs)"],
+            ["Quick bid buttons", "+0.2 Cr, +0.5 Cr, +1 Cr"],
+            [
+              "First bid",
+              "Must be ≥ player's base price (no increment needed)",
+            ],
+            ["Subsequent bids", "Must be ≥ current bid + 0.2 Cr"],
+            [
+              "Bid timer",
+              "10 seconds default (configurable 5–120s, host only)",
+            ],
+            ["Timer reset", "Each valid bid resets the countdown"],
+            [
+              "Withdrawal",
+              "Highest bidder cannot withdraw; others can at any time",
+            ],
+            ["All withdraw", "Player marked UNSOLD"],
+            ["One team left", "Player SOLD to remaining bidder"],
           ]}
         />
       </Section>
@@ -585,12 +734,12 @@ function RulesTab() {
       {/* ── TEAM BUDGET ── */}
       <Section title="Team Budget & Purse">
         <Table
-          headers={['Rule', 'Value']}
+          headers={["Rule", "Value"]}
           rows={[
-            ['Starting purse per team', '120 Crores'],
-            ['Purse deduction', 'Exact final bid amount (2 decimal places)'],
-            ['Bid blocked when', 'remaining purse < bid amount'],
-            ['Purse on reset', 'Restored to full 120 Crores'],
+            ["Starting purse per team", "120 Crores"],
+            ["Purse deduction", "Exact final bid amount (2 decimal places)"],
+            ["Bid blocked when", "remaining purse < bid amount"],
+            ["Purse on reset", "Restored to full 120 Crores"],
           ]}
         />
       </Section>
@@ -598,15 +747,18 @@ function RulesTab() {
       {/* ── SQUAD COMPOSITION ── */}
       <Section title="Squad Composition Rules">
         <Table
-          headers={['Rule', 'Value']}
+          headers={["Rule", "Value"]}
           rows={[
-            ['Max squad size', '25 players'],
-            ['Playing-12 size', 'Exactly 12'],
-            ['Max overseas in Playing-12', '4'],
-            ['Max overseas in squad (≤18 player cap)', '6'],
-            ['Max overseas in squad (25 player cap)', '8'],
-            ['Min Indian players for full Playing-12', '8'],
-            ['Overseas definition', 'Any player whose nationality ≠ Indian (case-insensitive)'],
+            ["Max squad size", "25 players"],
+            ["Playing-12 size", "Exactly 12"],
+            ["Max overseas in Playing-12", "4"],
+            ["Max overseas in squad (≤18 player cap)", "6"],
+            ["Max overseas in squad (25 player cap)", "8"],
+            ["Min Indian players for full Playing-12", "8"],
+            [
+              "Overseas definition",
+              "Any player whose nationality ≠ Indian (case-insensitive)",
+            ],
           ]}
         />
       </Section>
@@ -614,59 +766,96 @@ function RulesTab() {
       {/* ── PLAYER ROLES ── */}
       <Section title="Player Roles & Batting Positions">
         <Table
-          headers={['Role', 'Bats at', 'Bowls']}
+          headers={["Role", "Bats at", "Bowls"]}
           rows={[
-            ['Batsman', '1–8', 'Optional — if tactical.overs > 0'],
-            ['Bowler', '9–12 only', 'Yes (always has overs)'],
-            ['All-Rounder', '1–9', 'Yes (always has overs)'],
-            ['Wicket-Keeper', '1–8', 'Optional — if tactical.overs > 0'],
+            ["Batsman", "1–8", "Optional — if tactical.overs > 0"],
+            ["Bowler", "9–12 only", "Yes (always has overs)"],
+            ["All-Rounder", "1–9", "Yes (always has overs)"],
+            ["Wicket-Keeper", "1–8", "No"],
           ]}
         />
-        <p className="text-gray-500 text-xs mt-3">Any player with <span className="font-mono text-gray-400">tactical.overs &gt; 0</span> is included in bowling calculations regardless of role. All individual ratings are on a 0–10 scale.</p>
+        <p className="text-gray-500 text-xs mt-3">
+          Any player with{" "}
+          <span className="font-mono text-gray-400">tactical.overs &gt; 0</span>{" "}
+          is included in bowling calculations regardless of role. All individual
+          ratings are on a 0–10 scale.
+        </p>
       </Section>
 
       {/* ── TEAM SCORE OVERVIEW ── */}
       <Section title="Team Score Overview (0–100)">
-        <p className="text-gray-300 text-sm mb-4">Final team score is the sum of 7 components:</p>
+        <p className="text-gray-300 text-sm mb-4">
+          Final team score is the sum of 7 components:
+        </p>
         <div className="bg-gray-800/60 rounded-xl p-4 font-mono text-sm text-ipl-gold mb-4">
-          Final Score = Batting + Bowling + Fitness + Impact + Tactical + Age + Captaincy
+          Final Score = Batting + Bowling + Fitness + Impact + Tactical + Age +
+          Captaincy
         </div>
         <Table
-          headers={['Component', 'Max Points', 'Formula']}
+          headers={["Component", "Max Points", "Formula"]}
           rows={[
-            ['Batting', '~40', 'Keeper Score + Left-Right Balance + Position Fit'],
-            ['Bowling', '~40', 'Overs + Pace + Spin + Powerplay + Middle + Death phases'],
-            ['Fitness', '5', 'avg(stamina, 10 − injury_risk) × 0.5'],
-            ['Impact', '5', 'avg(match_winner, clutch, consistency) × 0.7'],
-            ['Tactical', '3', 'avg(flexibility of all players) × 0.3'],
-            ['Age', '1', 'clamp(1 − |avg_age − 30| / 15, 0, 1)  —  optimal age = 30'],
-            ['Captaincy', '4', 'Stepped by 0.5 pts per 0.25 drop below total captaincy of 1.51 — see table below'],
+            [
+              "Batting",
+              "~40",
+              "Keeper Score + Left-Right Balance + Position Fit",
+            ],
+            [
+              "Bowling",
+              "~40",
+              "Overs + Pace + Spin + Powerplay + Middle + Death phases",
+            ],
+            ["Fitness", "5", "avg(stamina, 10 − injury_risk) × 0.5"],
+            ["Impact", "5", "avg(match_winner, clutch, consistency) × 0.7"],
+            ["Tactical", "3", "avg(flexibility of all players) × 0.3"],
+            [
+              "Age",
+              "1",
+              "clamp(1 − |avg_age − 30| / 15, 0, 1)  —  optimal age = 30",
+            ],
+            [
+              "Captaincy",
+              "4",
+              "Stepped by 0.5 pts per 0.25 drop below total captaincy of 1.51 — see table below",
+            ],
           ]}
         />
       </Section>
 
       {/* ── BATTING SCORING ── */}
       <Section title="Batting Score Breakdown">
-        <h3 className="text-white font-semibold text-sm mb-2">1. Wicket-Keeper Score</h3>
+        <h3 className="text-white font-semibold text-sm mb-2">
+          1. Wicket-Keeper Score
+        </h3>
         <Table
-          headers={['Condition', 'Points']}
+          headers={["Condition", "Points"]}
           rows={[
-            ['2+ keepers in squad', '3.0'],
-            ['1 keeper, injury risk ≤ 3', '2.5'],
-            ['1 keeper, normal risk', '2.0'],
-            ['No keeper', '0'],
+            ["2+ keepers in squad", "3.0"],
+            ["1 keeper, injury risk ≤ 3", "2.5"],
+            ["1 keeper, normal risk", "2.0"],
+            ["No keeper", "0"],
           ]}
         />
 
-        <h3 className="text-white font-semibold text-sm mt-5 mb-2">2. Left-Right Balance (Max 3 pts)</h3>
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">
+          2. Left-Right Balance (Max 3 pts)
+        </h3>
         <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-1">
           Score = 3 × (min(left, right) / max(left, right))
         </div>
-        <p className="text-gray-500 text-xs">Counts batters and all-rounders only. Zero if only one handedness exists.</p>
+        <p className="text-gray-500 text-xs">
+          Counts batters and all-rounders only. Zero if only one handedness
+          exists.
+        </p>
 
-        <h3 className="text-white font-semibold text-sm mt-5 mb-2">3. Position Fit Score (Max 34 pts)</h3>
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">
+          3. Position Fit Score (Max 34 pts)
+        </h3>
         <p className="text-gray-400 text-xs mb-3">
-          Dynamic programming assigns players to optimal batting slots. Each slot score is a <strong className="text-gray-300">weighted average</strong> of the listed ratings — weights are divided by their sum, giving a value 0–10 — then scaled to the slot max:
+          Dynamic programming assigns players to optimal batting slots. Each
+          slot score is a{" "}
+          <strong className="text-gray-300">weighted average</strong> of the
+          listed ratings — weights are divided by their sum, giving a value 0–10
+          — then scaled to the slot max:
         </p>
         <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-5">
           slot contribution = max(0, slotScore / 10) × slotMax
@@ -675,45 +864,104 @@ function RulesTab() {
         {/* Per-position weight breakdowns */}
         {[
           {
-            label: 'Positions 1–2 · Openers', slotMax: '4.5 each', totalW: 0.90,
-            rows: [['powerplay', 0.50, '55.6%'], ['pace_play', 0.15, '16.7%'], ['middle', 0.10, '11.1%'], ['anchor', 0.05, '5.6%'], ['spin_play', 0.05, '5.6%'], ['power_hitting', 0.05, '5.6%']],
+            label: "Positions 1–2 · Openers",
+            slotMax: "4.5 each",
+            totalW: 0.9,
+            rows: [
+              ["powerplay", 0.5, "55.6%"],
+              ["pace_play", 0.15, "16.7%"],
+              ["middle", 0.1, "11.1%"],
+              ["anchor", 0.05, "5.6%"],
+              ["spin_play", 0.05, "5.6%"],
+              ["power_hitting", 0.05, "5.6%"],
+            ],
           },
           {
-            label: 'Positions 3–4 · Top order', slotMax: '4.5 each', totalW: 0.90,
-            rows: [['middle', 0.40, '44.4%'], ['powerplay', 0.20, '22.2%'], ['pace_play', 0.10, '11.1%'], ['spin_play', 0.10, '11.1%'], ['anchor', 0.05, '5.6%'], ['power_hitting', 0.05, '5.6%']],
+            label: "Positions 3–4 · Top order",
+            slotMax: "4.5 each",
+            totalW: 0.9,
+            rows: [
+              ["middle", 0.4, "44.4%"],
+              ["powerplay", 0.2, "22.2%"],
+              ["pace_play", 0.1, "11.1%"],
+              ["spin_play", 0.1, "11.1%"],
+              ["anchor", 0.05, "5.6%"],
+              ["power_hitting", 0.05, "5.6%"],
+            ],
           },
           {
-            label: 'Positions 5–6 · Middle order', slotMax: '4.0 each', totalW: 0.80,
-            rows: [['death', 0.30, '37.5%'], ['middle', 0.20, '25.0%'], ['pace_play', 0.10, '12.5%'], ['spin_play', 0.10, '12.5%'], ['finishing', 0.05, '6.25%'], ['power_hitting', 0.05, '6.25%']],
+            label: "Positions 5–6 · Middle order",
+            slotMax: "4.0 each",
+            totalW: 0.8,
+            rows: [
+              ["death", 0.3, "37.5%"],
+              ["middle", 0.2, "25.0%"],
+              ["pace_play", 0.1, "12.5%"],
+              ["spin_play", 0.1, "12.5%"],
+              ["finishing", 0.05, "6.25%"],
+              ["power_hitting", 0.05, "6.25%"],
+            ],
           },
           {
-            label: 'Positions 7–8 · Lower middle', slotMax: '3.5 each', totalW: 0.70,
-            rows: [['death', 0.40, '57.1%'], ['pace_play', 0.10, '14.3%'], ['finishing', 0.10, '14.3%'], ['power_hitting', 0.10, '14.3%']],
+            label: "Positions 7–8 · Lower middle",
+            slotMax: "3.5 each",
+            totalW: 0.7,
+            rows: [
+              ["death", 0.4, "57.1%"],
+              ["pace_play", 0.1, "14.3%"],
+              ["finishing", 0.1, "14.3%"],
+              ["power_hitting", 0.1, "14.3%"],
+            ],
           },
           {
-            label: 'Positions 9–12 · Tail', slotMax: '0.25 each (shared)', totalW: 1.00,
-            rows: [['power_hitting', 0.60, '60.0%'], ['finishing', 0.40, '40.0%']],
+            label: "Positions 9–12 · Tail",
+            slotMax: "0.25 each (shared)",
+            totalW: 1.0,
+            rows: [
+              ["power_hitting", 0.6, "60.0%"],
+              ["finishing", 0.4, "40.0%"],
+            ],
           },
         ].map(({ label, slotMax, totalW, rows }) => (
-          <div key={label} className="mb-4 bg-gray-800/40 rounded-xl overflow-hidden">
+          <div
+            key={label}
+            className="mb-4 bg-gray-800/40 rounded-xl overflow-hidden"
+          >
             <div className="flex items-center justify-between px-4 py-2 bg-gray-800/80 border-b border-gray-700">
               <span className="text-white text-xs font-semibold">{label}</span>
-              <span className="text-gray-400 text-xs">Slot max: <span className="text-ipl-gold font-mono">{slotMax}</span> &nbsp;·&nbsp; Σ weights: <span className="font-mono">{totalW.toFixed(2)}</span></span>
+              <span className="text-gray-400 text-xs">
+                Slot max:{" "}
+                <span className="text-ipl-gold font-mono">{slotMax}</span>{" "}
+                &nbsp;·&nbsp; Σ weights:{" "}
+                <span className="font-mono">{totalW.toFixed(2)}</span>
+              </span>
             </div>
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-700">
-                  <th className="text-left text-gray-400 font-semibold py-1.5 px-4">Rating</th>
-                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">Raw weight</th>
-                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">Effective %</th>
+                  <th className="text-left text-gray-400 font-semibold py-1.5 px-4">
+                    Rating
+                  </th>
+                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">
+                    Raw weight
+                  </th>
+                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">
+                    Effective %
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(([attr, raw, pct]) => (
                   <tr key={attr} className="border-b border-gray-800/50">
-                    <td className="py-1.5 px-4 text-gray-300 font-mono">{attr}</td>
-                    <td className="py-1.5 px-4 text-gray-400 text-right font-mono">{raw.toFixed(2)}</td>
-                    <td className="py-1.5 px-4 text-ipl-gold text-right font-mono">{pct}</td>
+                    <td className="py-1.5 px-4 text-gray-300 font-mono">
+                      {attr}
+                    </td>
+                    <td className="py-1.5 px-4 text-gray-400 text-right font-mono">
+                      {raw.toFixed(2)}
+                    </td>
+                    <td className="py-1.5 px-4 text-ipl-gold text-right font-mono">
+                      {pct}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -725,42 +973,94 @@ function RulesTab() {
           <p>• Bowlers can only occupy positions 9–12.</p>
           <p>• Batsmen &amp; Wicket-Keepers can only occupy positions 1–8.</p>
           <p>• All-Rounders can occupy positions 1–9.</p>
-          <p>• All-Rounder at position 9 receives a <span className="text-green-400">+2 bonus</span> (only applied if total position fit would not exceed 34).</p>
-          <p>• Batting outside preferred positions: <span className="text-red-400">−3 penalty</span> applied to slot score before scaling.</p>
+          <p>
+            • All-Rounder at position 9 receives a{" "}
+            <span className="text-green-400">+2 bonus</span> (only applied if
+            total position fit would not exceed 34).
+          </p>
+          <p>
+            • Batting outside preferred positions:{" "}
+            <span className="text-red-400">−3 penalty</span> applied to slot
+            score before scaling.
+          </p>
         </div>
       </Section>
 
       {/* ── BOWLING SCORING ── */}
       <Section title="Bowling Score Breakdown">
-        <h3 className="text-white font-semibold text-sm mb-2">1. Total Overs Score (Max 3 pts)</h3>
+        <h3 className="text-white font-semibold text-sm mb-2">
+          1. Total Overs Score (Max 3 pts)
+        </h3>
         <Table
-          headers={['Overs', 'Score']}
-          rows={[['24+', '3.0'], ['23', '2.5'], ['22', '2.0'], ['21', '1.0'], ['20', '0.5'], ['< 20', '0']]}
+          headers={["Overs", "Score"]}
+          rows={[
+            ["24+", "3.0"],
+            ["23", "2.5"],
+            ["22", "2.0"],
+            ["21", "1.0"],
+            ["20", "0.5"],
+            ["< 20", "0"],
+          ]}
         />
 
-        <h3 className="text-white font-semibold text-sm mt-5 mb-2">2. Pace Overs Score (Max 3 pts)</h3>
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">
+          2. Pace Overs Score (Max 3 pts)
+        </h3>
         <Table
-          headers={['Pace Overs', 'Score']}
-          rows={[['14+', '2.5'], ['13', '2.0'], ['12', '1.5'], ['11', '1.0'], ['10', '0.5'], ['< 10', '0']]}
+          headers={["Pace Overs", "Score"]}
+          rows={[
+            ["14+", "2.5"],
+            ["13", "2.0"],
+            ["12", "1.5"],
+            ["11", "1.0"],
+            ["10", "0.5"],
+            ["< 10", "0"],
+          ]}
         />
-        <p className="text-gray-500 text-xs mt-1">+0.5 bonus if squad has both left-arm and right-arm pacers (cap 3.0 total).</p>
+        <p className="text-gray-500 text-xs mt-1">
+          +0.5 bonus if squad has both left-arm and right-arm pacers (cap 3.0
+          total).
+        </p>
 
-        <h3 className="text-white font-semibold text-sm mt-5 mb-2">3. Spin Overs Score (Max 3 pts)</h3>
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">
+          3. Spin Overs Score (Max 3 pts)
+        </h3>
         <Table
-          headers={['Spin Overs', 'Score']}
-          rows={[['10+', '2.5'], ['9', '2.0'], ['8', '1.5'], ['7', '1.0'], ['6', '0.5'], ['< 6', '0']]}
+          headers={["Spin Overs", "Score"]}
+          rows={[
+            ["10+", "2.5"],
+            ["9", "2.0"],
+            ["8", "1.5"],
+            ["7", "1.0"],
+            ["6", "0.5"],
+            ["< 6", "0"],
+          ]}
         />
-        <p className="text-gray-500 text-xs mt-1">+0.5 bonus for complementary spin archetypes (off-spin + leg-spin combo).</p>
+        <p className="text-gray-500 text-xs mt-1">
+          +0.5 bonus for complementary spin archetypes (off-spin + leg-spin
+          combo).
+        </p>
 
-        <h3 className="text-white font-semibold text-sm mt-5 mb-2">4. Phase Bowling Scores</h3>
-        <p className="text-gray-400 text-xs mb-3">Requires ≥ 2 eligible bowlers. Takes top 4 bowlers per phase.<br />
-          Effective rating = base rating if designated for that phase, else base − 2.</p>
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">
+          4. Phase Bowling Scores
+        </h3>
+        <p className="text-gray-400 text-xs mb-3">
+          Requires ≥ 2 eligible bowlers. Takes top 4 bowlers per phase.
+          <br />
+          Effective rating = base rating if designated for that phase, else base
+          − 2.
+        </p>
         <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-3">
-          Phase Score = avg(top 4 effective ratings) × multiplier  [clamped to max]
+          Phase Score = avg(top 4 effective ratings) × multiplier [clamped to
+          max]
         </div>
         <Table
-          headers={['Phase', 'Multiplier', 'Max Points']}
-          rows={[['Powerplay', '1.0×', '10'], ['Middle', '1.1×', '11'], ['Death', '1.0×', '10']]}
+          headers={["Phase", "Multiplier", "Max Points"]}
+          rows={[
+            ["Powerplay", "1.0×", "10"],
+            ["Middle", "1.1×", "11"],
+            ["Death", "1.0×", "10"],
+          ]}
         />
       </Section>
 
@@ -768,14 +1068,32 @@ function RulesTab() {
       <Section title="Supplementary Score Formulas">
         <div className="space-y-4">
           {[
-            { label: 'Fitness (Max 5)', formula: 'avg(stamina,  10 − injury_risk)  ×  0.5', attrs: 'fitness.stamina, fitness.injury_risk' },
-            { label: 'Impact (Max 5)', formula: 'avg(match_winner,  clutch,  consistency)  ×  0.7', attrs: 'role_impact.match_winner / clutch / consistency' },
-            { label: 'Tactical (Max 3)', formula: 'avg(flexibility of all players)  ×  0.3', attrs: 'tactical.flexibility' },
-            { label: 'Age (Max 1)', formula: 'clamp(1 − |avg_age − 30| / 15,  0,  1)', attrs: 'Player age — optimal team average = 30 years' },
+            {
+              label: "Fitness (Max 5)",
+              formula: "avg(stamina,  10 − injury_risk)  ×  0.5",
+              attrs: "fitness.stamina, fitness.injury_risk",
+            },
+            {
+              label: "Impact (Max 5)",
+              formula: "avg(match_winner,  clutch,  consistency)  ×  0.7",
+              attrs: "role_impact.match_winner / clutch / consistency",
+            },
+            {
+              label: "Tactical (Max 3)",
+              formula: "avg(flexibility of all players)  ×  0.3",
+              attrs: "tactical.flexibility",
+            },
+            {
+              label: "Age (Max 1)",
+              formula: "clamp(1 − |avg_age − 30| / 15,  0,  1)",
+              attrs: "Player age — optimal team average = 30 years",
+            },
           ].map(({ label, formula, attrs }) => (
             <div key={label} className="bg-gray-800/40 rounded-xl p-4">
               <p className="text-white text-sm font-semibold mb-1">{label}</p>
-              <pre className="font-mono text-xs text-ipl-gold whitespace-pre-wrap mb-1">{formula}</pre>
+              <pre className="font-mono text-xs text-ipl-gold whitespace-pre-wrap mb-1">
+                {formula}
+              </pre>
               <p className="text-gray-500 text-xs">Source fields: {attrs}</p>
             </div>
           ))}
@@ -783,35 +1101,58 @@ function RulesTab() {
           {/* Captaincy — full step table */}
           <div className="bg-gray-800/40 rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-700">
-              <p className="text-white text-sm font-semibold">Captaincy (Max 4)</p>
-              <p className="text-gray-500 text-xs mt-0.5">Source: <span className="font-mono">tactical.captaincy</span> summed across all squad players</p>
+              <p className="text-white text-sm font-semibold">
+                Captaincy (Max 4)
+              </p>
+              <p className="text-gray-500 text-xs mt-0.5">
+                Source: <span className="font-mono">tactical.captaincy</span>{" "}
+                summed across all squad players
+              </p>
             </div>
             <div className="px-4 py-3 border-b border-gray-700">
-              <pre className="font-mono text-xs text-ipl-gold whitespace-pre-wrap">{'steps = floor(max(0,  1.75 − total)  /  0.25)\nscore = max(0,  4  −  steps × 0.5)'}</pre>
+              <pre className="font-mono text-xs text-ipl-gold whitespace-pre-wrap">
+                {
+                  "steps = floor(max(0,  1.75 − total)  /  0.25)\nscore = max(0,  4  −  steps × 0.5)"
+                }
+              </pre>
             </div>
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-700">
-                  <th className="text-left text-gray-400 font-semibold py-1.5 px-4">Total captaincy (squad sum)</th>
-                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">Steps</th>
-                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">Score</th>
+                  <th className="text-left text-gray-400 font-semibold py-1.5 px-4">
+                    Total captaincy (squad sum)
+                  </th>
+                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">
+                    Steps
+                  </th>
+                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">
+                    Score
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  ['> 1.50',       '0', '4.0'],
-                  ['1.26 – 1.50',  '1', '3.5'],
-                  ['1.01 – 1.25',  '2', '3.0'],
-                  ['0.76 – 1.00',  '3', '2.5'],
-                  ['0.51 – 0.75',  '4', '2.0'],
-                  ['0.26 – 0.50',  '5', '1.5'],
-                  ['0.01 – 0.25',  '6', '1.0'],
-                  ['≤ 0',          '—', '0.0'],
+                  ["> 1.50", "0", "4.0"],
+                  ["1.26 – 1.50", "1", "3.5"],
+                  ["1.01 – 1.25", "2", "3.0"],
+                  ["0.76 – 1.00", "3", "2.5"],
+                  ["0.51 – 0.75", "4", "2.0"],
+                  ["0.26 – 0.50", "5", "1.5"],
+                  ["0.01 – 0.25", "6", "1.0"],
+                  ["≤ 0", "—", "0.0"],
                 ].map(([range, steps, score], i) => (
                   <tr key={i} className="border-b border-gray-800/50">
-                    <td className="py-1.5 px-4 text-gray-300 font-mono">{range}</td>
-                    <td className="py-1.5 px-4 text-gray-400 text-right font-mono">{steps}</td>
-                    <td className={`py-1.5 px-4 text-right font-mono font-semibold ${score === '4.0' ? 'text-ipl-gold' : score === '0.0' ? 'text-gray-500' : 'text-gray-300'}`}>{score}</td>
+                    <td className="py-1.5 px-4 text-gray-300 font-mono">
+                      {range}
+                    </td>
+                    <td className="py-1.5 px-4 text-gray-400 text-right font-mono">
+                      {steps}
+                    </td>
+                    <td
+                      className={`py-1.5 px-4 text-right font-mono font-semibold ${score === "4.0" ? "text-ipl-gold" : score === "0.0" ? "text-gray-500" : "text-gray-300"}`}
+                    >
+                      {score}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -823,17 +1164,20 @@ function RulesTab() {
       {/* ── GAME CONSTANTS ── */}
       <Section title="Game Constants">
         <Table
-          headers={['Constant', 'Value']}
+          headers={["Constant", "Value"]}
           rows={[
-            ['Teams', '10 (MI, CSK, RCB, KKR, RR, DC, SRH, PBKS, GT, LSG)'],
-            ['Starting purse per team', '120 Crores'],
-            ['Max squad size', '25 players'],
-            ['Playing-12 overseas cap', '4 players'],
-            ['Min bid increment', '0.2 Crores'],
-            ['Default auction timer', '10 seconds'],
-            ['Bid normalization', '2 decimal places'],
-            ['Optimal captain score threshold', '≥ 1.75 total captaincy for full 4 pts'],
-            ['Optimal team average age', '30 years'],
+            ["Teams", "10 (MI, CSK, RCB, KKR, RR, DC, SRH, PBKS, GT, LSG)"],
+            ["Starting purse per team", "120 Crores"],
+            ["Max squad size", "25 players"],
+            ["Playing-12 overseas cap", "4 players"],
+            ["Min bid increment", "0.2 Crores"],
+            ["Default auction timer", "10 seconds"],
+            ["Bid normalization", "2 decimal places"],
+            [
+              "Optimal captain score threshold",
+              "≥ 1.75 total captaincy for full 4 pts",
+            ],
+            ["Optimal team average age", "30 years"],
           ]}
         />
       </Section>
@@ -844,10 +1188,10 @@ function RulesTab() {
 function InRoomLayout() {
   const { room, teamAssignments } = useRoom();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('Lobby');
+  const [activeTab, setActiveTab] = useState("Lobby");
 
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
+    if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, []);
@@ -864,19 +1208,21 @@ function InRoomLayout() {
               onClick={() => setActiveTab(tab)}
               className={`relative flex-shrink-0 px-4 py-3 text-sm font-semibold transition border-b-2 ${
                 activeTab === tab
-                  ? 'text-ipl-gold border-ipl-gold'
-                  : 'text-gray-400 border-transparent hover:text-white hover:border-gray-600'
+                  ? "text-ipl-gold border-ipl-gold"
+                  : "text-gray-400 border-transparent hover:text-white hover:border-gray-600"
               }`}
             >
               {tab}
-              {tab === 'Auction' && room && (
+              {tab === "Auction" && room && (
                 <span className="absolute top-2 right-1 w-1.5 h-1.5 rounded-full bg-green-500" />
               )}
             </button>
           ))}
 
           <div className="flex-shrink-0 ml-2 flex items-center gap-2 pb-1">
-            <span className="text-xs text-gray-500 hidden sm:inline">Room:</span>
+            <span className="text-xs text-gray-500 hidden sm:inline">
+              Room:
+            </span>
             <span className="font-mono font-bold text-ipl-gold text-sm bg-gray-900 px-2 py-0.5 rounded-lg border border-gray-700">
               {room?.code}
             </span>
@@ -885,7 +1231,7 @@ function InRoomLayout() {
       </div>
 
       <div className="h-full pt-[57px] overflow-hidden">
-        {activeTab === 'Lobby' && (
+        {activeTab === "Lobby" && (
           <div className="h-full overflow-y-auto">
             <div className="max-w-2xl mx-auto px-4 py-8">
               <RoomLobby />
@@ -893,8 +1239,8 @@ function InRoomLayout() {
           </div>
         )}
 
-        {activeTab === 'Auction' && (
-          myAssignment ? (
+        {activeTab === "Auction" &&
+          (myAssignment ? (
             <div className="h-full overflow-y-auto lg:overflow-hidden">
               <AuctionBoard />
             </div>
@@ -903,12 +1249,15 @@ function InRoomLayout() {
               <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="bg-gray-900 border border-gray-700 rounded-2xl p-10 text-center max-w-sm">
                   <p className="text-4xl mb-4">🏏</p>
-                  <h2 className="text-white font-bold text-xl mb-2">Pick a Team First</h2>
+                  <h2 className="text-white font-bold text-xl mb-2">
+                    Pick a Team First
+                  </h2>
                   <p className="text-gray-400 text-sm mb-6">
-                    Go to the Lobby tab and select your team before joining the auction.
+                    Go to the Lobby tab and select your team before joining the
+                    auction.
                   </p>
                   <button
-                    onClick={() => setActiveTab('Lobby')}
+                    onClick={() => setActiveTab("Lobby")}
                     className="bg-ipl-gold text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
                   >
                     Go to Lobby
@@ -916,35 +1265,34 @@ function InRoomLayout() {
                 </div>
               </div>
             </div>
-          )
-        )}
+          ))}
 
-        {activeTab === 'Teams' && (
+        {activeTab === "Teams" && (
           <div className="h-full overflow-y-auto">
             <TeamsTab />
           </div>
         )}
-        {activeTab === 'Players' && (
+        {activeTab === "Players" && (
           <div className="h-full overflow-y-auto">
             <PlayersTab />
           </div>
         )}
-        {activeTab === 'Dashboard' && (
+        {activeTab === "Dashboard" && (
           <div className="h-full overflow-y-auto">
             <DashboardPage />
           </div>
         )}
-        {activeTab === 'Rankings' && (
+        {activeTab === "Rankings" && (
           <div className="h-full overflow-y-auto">
             <RankingPage />
           </div>
         )}
-        {activeTab === 'Rules' && (
+        {activeTab === "Rules" && (
           <div className="h-full overflow-y-auto">
             <RulesTab />
           </div>
         )}
-        {activeTab === 'Settings' && (
+        {activeTab === "Settings" && (
           <div className="h-full overflow-y-auto">
             <SettingsTab />
           </div>
@@ -957,7 +1305,7 @@ function InRoomLayout() {
 export default function RoomPage() {
   const { status, error } = useRoom();
 
-  if (status === 'in-room') return <InRoomLayout />;
+  if (status === "in-room") return <InRoomLayout />;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
