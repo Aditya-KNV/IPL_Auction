@@ -526,7 +526,236 @@ function SettingsTab() {
   );
 }
 
-const TABS = ['Lobby', 'Auction', 'Teams', 'Players', 'Dashboard', 'Rankings', 'Settings'];
+const TABS = ['Lobby', 'Auction', 'Teams', 'Players', 'Dashboard', 'Rankings', 'Rules', 'Settings'];
+
+function RulesTab() {
+  const Section = ({ title, children }) => (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+      <h2 className="text-ipl-gold font-bold text-lg mb-4 border-b border-gray-800 pb-2">{title}</h2>
+      {children}
+    </div>
+  );
+
+  const Table = ({ headers, rows }) => (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-gray-700">
+            {headers.map((h) => (
+              <th key={h} className="text-left text-gray-400 font-semibold py-2 pr-4">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-b border-gray-800/50">
+              {row.map((cell, j) => (
+                <td key={j} className="py-2 pr-4 text-gray-300">{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-ipl-gold mb-2">Rules & Rating Schema</h1>
+      <p className="text-gray-400 text-sm mb-8">Complete reference for how bidding, budgets, squads, and player scores are calculated.</p>
+
+      {/* ── BIDDING RULES ── */}
+      <Section title="Bidding Rules">
+        <Table
+          headers={['Rule', 'Value']}
+          rows={[
+            ['Minimum bid increment', '0.2 Crores (20 Lakhs)'],
+            ['Quick bid buttons', '+0.2 Cr, +0.5 Cr, +1 Cr'],
+            ['First bid', 'Must be ≥ player\'s base price (no increment needed)'],
+            ['Subsequent bids', 'Must be ≥ current bid + 0.2 Cr'],
+            ['Bid timer', '10 seconds default (configurable 5–120s, host only)'],
+            ['Timer reset', 'Each valid bid resets the countdown'],
+            ['Withdrawal', 'Highest bidder cannot withdraw; others can at any time'],
+            ['All withdraw', 'Player marked UNSOLD'],
+            ['One team left', 'Player SOLD to remaining bidder'],
+          ]}
+        />
+      </Section>
+
+      {/* ── TEAM BUDGET ── */}
+      <Section title="Team Budget & Purse">
+        <Table
+          headers={['Rule', 'Value']}
+          rows={[
+            ['Starting purse per team', '120 Crores'],
+            ['Purse deduction', 'Exact final bid amount (2 decimal places)'],
+            ['Bid blocked when', 'remaining purse < bid amount'],
+            ['Purse on reset', 'Restored to full 120 Crores'],
+          ]}
+        />
+      </Section>
+
+      {/* ── SQUAD COMPOSITION ── */}
+      <Section title="Squad Composition Rules">
+        <Table
+          headers={['Rule', 'Value']}
+          rows={[
+            ['Max squad size', '25 players'],
+            ['Playing-12 size', 'Exactly 12'],
+            ['Max overseas in Playing-12', '4'],
+            ['Max overseas in squad (≤18 player cap)', '6'],
+            ['Max overseas in squad (25 player cap)', '8'],
+            ['Min Indian players for full Playing-12', '8'],
+            ['Overseas definition', 'Any player whose nationality ≠ Indian (case-insensitive)'],
+          ]}
+        />
+      </Section>
+
+      {/* ── PLAYER ROLES ── */}
+      <Section title="Player Roles & Batting Positions">
+        <Table
+          headers={['Role', 'Bats at', 'Bowls']}
+          rows={[
+            ['Batsman', '1–8', 'No'],
+            ['Bowler', '9–12 only', 'Yes'],
+            ['All-Rounder', '1–9', 'Yes'],
+            ['Wicket-Keeper', '1–8', 'No'],
+          ]}
+        />
+        <p className="text-gray-500 text-xs mt-3">All individual ratings are on a 0–10 scale.</p>
+      </Section>
+
+      {/* ── TEAM SCORE OVERVIEW ── */}
+      <Section title="Team Score Overview (0–100)">
+        <p className="text-gray-300 text-sm mb-4">Final team score is the sum of 7 components:</p>
+        <div className="bg-gray-800/60 rounded-xl p-4 font-mono text-sm text-ipl-gold mb-4">
+          Final Score = Batting + Bowling + Fitness + Impact + Tactical + Age + Captaincy
+        </div>
+        <Table
+          headers={['Component', 'Max Points', 'Formula']}
+          rows={[
+            ['Batting', '~40', 'Keeper Score + Left-Right Balance + Position Fit'],
+            ['Bowling', '~40', 'Overs + Pace + Spin + Powerplay + Middle + Death phases'],
+            ['Fitness', '5', 'avg(stamina, 10 − injury_risk) × 0.5'],
+            ['Impact', '5', 'avg(match_winner, clutch, consistency) × 0.7'],
+            ['Tactical', '3', 'avg(flexibility of all players) × 0.3'],
+            ['Age', '1', 'clamp(1 − |avg_age − 30| / 15, 0, 1)  —  optimal age = 30'],
+            ['Captaincy', '4', 'Stepped: full 4 pts when total captaincy ≥ 1.75, drops 0.5 per 0.25 below'],
+          ]}
+        />
+      </Section>
+
+      {/* ── BATTING SCORING ── */}
+      <Section title="Batting Score Breakdown">
+        <h3 className="text-white font-semibold text-sm mb-2">1. Wicket-Keeper Score</h3>
+        <Table
+          headers={['Condition', 'Points']}
+          rows={[
+            ['2 fit keepers', '4.0'],
+            ['1 keeper, injury risk ≤ 3', '2.5'],
+            ['1 keeper, normal risk', '2.0'],
+            ['No keeper', '0'],
+          ]}
+        />
+
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">2. Left-Right Balance (Max 3 pts)</h3>
+        <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-1">
+          Score = 3 × (min(left, right) / max(left, right))
+        </div>
+        <p className="text-gray-500 text-xs">Counts batters and all-rounders only. Zero if only one handedness exists.</p>
+
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">3. Position Fit Score (Max 34 pts)</h3>
+        <p className="text-gray-400 text-xs mb-3">Dynamic programming assigns players to optimal batting slots. Each slot has a maximum:</p>
+        <Table
+          headers={['Position', 'Slot Max', 'Dominant Rating Weights']}
+          rows={[
+            ['1–2 (Openers)', '4.5 each', '50% powerplay, 15% pace play, 10% middle'],
+            ['3–4 (Top order)', '4.5 each', '40% middle, 20% powerplay, 10% pace/spin'],
+            ['5–6 (Middle order)', '4.0 each', '30% middle, 20% death, 10% pace/spin'],
+            ['7–8 (Lower middle)', '3.5 each', '40% death, 10% pace / finishing / power-hitting'],
+            ['9–12 (Tail)', '0.25 each (shared)', '60% power-hitting, 40% finishing'],
+          ]}
+        />
+        <div className="mt-3 space-y-1 text-xs text-gray-400">
+          <p>• Bowlers can only occupy positions 9–12.</p>
+          <p>• All-Rounder at position 9 receives a <span className="text-green-400">+2 bonus</span> (if total position fit ≤ 34).</p>
+          <p>• Batting outside preferred positions: <span className="text-red-400">−3 penalty</span>.</p>
+        </div>
+      </Section>
+
+      {/* ── BOWLING SCORING ── */}
+      <Section title="Bowling Score Breakdown">
+        <h3 className="text-white font-semibold text-sm mb-2">1. Total Overs Score (Max 3 pts)</h3>
+        <Table
+          headers={['Overs', 'Score']}
+          rows={[['24+', '3.0'], ['23', '2.5'], ['22', '2.0'], ['21', '1.0'], ['20', '0.5'], ['< 20', '0']]}
+        />
+
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">2. Pace Overs Score (Max 3 pts)</h3>
+        <Table
+          headers={['Pace Overs', 'Score']}
+          rows={[['14+', '2.5'], ['13', '2.0'], ['12', '1.5'], ['11', '1.0'], ['10', '0.5'], ['< 10', '0']]}
+        />
+        <p className="text-gray-500 text-xs mt-1">+0.5 bonus if squad has both left-arm and right-arm pacers (cap 3.0 total).</p>
+
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">3. Spin Overs Score (Max 3 pts)</h3>
+        <Table
+          headers={['Spin Overs', 'Score']}
+          rows={[['10+', '2.5'], ['9', '2.0'], ['8', '1.5'], ['7', '1.0'], ['6', '0.5'], ['< 6', '0']]}
+        />
+        <p className="text-gray-500 text-xs mt-1">+0.5 bonus for complementary spin archetypes (off-spin + leg-spin combo).</p>
+
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">4. Phase Bowling Scores</h3>
+        <p className="text-gray-400 text-xs mb-3">Requires ≥ 2 eligible bowlers. Takes top 4 bowlers per phase.<br />
+          Effective rating = base rating if designated for that phase, else base − 2.</p>
+        <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-3">
+          Phase Score = avg(top 4 effective ratings) × multiplier  [clamped to max]
+        </div>
+        <Table
+          headers={['Phase', 'Multiplier', 'Max Points']}
+          rows={[['Powerplay', '1.0×', '10'], ['Middle', '1.1×', '11'], ['Death', '1.0×', '10']]}
+        />
+      </Section>
+
+      {/* ── SUPPLEMENTARY SCORES ── */}
+      <Section title="Supplementary Score Formulas">
+        <div className="space-y-4">
+          {[
+            { label: 'Fitness (Max 5)', formula: 'avg(stamina,  10 − injury_risk)  ×  0.5', attrs: 'fitness.stamina, fitness.injury_risk' },
+            { label: 'Impact (Max 5)', formula: 'avg(match_winner,  clutch,  consistency)  ×  0.7', attrs: 'role_impact.match_winner / clutch / consistency' },
+            { label: 'Tactical (Max 3)', formula: 'avg(flexibility of all players)  ×  0.3', attrs: 'tactical.flexibility' },
+            { label: 'Age (Max 1)', formula: 'clamp(1 − |avg_age − 30| / 15,  0,  1)', attrs: 'Player age — optimal team average = 30 years' },
+            { label: 'Captaincy (Max 4)', formula: 'steps = floor(max(0, 1.75 − total_cap) / 0.25)\nScore = max(0, 4 − steps × 0.5)', attrs: 'tactical.captaincy (summed across squad)' },
+          ].map(({ label, formula, attrs }) => (
+            <div key={label} className="bg-gray-800/40 rounded-xl p-4">
+              <p className="text-white text-sm font-semibold mb-1">{label}</p>
+              <pre className="font-mono text-xs text-ipl-gold whitespace-pre-wrap mb-1">{formula}</pre>
+              <p className="text-gray-500 text-xs">Source fields: {attrs}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* ── GAME CONSTANTS ── */}
+      <Section title="Game Constants">
+        <Table
+          headers={['Constant', 'Value']}
+          rows={[
+            ['Teams', '10 (MI, CSK, RCB, KKR, RR, DC, SRH, PBKS, GT, LSG)'],
+            ['Starting purse per team', '120 Crores'],
+            ['Max squad size', '25 players'],
+            ['Playing-12 overseas cap', '4 players'],
+            ['Min bid increment', '0.2 Crores'],
+            ['Default auction timer', '10 seconds'],
+            ['Bid normalization', '2 decimal places'],
+            ['Optimal captain score threshold', '≥ 1.75 total captaincy for full 4 pts'],
+            ['Optimal team average age', '30 years'],
+          ]}
+        />
+      </Section>
+    </div>
+  );
+}
 
 function InRoomLayout() {
   const { room, teamAssignments } = useRoom();
@@ -624,6 +853,11 @@ function InRoomLayout() {
         {activeTab === 'Rankings' && (
           <div className="h-full overflow-y-auto">
             <RankingPage />
+          </div>
+        )}
+        {activeTab === 'Rules' && (
+          <div className="h-full overflow-y-auto">
+            <RulesTab />
           </div>
         )}
         {activeTab === 'Settings' && (
