@@ -796,16 +796,16 @@ function RulesTab() {
           rows={[
             [
               "Batting",
-              "~40",
+              "40",
               "Keeper Score + Left-Right Balance + Position Fit",
             ],
             [
               "Bowling",
-              "~40",
+              "40",
               "Overs + Pace + Spin + Powerplay + Middle + Death phases",
             ],
             ["Fitness", "5", "avg(stamina, 10 − injury_risk) × 0.5"],
-            ["Impact", "5", "avg(match_winner, clutch, consistency) × 0.7"],
+            ["Impact", "7", "avg(match_winner, clutch, consistency) × 0.7"],
             ["Tactical", "3", "avg(flexibility of all players) × 0.3"],
             [
               "Age",
@@ -1074,7 +1074,7 @@ function RulesTab() {
               attrs: "fitness.stamina, fitness.injury_risk",
             },
             {
-              label: "Impact (Max 5)",
+              label: "Impact (Max 7)",
               formula: "avg(match_winner,  clutch,  consistency)  ×  0.7",
               attrs: "role_impact.match_winner / clutch / consistency",
             },
