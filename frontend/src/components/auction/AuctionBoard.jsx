@@ -424,7 +424,7 @@ export default function AuctionBoard() {
               {currentPlayer && <PlayerRatingsPanel player={currentPlayer} />}
               <div>
                 <SectionLabel>{amHost ? "All Teams" : "Other Teams"}</SectionLabel>
-                <OtherTeamsPanel teams={allTeams} myTeamId={myTeam?._id} />
+                <OtherTeamsPanel teams={allTeams} myTeamId={myTeam?._id} teamAssignments={teamAssignments} />
               </div>
             </div>
           </div>

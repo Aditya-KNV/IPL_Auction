@@ -497,10 +497,7 @@ function TeamsTab() {
       )}
 
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">
-          All Teams
-        </p>
-        <OtherTeamsPanel teams={allTeams} myTeamId={myTeamId} />
+        <OtherTeamsPanel teams={allTeams} myTeamId={myTeamId} teamAssignments={teamAssignments} />
       </div>
     </div>
   );
@@ -878,7 +875,7 @@ function RulesTab() {
           },
           {
             label: "Positions 3–4 · Top order",
-            slotMax: "4.5 each",
+            slotMax: "4.0 each",
             totalW: 0.9,
             rows: [
               ["middle", 0.4, "44.4%"],
@@ -903,8 +900,8 @@ function RulesTab() {
             ],
           },
           {
-            label: "Positions 7–8 · Lower middle",
-            slotMax: "3.5 each",
+            label: "Positions 7–8 · Lower order",
+            slotMax: "#7: 4.0 · #8: 3.0",
             totalW: 0.7,
             rows: [
               ["death", 0.4, "57.1%"],
@@ -915,7 +912,7 @@ function RulesTab() {
           },
           {
             label: "Positions 9–12 · Tail",
-            slotMax: "0.25 each (shared)",
+            slotMax: "#9: 1.0 · #10: 0.34 · #11–12: 0.33",
             totalW: 1.0,
             rows: [
               ["power_hitting", 0.6, "60.0%"],
@@ -973,11 +970,6 @@ function RulesTab() {
           <p>• Bowlers can only occupy positions 9–12.</p>
           <p>• Batsmen &amp; Wicket-Keepers can only occupy positions 1–8.</p>
           <p>• All-Rounders can occupy positions 1–9.</p>
-          <p>
-            • All-Rounder at position 9 receives a{" "}
-            <span className="text-green-400">+2 bonus</span> (only applied if
-            total position fit would not exceed 34).
-          </p>
           <p>
             • Batting outside preferred positions:{" "}
             <span className="text-red-400">−3 penalty</span> applied to slot

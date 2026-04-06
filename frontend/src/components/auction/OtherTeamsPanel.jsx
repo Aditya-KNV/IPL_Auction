@@ -97,7 +97,7 @@ const SquadList = ({ players, onPlayerClick, loadingId }) => {
   );
 };
 
-const TeamRow = ({ team, rank, isMyTeam, onPlayerClick, loadingId }) => {
+const TeamRow = ({ team, rank, isMyTeam, username, onPlayerClick, loadingId }) => {
   const [expanded, setExpanded] = useState(false);
   const remaining = normalizeCroreAmount(team.remainingPurse ?? 0);
   const total = normalizeCroreAmount(team.purse ?? 0);
@@ -116,11 +116,15 @@ const TeamRow = ({ team, rank, isMyTeam, onPlayerClick, loadingId }) => {
         <div className="flex-1 min-w-0 text-left">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-gray-200 truncate">{team.name}</span>
-            {isMyTeam && (
+            {isMyTeam ? (
               <span className="text-[9px] font-bold text-ipl-gold border border-ipl-gold/30 px-1.5 py-0.5 rounded-full tracking-widest flex-shrink-0">
                 YOU
               </span>
-            )}
+            ) : username ? (
+              <span className="text-[9px] font-bold text-gray-400 border border-gray-700 px-1.5 py-0.5 rounded-full tracking-widest flex-shrink-0 truncate max-w-[80px]">
+                {username}
+              </span>
+            ) : null}
           </div>
           <PurseBar remaining={remaining} total={total || 120} color={team.color} />
           <div className="flex items-center justify-between mt-1">
@@ -153,9 +157,15 @@ const TeamRow = ({ team, rank, isMyTeam, onPlayerClick, loadingId }) => {
   );
 };
 
-export default function OtherTeamsPanel({ teams, myTeamId }) {
+export default function OtherTeamsPanel({ teams, myTeamId, teamAssignments = {} }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [loadingId, setLoadingId] = useState(null);
+
+  // Build teamId → username map from assignments
+  const teamOwners = Object.values(teamAssignments).reduce((acc, a) => {
+    if (a.teamId && a.claimedBy) acc[String(a.teamId)] = a.claimedBy;
+    return acc;
+  }, {});
 
   const openPlayer = async (playerId) => {
     if (loadingId) return;
@@ -211,6 +221,7 @@ export default function OtherTeamsPanel({ teams, myTeamId }) {
                 team={team}
                 rank={rank}
                 isMyTeam={isMyTeam}
+                username={teamOwners[String(team._id)]}
                 onPlayerClick={openPlayer}
                 loadingId={loadingId}
               />

@@ -62,15 +62,14 @@ const battingFormulaForPosition = (position) => {
 };
 
 // Per-slot contribution cap toward the 34-point Position Fit total.
-// Groups: (1,2)→9 pts, (3,4)→9 pts, (5,6)→8 pts, (7,8)→7 pts, (9–12)→1 pt shared (0.25 each)
+// Slot maxes — #1–2: 4.5 pts · #3–7: 4 pts · #8: 3 pts · #9: 1 pt · #10: 0.34 pts · #11–12: 0.33 pts
 const POSITION_SLOT_MAX = {
   1: 4.5, 2: 4.5,
-  3: 4.5, 4: 4.5,
-  5: 4.0, 6: 4.0,
-  7: 3.5, 8: 3.5,
-  9: 0.25, 10: 0.25, 11: 0.25, 12: 0.25,
+  3: 4,   4: 4,
+  5: 4,   6: 4,
+  7: 4,   8: 3,
+  9: 1,   10: 0.34, 11: 0.33, 12: 0.33,
 };
-const AR_LOWER_ORDER_BONUS = 2; // direct score bonus for an All-Rounder batting at #9 (only if total won't exceed 34)
 
 const weightedNormalizedScore = (metrics, weights) => {
   const weightEntries = Object.entries(weights);
@@ -105,15 +104,14 @@ const optimizeBattingOrder = (players) => {
       // Hard position constraints:
       //   Bowlers can ONLY bat at positions 9–12 (lower order)
       //   Batsmen/Wicket-Keepers stay at 1–8 (8 allows overflow when squad has 8+ top-order players)
-      //   All-Rounders can stretch to position 9 (batting depth bonus applies)
+      //   All-Rounders can stretch to position 9
       if (player.role === 'Bowler' && position < 9) continue;
       if ((player.role === 'Batsman' || player.role === 'Wicket-Keeper') && position > 8) continue;
       const preferred = player.tactical?.positions ?? [];
       const base = preferred.includes(position)
         ? playerBattingScoreForPosition(player, position)
         : playerBattingScoreForPosition(player, position) - 3;
-      // Any player at #9 earns a squad-depth bonus in optimisation
-      const slotScore = base + (position === 9 ? AR_LOWER_ORDER_BONUS : 0);
+      const slotScore = base;
 
       best = Math.max(best, slotScore + dfs(slotIndex + 1, usedMask | (1 << playerIndex)));
     }
@@ -148,7 +146,7 @@ const optimizeBattingOrder = (players) => {
       const base = preferred.includes(position)
         ? playerBattingScoreForPosition(player, position)
         : playerBattingScoreForPosition(player, position) - 3;
-      const slotScore = base + (position === 9 ? AR_LOWER_ORDER_BONUS : 0);
+      const slotScore = base;
 
       const candidate = slotScore + memoGet(slotIndex + 1, usedMask | (1 << pi));
       if (candidate > bestValue) { bestValue = candidate; bestPi = pi; bestSlotScore = slotScore; }
@@ -157,8 +155,7 @@ const optimizeBattingOrder = (players) => {
     if (bestPi >= 0) {
       const player = players[bestPi];
       const preferred = player.tactical?.positions ?? [];
-      const arBonus = player.role === 'All-Rounder' && position === 9;
-      assignments.push({ position, playerIndex: bestPi, isPreferred: preferred.includes(position), slotScore: round(bestSlotScore), arBonus });
+      assignments.push({ position, playerIndex: bestPi, isPreferred: preferred.includes(position), slotScore: round(bestSlotScore) });
       usedMask |= (1 << bestPi);
     }
   }
@@ -197,22 +194,13 @@ const battingPositionScore = (players) => {
 
   let positionFitScore = 0;
 
-  const battingOrder = assignments.map(({ position, playerIndex, isPreferred, slotScore, arBonus }) => {
+  const battingOrder = assignments.map(({ position, playerIndex, isPreferred, slotScore }) => {
     const p = candidates[playerIndex];
     const slotMax = POSITION_SLOT_MAX[position] ?? 0;
     const contribution = round(Math.max(0, slotScore / 10) * slotMax, 2);
     positionFitScore += contribution;
-    return { playerId: String(p._id), name: p.name, position, isPreferred, slotScore, arBonus, slotMax, contribution };
+    return { playerId: String(p._id), name: p.name, position, isPreferred, slotScore, slotMax, contribution };
   }).sort((a, b) => a.position - b.position);
-
-  // AR bonus at #9: +2 only if it won't push position fit above 34
-  const arEntry = battingOrder.find((e) => e.arBonus);
-  if (arEntry && positionFitScore + AR_LOWER_ORDER_BONUS <= 34) {
-    positionFitScore += AR_LOWER_ORDER_BONUS;
-    arEntry.arBonusGranted = true;
-  } else if (arEntry) {
-    arEntry.arBonusGranted = false;
-  }
 
   return { score: round(positionFitScore), battingOrder };
 };

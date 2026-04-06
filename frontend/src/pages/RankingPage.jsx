@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useRoom } from '../context/RoomContext';
+import { useMyTeam } from '../hooks/useMyTeam';
 import PlayerStatsModal from '../components/players/PlayerStatsModal';
 
 
@@ -120,14 +121,14 @@ const SCHEMA_SECTIONS = [
       { label: 'Left/Right Balance', max: 3, desc: '3 × (min(left, right) / max(left, right))' },
       {
         label: 'Position Fit', max: 34, desc:
-          'Group weights — #1–2: 9 pts (4.5 each) · #3–4: 9 pts (4.5 each) · #5–6: 8 pts (4.0 each) · #7–8: 7 pts (3.5 each) · #9–12: 1 pt shared (0.25 each)\n' +
+          'Slot maxes — #1–2: 4.5 pts · #3–7: 4 pts · #8: 3 pts · #9: 1 pt · #10: 0.34 pts · #11–12: 0.33 pts\n' +
           'Each slot contribution = (fit score / 10) × slot max\n' +
           '#1–2 Openers: Powerplay 50%, Pace play 15%, Middle 10%, Anchor 5%, Spin 5%, Power hit 5%\n' +
           '#3–4 Top order: Middle 40%, Powerplay 20%, Pace 10%, Spin 10%, Anchor 5%, Power hit 5%\n' +
           '#5–6 Middle: Death 30%, Middle 20%, Pace 10%, Spin 10%, Finishing 5%, Power hit 5%\n' +
           '#7–8 Lower: Death 40%, Pace 10%, Finishing 10%, Power hit 10%\n' +
           '#9–12 Tail: Power hitting 60%, Finishing 40%\n' +
-          'Out-of-position penalty: −3 · All-Rounder at #9: +2 bonus (only if total ≤ 34)',
+          'Out-of-position penalty: −3',
       },
     ],
   },
@@ -389,8 +390,6 @@ const TeamCard = ({ entry }) => {
               <Playing12 players={entry.playing12} />
             ) : (
               <>
-                <p className="text-sm leading-relaxed text-gray-300">{entry.summary}</p>
-
                 {entry.changeLog && entry.changeLog !== 'No changes made to squad.' && (
                   <div className="mt-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
                     <p className="font-bold text-xs uppercase tracking-wider mb-1">Recent Squad Changes</p>
@@ -438,11 +437,6 @@ const TeamCard = ({ entry }) => {
                                 <span className="text-gray-300 font-medium">{entry.name}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                {entry.arBonus && (
-                                  <span className={`text-[10px] font-bold ${entry.arBonusGranted ? 'text-purple-400' : 'text-gray-600'}`}>
-                                    +2 AR{entry.arBonusGranted ? '' : ' (capped)'}
-                                  </span>
-                                )}
                                 <span className="tabular-nums text-[10px] text-gray-500">
                                   {entry.contribution != null ? entry.contribution.toFixed(2) : '—'}
                                   <span className="text-gray-700">/{entry.slotMax != null ? entry.slotMax.toFixed(2) : '—'}</span>
@@ -526,6 +520,318 @@ const TeamCard = ({ entry }) => {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+// ── Report generation ─────────────────────────────────────────────────────────
+
+function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, allTeams = []) {
+  const MEDAL_TEXT = ['🥇 1st', '🥈 2nd', '🥉 3rd'];
+
+  // Put user's team first, then the rest in rank order
+  const sorted = myTeamShortName
+    ? [
+        ...rankings.filter((r) => r.teamShortName === myTeamShortName),
+        ...rankings.filter((r) => r.teamShortName !== myTeamShortName),
+      ]
+    : rankings;
+
+  const bar = (val, max) => {
+    const pct = Math.min(100, Math.round((val / max) * 100));
+    const color =
+      pct >= 75 ? '#f5c518' : pct >= 50 ? '#4a9eff' : pct >= 30 ? '#9b69ff' : '#ff6b6b';
+    return `
+      <div style="margin-top:4px;">
+        <div style="height:6px;border-radius:3px;background:#2a2a3a;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;border-radius:3px;background:${color};"></div>
+        </div>
+      </div>`;
+  };
+
+  const row = (label, val, max) => `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid #1e1e2e;">
+      <span style="font-size:12px;color:#aaa;">${label}</span>
+      <span style="font-size:12px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">${val}<span style="color:#555;font-weight:400">/${max}</span></span>
+    </div>`;
+
+  const teamSection = (entry) => {
+    const isMyTeam = entry.teamShortName === myTeamShortName;
+    const owner = teamOwners[entry.teamShortName];
+    const medal = MEDAL_TEXT[entry.rank - 1] ?? `#${entry.rank}`;
+    const b = entry.breakdown;
+
+    // Compute bench: full squad minus playing 12
+    const fullTeam = allTeams.find((t) => t.shortName === entry.teamShortName);
+    const playing12Ids = new Set((entry.playing12 ?? []).map((p) => String(p._id)));
+    const bench = (fullTeam?.players ?? []).filter((p) => !playing12Ids.has(String(p._id)));
+
+    const ROLE_ORDER_BENCH = ['Batsman', 'Wicket-Keeper', 'All-Rounder', 'Bowler'];
+    const benchByRole = bench.reduce((acc, p) => {
+      const k = p.role ?? 'Other';
+      if (!acc[k]) acc[k] = [];
+      acc[k].push(p);
+      return acc;
+    }, {});
+    const benchRoles = [
+      ...ROLE_ORDER_BENCH.filter((r) => benchByRole[r]?.length),
+      ...Object.keys(benchByRole).filter((r) => !ROLE_ORDER_BENCH.includes(r) && benchByRole[r]?.length),
+    ];
+
+    return `
+    <div style="margin-bottom:28px;border-radius:14px;overflow:hidden;border:${isMyTeam ? '2px solid #f5c518' : '1px solid #2a2a3a'};background:#12121e;page-break-inside:avoid;">
+      <!-- Team header -->
+      <div style="padding:18px 20px;background:${isMyTeam ? 'linear-gradient(135deg,#1a1600,#1e1a00)' : '#0e0e1a'};display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="font-size:26px;line-height:1;">${medal}</span>
+          <div>
+            ${isMyTeam
+              ? `<div style="font-size:9px;font-weight:900;letter-spacing:2px;color:#f5c518;margin-bottom:3px;text-transform:uppercase;">★ Your Team</div>`
+              : owner ? `<div style="font-size:9px;font-weight:700;letter-spacing:1px;color:#888;margin-bottom:3px;text-transform:uppercase;">${owner}</div>` : ''}
+            <div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:0.3px;">${entry.teamName}</div>
+            <div style="font-size:11px;color:#555;font-family:monospace;margin-top:2px;">${entry.teamShortName}</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:36px;font-weight:900;color:#f5c518;font-variant-numeric:tabular-nums;line-height:1;">${entry.score}</div>
+          <div style="font-size:10px;color:#555;margin-top:2px;">/ 100 pts</div>
+          ${bar(entry.score, 100)}
+        </div>
+      </div>
+
+      <div style="padding:18px 20px;">
+        ${entry.changeLog && entry.changeLog !== 'No changes made to squad.' ? `
+        <div style="border-radius:8px;border:1px solid #1a3a1a;background:#0f2a0f;padding:10px 14px;margin-bottom:18px;">
+          <p style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4caf50;text-transform:uppercase;margin:0 0 4px;">Recent Squad Changes</p>
+          <p style="font-size:12px;color:#81c784;margin:0;">${entry.changeLog}</p>
+        </div>` : ''}
+
+        <!-- Score overview grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+          <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4a9eff;text-transform:uppercase;margin-bottom:8px;">Batting</div>
+            ${row('Total', b.batting.total, 40)}
+            ${row('Wicket Keeper', b.batting.wicketKeeper, 3)}
+            ${row('L/R Balance', b.batting.leftRightBalance, 3)}
+            ${row('Position Fit', b.batting.positions, 34)}
+          </div>
+          <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;">
+            <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#ff6b6b;text-transform:uppercase;margin-bottom:8px;">Bowling</div>
+            ${row('Total', b.bowling.total, 40)}
+            ${row('Total Overs', b.bowling.totalOvers, 3)}
+            ${row('Pace Overs', b.bowling.paceOvers, 3)}
+            ${row('Spin Overs', b.bowling.spinOvers, 3)}
+            ${row('Powerplay', b.bowling.powerplay, 10)}
+            ${row('Middle Overs', b.bowling.middle, 11)}
+            ${row('Death', b.bowling.death, 10)}
+          </div>
+          <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;grid-column:span 2;">
+            <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4caf50;text-transform:uppercase;margin-bottom:8px;">Other Metrics</div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+              ${[
+                ['Fitness', b.fitness, 5],
+                ['Impact', b.impact, 7],
+                ['Tactical', b.tactical, 3],
+                ['Age', b.age, 1],
+                ['Captaincy', b.captaincy, 4],
+              ]
+                .map(
+                  ([l, v, m]) => `
+                <div style="text-align:center;">
+                  <div style="font-size:10px;color:#555;margin-bottom:2px;">${l}</div>
+                  <div style="font-size:16px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;">${v}<span style="font-size:10px;color:#444;font-weight:400">/${m}</span></div>
+                </div>`
+                )
+                .join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Batting order assignment -->
+        ${b.batting.battingOrder?.length ? `
+        <div style="margin-bottom:20px;">
+          <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4a9eff;text-transform:uppercase;margin-bottom:8px;">Batting Order Assignment</div>
+          <table style="width:100%;border-collapse:collapse;font-size:11px;background:#0a0a14;border-radius:10px;overflow:hidden;">
+            <thead>
+              <tr style="background:#0d0d1e;">
+                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:center;letter-spacing:1px;font-size:9px;">#</th>
+                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:left;letter-spacing:1px;font-size:9px;">PLAYER</th>
+                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;font-size:9px;">CONTRIBUTION</th>
+                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;font-size:9px;">SLOT MAX</th>
+                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:center;letter-spacing:1px;font-size:9px;">FIT</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from({ length: 12 }, (_, i) => i + 1).map((pos) => {
+                const e = b.batting.battingOrder.find((x) => x.position === pos);
+                if (!e) return `<tr style="border-top:1px solid #1a1a2e;">
+                  <td style="padding:5px 10px;color:#f5c518;font-weight:700;text-align:center;">${pos}</td>
+                  <td style="padding:5px 10px;color:#333;font-style:italic;" colspan="4">— empty —</td>
+                </tr>`;
+                return `<tr style="border-top:1px solid #1a1a2e;">
+                  <td style="padding:5px 10px;color:#f5c518;font-weight:700;text-align:center;">${pos}</td>
+                  <td style="padding:5px 10px;color:#ddd;font-weight:600;">${e.name}</td>
+                  <td style="padding:5px 10px;color:#aaa;text-align:right;font-variant-numeric:tabular-nums;">${e.contribution != null ? e.contribution.toFixed(2) : '—'}</td>
+                  <td style="padding:5px 10px;color:#555;text-align:right;font-variant-numeric:tabular-nums;">${e.slotMax != null ? e.slotMax.toFixed(2) : '—'}</td>
+                  <td style="padding:5px 10px;text-align:center;">
+                    <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;${e.isPreferred ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
+                      ${e.isPreferred ? '✓ In pos' : '✗ Out of pos'}
+                    </span>
+                  </td>
+                </tr>`;
+              }).join('')}
+              <tr style="border-top:2px solid #2a2a3a;">
+                <td colspan="2" style="padding:6px 10px;font-size:9px;font-weight:900;color:#888;letter-spacing:1px;text-transform:uppercase;">Total Position Fit</td>
+                <td colspan="3" style="padding:6px 10px;text-align:right;font-weight:900;color:#4a9eff;font-size:13px;font-variant-numeric:tabular-nums;">${b.batting.positions}<span style="font-size:10px;color:#444;font-weight:400">/34</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>` : ''}
+
+        <!-- Bowling phase assignments -->
+        ${b.bowling.phaseAssignments ? `
+        <div style="margin-bottom:20px;">
+          <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#ff6b6b;text-transform:uppercase;margin-bottom:8px;">Bowling Phase Assignments (Top 4)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            ${[
+              { key: 'powerplay', label: 'Powerplay', score: b.bowling.powerplay, max: 10 },
+              { key: 'middle',    label: 'Middle',    score: b.bowling.middle,    max: 11 },
+              { key: 'death',     label: 'Death',     score: b.bowling.death,     max: 10 },
+            ].map(({ key, label, score, max }) => {
+              const bowlers = b.bowling.phaseAssignments[key] ?? [];
+              return `
+              <div style="background:#0a0a14;border-radius:10px;overflow:hidden;">
+                <div style="padding:8px 10px;background:#0d0d1e;display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:9px;font-weight:900;letter-spacing:1px;color:#ff6b6b;text-transform:uppercase;">${label}</span>
+                  <span style="font-size:11px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">${score}<span style="color:#444;font-weight:400;font-size:9px;">/${max}</span></span>
+                </div>
+                ${bowlers.length ? `
+                <table style="width:100%;border-collapse:collapse;font-size:10px;">
+                  <tbody>
+                    ${bowlers.map((bw) => `
+                    <tr style="border-top:1px solid #1a1a2e;">
+                      <td style="padding:4px 8px;color:#ddd;">${bw.name}</td>
+                      <td style="padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums;color:#aaa;">${bw.designated ? bw.base : `<span style="color:#aaa;">${bw.base}</span><span style="color:#f5a623;">→${bw.effective}</span>`}</td>
+                      <td style="padding:4px 8px;text-align:center;">
+                        <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;${bw.designated ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
+                          ${bw.designated ? '✓' : '−2'}
+                        </span>
+                      </td>
+                    </tr>`).join('')}
+                  </tbody>
+                </table>` : `<p style="padding:8px;font-size:10px;color:#333;text-align:center;">No bowlers</p>`}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+
+        <!-- Bench / remaining players -->
+        ${bench.length ? `
+        <div style="margin-top:4px;">
+          <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#888;text-transform:uppercase;margin-bottom:8px;">Remaining Players (${bench.length})</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+            ${benchRoles.map((role) => `
+            <div style="background:#0a0a14;border-radius:8px;overflow:hidden;">
+              <div style="padding:5px 10px;background:#0d0d1e;">
+                <span style="font-size:9px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:${
+                  role === 'Batsman' ? '#4a9eff' : role === 'Bowler' ? '#ff6b6b' : role === 'All-Rounder' ? '#9b69ff' : '#f5c518'
+                };">${role}s (${benchByRole[role].length})</span>
+              </div>
+              ${benchByRole[role].map((p) => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 10px;border-top:1px solid #1a1a2e;">
+                <span style="font-size:11px;color:#ddd;">${p.name}</span>
+                ${p.soldPrice != null ? `<span style="font-size:10px;color:#f5c518;font-variant-numeric:tabular-nums;">₹${(p.soldPrice / 10000000).toFixed(2)}Cr</span>` : ''}
+              </div>`).join('')}
+            </div>`).join('')}
+          </div>
+        </div>` : `<p style="font-size:10px;color:#333;margin-top:4px;">No remaining players — full squad in playing 12.</p>`}
+      </div>
+    </div>`;
+  };
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>IPL Auction — Team Ratings Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#08080f;color:#fff;font-family:'Inter',sans-serif;padding:32px 24px;max-width:900px;margin:0 auto;}
+    @media print{
+      body{background:#fff;color:#000;padding:16px;}
+      @page{margin:16mm 12mm;}
+    }
+  </style>
+</head>
+<body>
+  <!-- Report header -->
+  <div style="margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #f5c518;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:3px;color:#f5c518;text-transform:uppercase;margin-bottom:6px;">IPL Auction</div>
+        <h1 style="font-size:32px;font-weight:900;color:#fff;letter-spacing:-0.5px;">Team Ratings Report</h1>
+        <p style="font-size:13px;color:#555;margin-top:6px;">Generated on ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#555;">Scoring System</div>
+        <div style="font-size:13px;color:#aaa;margin-top:2px;">Batting 40 · Bowling 40 · Other 20</div>
+        <div style="font-size:11px;color:#333;margin-top:4px;">Max 100 pts</div>
+      </div>
+    </div>
+
+    <!-- Verdict -->
+    ${verdict ? `
+    <div style="margin-top:20px;padding:14px 18px;border-radius:10px;background:#0e0e20;border:1px solid #2a2a4a;">
+      <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:#f5c518;text-transform:uppercase;margin-bottom:6px;">Overall Verdict</div>
+      <p style="font-size:13px;color:#ccc;line-height:1.7;">${verdict}</p>
+    </div>` : ''}
+
+    <!-- Rankings summary table -->
+    <div style="margin-top:20px;overflow:hidden;border-radius:10px;border:1px solid #1e1e2e;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#0a0a18;">
+            <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:left;letter-spacing:1px;">RANK</th>
+            <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:left;letter-spacing:1px;">TEAM</th>
+            <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">SCORE</th>
+            <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">BATTING</th>
+            <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">BOWLING</th>
+            <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">OTHERS</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rankings
+            .slice()
+            .sort((a, b) => a.rank - b.rank)
+            .map((e) => {
+              const isMe = e.teamShortName === myTeamShortName;
+              const b = e.breakdown ?? {};
+              const others = ((b.fitness ?? 0) + (b.impact ?? 0) + (b.tactical ?? 0) + (b.age ?? 0) + (b.captaincy ?? 0)).toFixed(2);
+              return `<tr style="border-top:1px solid #1e1e2e;background:${isMe ? '#1a1600' : 'transparent'};">
+                <td style="padding:9px 14px;font-size:12px;color:#f5c518;font-weight:700;">${MEDAL_TEXT[e.rank - 1] ?? `#${e.rank}`}</td>
+                <td style="padding:9px 14px;font-size:13px;color:#fff;font-weight:600;">${e.teamName}${isMe ? ' <span style="font-size:9px;font-weight:900;color:#f5c518;letter-spacing:1px;background:#f5c51822;padding:2px 6px;border-radius:4px;margin-left:6px;">YOUR TEAM</span>' : ''}</td>
+                <td style="padding:9px 14px;font-size:14px;font-weight:900;color:#f5c518;text-align:right;font-variant-numeric:tabular-nums;">${e.score}</td>
+                <td style="padding:9px 14px;font-size:12px;color:#4a9eff;text-align:right;font-variant-numeric:tabular-nums;">${e.breakdown?.batting?.total ?? '—'}/40</td>
+                <td style="padding:9px 14px;font-size:12px;color:#ff6b6b;text-align:right;font-variant-numeric:tabular-nums;">${e.breakdown?.bowling?.total ?? '—'}/40</td>
+                <td style="padding:9px 14px;font-size:12px;color:#4caf50;text-align:right;font-variant-numeric:tabular-nums;">${others}/20</td>
+              </tr>`;
+            })
+            .join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Per-team detailed sections -->
+  <div>
+    ${sorted.map(teamSection).join('')}
+  </div>
+
+  <div style="margin-top:32px;padding-top:16px;border-top:1px solid #1e1e2e;text-align:center;">
+    <p style="font-size:10px;color:#333;letter-spacing:1px;">IPL AUCTION · TEAM RATINGS REPORT · ${new Date().getFullYear()}</p>
+  </div>
+</body>
+</html>`;
+}
+
 export default function RankingPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -534,6 +840,8 @@ export default function RankingPage() {
 
   const { socket } = useSocket();
   const { room } = useRoom();
+  const { myTeam, allTeams } = useMyTeam();
+  const { teamAssignments } = useRoom();
 
   const fetchRankings = async () => {
     setLoading(true);
@@ -576,6 +884,30 @@ export default function RankingPage() {
   }, [socket]);
 
   const amHost = room?.hostId === socket?.id;
+  const hasRankings = data && data.rankings?.length > 0;
+
+  const handleDownload = () => {
+    // Build shortName → username map from room team assignments
+    const teamOwners = Object.values(teamAssignments ?? {}).reduce((acc, a) => {
+      if (a.shortName && a.claimedBy) acc[a.shortName] = a.claimedBy;
+      return acc;
+    }, {});
+
+    const html = buildReportHtml(
+      data.rankings,
+      data.verdict,
+      myTeam?.shortName ?? null,
+      teamOwners,
+      allTeams
+    );
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    // Small delay so the fonts/styles load before print dialog
+    setTimeout(() => win.print(), 600);
+  };
 
   return (
     <div className="mx-auto max-w-2xl p-6">
@@ -588,16 +920,31 @@ export default function RankingPage() {
             Deterministic scoring based on squad composition and role balance
           </p>
         </div>
-        <button
-          onClick={() => setShowInfo(true)}
-          title="How are teams rated?"
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-gray-700 bg-gray-800 text-gray-400 transition hover:border-ipl-gold hover:text-ipl-gold"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {hasRankings && (
+            <button
+              onClick={handleDownload}
+              title="Download ratings report"
+              className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-semibold text-gray-300 transition hover:border-ipl-gold hover:text-ipl-gold"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download Report
+            </button>
+          )}
+          <button
+            onClick={() => setShowInfo(true)}
+            title="How are teams rated?"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-gray-700 bg-gray-800 text-gray-400 transition hover:border-ipl-gold hover:text-ipl-gold"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {amHost && (

@@ -270,9 +270,9 @@ const MARQUEE_SET_1 = [
       skills: {
         finishing: 10,
         power_hitting: 10,
-        anchor: 9,
+        anchor: 10,
         spin_play: 10,
-        pace_play: 9,
+        pace_play: 10,
       },
     },
     bowling: {
@@ -292,6 +292,50 @@ const MARQUEE_SET_1 = [
     tactical: {
       flexibility: 7,
       positions: [3, 4, 5, 6],
+      overs: 0,
+      captaincy: 0.75,
+    },
+    basePrice: 2,
+  },
+
+  {
+    name: "Travis Head",
+    nationality: "Australian",
+    role: "Batsman",
+    batting_style: "left-handed",
+    bowling_style: "",
+    age: 32,
+    batting: {
+      phases: {
+        powerplay: { rating: 10, strike_rate: 140 },
+        middle: { rating: 9, strike_rate: 160 },
+        death: { rating: 9, strike_rate: 185 },
+      },
+      skills: {
+        finishing: 9,
+        power_hitting: 10,
+        anchor: 8,
+        spin_play: 10,
+        pace_play: 10,
+      },
+    },
+    bowling: {
+      phases: { powerplay: 0, middle: 0, death: 0 },
+      skills: { variations: 0, yorker: 0, bouncer: 0 },
+      positions: [0, 0, 0],
+    },
+    role_impact: {
+      match_winner: 9,
+      clutch: 9,
+      consistency: 8,
+    },
+    fitness: {
+      injury_risk: 4,
+      stamina: 8,
+    },
+    tactical: {
+      flexibility: 7,
+      positions: [1, 2, 3, 4, 5],
       overs: 0,
       captaincy: 0.75,
     },
