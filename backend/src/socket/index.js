@@ -5,6 +5,7 @@ const AuctionSession = require('../models/AuctionSession');
 const Team = require('../models/Team');
 const { registerRoomHandlers } = require('./roomHandlers');
 const { getRawRoom, getRawRoomByUserId } = require('./roomStore');
+const acceleratedStore = require('./acceleratedStore');
 const timer = require('./auctionTimer');
 const { getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
 const { canTeamBuyPlayer, MAX_OVERSEAS_SQUAD, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules');
@@ -220,6 +221,110 @@ const initSocket = (server) => {
       } catch (err) {
         console.error('[settings:update-timer] error:', err.message);
         socket.emit('room:error', { message: 'Failed to update timer' });
+      }
+    });
+
+    // ── accelerated:init ─────────────────────────────────────────────────────
+    // Host-only: pause the auction and open the player-selection phase.
+    socket.on('accelerated:init', async ({ maxPicks } = {}) => {
+      try {
+        const rawRoom = getRawRoom(socket.id);
+        if (!rawRoom || rawRoom.hostId !== socket.id) {
+          return socket.emit('room:error', { message: 'Only the host can start accelerated mode' });
+        }
+
+        const max = Number.isFinite(Number(maxPicks)) && Number(maxPicks) >= 0
+          ? Math.floor(Number(maxPicks))
+          : 7;
+
+        const { openAcceleratedSelection } = require('../controllers/auctionController');
+        const result = await openAcceleratedSelection(max);
+        if (result.error) return socket.emit('room:error', { message: result.error });
+
+        io.emit('accelerated:open', {
+          players:          result.players,
+          maxPicks:         max,
+          expectedTeamIds:  result.assignedTeamIds,
+          submittedTeamIds: [],
+          allSubmitted:     result.assignedTeamIds.length === 0,
+        });
+
+        console.log(`[accelerated] ${socket.user.username} opened selection (${result.players.length} players available)`);
+      } catch (err) {
+        console.error('[accelerated:init]', err.message);
+        socket.emit('room:error', { message: 'Failed to open accelerated mode' });
+      }
+    });
+
+    // ── accelerated:submit ───────────────────────────────────────────────────
+    // Team owner submits their picks (up to 7 player IDs).
+    socket.on('accelerated:submit', async ({ picks }) => {
+      try {
+        const assigned = getAssignedTeamForSocket(socket);
+        if (!assigned?.teamId) {
+          return socket.emit('room:error', { message: 'You must pick a team before submitting' });
+        }
+        if (!Array.isArray(picks)) {
+          return socket.emit('room:error', { message: 'Invalid picks format' });
+        }
+
+        const result = acceleratedStore.submitPicks(assigned.teamId, picks);
+        if (result.error) return socket.emit('room:error', { message: result.error });
+
+        const snapshot = acceleratedStore.getSelectionSnapshot();
+        if (!snapshot) return;
+
+        io.emit('accelerated:progress', {
+          submittedTeamIds: snapshot.submittedTeamIds,
+          expectedTeamIds:  snapshot.expectedTeamIds,
+          allSubmitted:     snapshot.allSubmitted,
+          maxPicks:         snapshot.maxPicks,
+        });
+
+        console.log(`[accelerated] ${socket.user.username} submitted ${picks.length} picks`);
+      } catch (err) {
+        console.error('[accelerated:submit]', err.message);
+        socket.emit('room:error', { message: 'Failed to submit picks' });
+      }
+    });
+
+    // ── accelerated:begin ────────────────────────────────────────────────────
+    // Host-only: finalise pool and start the accelerated auction.
+    socket.on('accelerated:begin', async () => {
+      try {
+        const rawRoom = getRawRoom(socket.id);
+        if (!rawRoom || rawRoom.hostId !== socket.id) {
+          return socket.emit('room:error', { message: 'Only the host can begin the accelerated auction' });
+        }
+
+        const { beginAcceleratedAuction } = require('../controllers/auctionController');
+        const result = await beginAcceleratedAuction();
+        if (result.error) return socket.emit('room:error', { message: result.error });
+
+        io.emit('accelerated:started', { playerCount: result.playerCount });
+        console.log(`[accelerated] started — ${result.playerCount} players in pool`);
+      } catch (err) {
+        console.error('[accelerated:begin]', err.message);
+        socket.emit('room:error', { message: 'Failed to begin accelerated auction' });
+      }
+    });
+
+    // ── accelerated:cancel ───────────────────────────────────────────────────
+    // Host-only: abort accelerated mode, leave auction paused.
+    socket.on('accelerated:cancel', async () => {
+      try {
+        const rawRoom = getRawRoom(socket.id);
+        if (!rawRoom || rawRoom.hostId !== socket.id) {
+          return socket.emit('room:error', { message: 'Only the host can cancel accelerated mode' });
+        }
+
+        const { cancelAcceleratedMode } = require('../controllers/auctionController');
+        cancelAcceleratedMode();
+        io.emit('accelerated:closed');
+        console.log(`[accelerated] ${socket.user.username} cancelled accelerated mode`);
+      } catch (err) {
+        console.error('[accelerated:cancel]', err.message);
+        socket.emit('room:error', { message: 'Failed to cancel accelerated mode' });
       }
     });
 

@@ -22,6 +22,11 @@ export const useAuction = () => {
   const [unsoldFlash,   setUnsoldFlash]   = useState(null);
   const [loading,       setLoading]       = useState(true);
 
+  // ── Accelerated auction state ──────────────────────────────────────────────
+  // null  = not active
+  // object = { players, expectedTeamIds, submittedTeamIds, allSubmitted }
+  const [accelerated, setAccelerated] = useState(null);
+
   const tickRef = useRef(null);
 
   const startLocalTick = useCallback((expiresAt) => {
@@ -229,6 +234,25 @@ export const useAuction = () => {
       setTimeout(() => setBidError(''), 3500);
     };
 
+    // ── Accelerated auction events ─────────────────────────────────────────
+    const onAcceleratedOpen = ({ players, maxPicks, expectedTeamIds, submittedTeamIds, allSubmitted }) => {
+      setAccelerated({ players, maxPicks, expectedTeamIds, submittedTeamIds, allSubmitted });
+    };
+
+    const onAcceleratedProgress = ({ submittedTeamIds, expectedTeamIds, allSubmitted, maxPicks }) => {
+      setAccelerated((prev) =>
+        prev ? { ...prev, submittedTeamIds, expectedTeamIds, allSubmitted, ...(maxPicks != null ? { maxPicks } : {}) } : null
+      );
+    };
+
+    const onAcceleratedStarted = () => {
+      setAccelerated(null);
+    };
+
+    const onAcceleratedClosed = () => {
+      setAccelerated(null);
+    };
+
     socket.on('auction:nextPlayer', onNextPlayer);
     socket.on('bid:update',         onBidUpdate);
     socket.on('auction:timer',      onTimer);
@@ -239,6 +263,10 @@ export const useAuction = () => {
     socket.on('auction:completed',  onCompleted);
     socket.on('auction:withdraw-updated', onWithdrawUpdated);
     socket.on('bid:error',          onBidError);
+    socket.on('accelerated:open',     onAcceleratedOpen);
+    socket.on('accelerated:progress', onAcceleratedProgress);
+    socket.on('accelerated:started',  onAcceleratedStarted);
+    socket.on('accelerated:closed',   onAcceleratedClosed);
 
     return () => {
       socket.off('auction:nextPlayer', onNextPlayer);
@@ -251,6 +279,10 @@ export const useAuction = () => {
       socket.off('auction:completed',  onCompleted);
       socket.off('auction:withdraw-updated', onWithdrawUpdated);
       socket.off('bid:error',          onBidError);
+      socket.off('accelerated:open',     onAcceleratedOpen);
+      socket.off('accelerated:progress', onAcceleratedProgress);
+      socket.off('accelerated:started',  onAcceleratedStarted);
+      socket.off('accelerated:closed',   onAcceleratedClosed);
     };
   }, [socket, startLocalTick, stopLocalTick]);
 
@@ -264,9 +296,18 @@ export const useAuction = () => {
     socket?.emit('auction:withdraw');
   }, [socket]);
 
+  // ── Accelerated auction actions ────────────────────────────────────────────
+  const initAcceleratedMode     = useCallback((maxPicks) => socket?.emit('accelerated:init', { maxPicks }), [socket]);
+  const submitAcceleratedPicks  = useCallback((picks) => socket?.emit('accelerated:submit', { picks }), [socket]);
+  const beginAcceleratedAuction = useCallback(() => socket?.emit('accelerated:begin'),                  [socket]);
+  const cancelAcceleratedMode   = useCallback(() => socket?.emit('accelerated:cancel'),                 [socket]);
+
   return {
     session, currentPlayer, currentBid, minNextBid,
     highestBidder, withdrawnTeams, timeLeft, timerTotal, bidHistory, bidError,
     soldFlash, unsoldFlash, loading, placeBid, withdraw, refetch: fetchSession,
+    // accelerated
+    accelerated, initAcceleratedMode, submitAcceleratedPicks,
+    beginAcceleratedAuction, cancelAcceleratedMode,
   };
 };

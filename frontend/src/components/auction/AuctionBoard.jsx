@@ -11,6 +11,7 @@ import BidPanel from "./BidPanel";
 import BidFeed from "./BidFeed";
 import AuctionTimer from "./AuctionTimer";
 import AuctionControls from "./AuctionControls";
+import AcceleratedModal from "./AcceleratedModal";
 import OtherTeamsPanel from "./OtherTeamsPanel";
 import { hasBattingStats, hasBowlingStats } from "../../utils/playerDisplay";
 import { setAudioMuted, isAudioMuted, playSoldSound } from "../../utils/auctionAudio";
@@ -336,6 +337,11 @@ export default function AuctionBoard() {
     placeBid,
     withdraw,
     refetch,
+    accelerated,
+    initAcceleratedMode,
+    submitAcceleratedPicks,
+    beginAcceleratedAuction,
+    cancelAcceleratedMode,
   } = useAuction();
 
   // Play sold sound whenever a new sold flash appears
@@ -373,6 +379,23 @@ export default function AuctionBoard() {
       {modalPlayer && (
         <PlayerStatsModal player={modalPlayer} onClose={() => setModalPlayer(null)} />
       )}
+
+      {accelerated && (
+        <AcceleratedModal
+          players={accelerated.players}
+          maxPicks={accelerated.maxPicks ?? 7}
+          expectedTeamIds={accelerated.expectedTeamIds}
+          submittedTeamIds={accelerated.submittedTeamIds}
+          allSubmitted={accelerated.allSubmitted}
+          myTeamId={myTeamAssignment?.teamId ?? null}
+          isHost={amHost}
+          allTeams={allTeams}
+          onSubmit={submitAcceleratedPicks}
+          onBegin={beginAcceleratedAuction}
+          onCancel={cancelAcceleratedMode}
+        />
+      )}
+
       <SoldFlash soldFlash={soldFlash} />
       <UnsoldFlash player={unsoldFlash} />
 
@@ -405,7 +428,13 @@ export default function AuctionBoard() {
           </div>
 
           <div className="flex items-center gap-3">
-            {amHost && <AuctionControls session={session} onRefetch={refetch} />}
+            {amHost && (
+              <AuctionControls
+                session={session}
+                onRefetch={refetch}
+                onAccelerated={initAcceleratedMode}
+              />
+            )}
             {isActive && (
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />

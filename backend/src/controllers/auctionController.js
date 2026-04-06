@@ -4,6 +4,7 @@ const Team = require('../models/Team');
 const { getIO } = require('../socket');
 const timer = require('../socket/auctionTimer');
 const { getAssignedTeamIds } = require('../socket/roomStore');
+const acceleratedStore = require('../socket/acceleratedStore');
 const { getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
 const { canTeamBuyPlayer, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules');
 
@@ -241,6 +242,20 @@ const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
 const NEXT_PLAYER_DELAY_MS = 200;
 
 const pickRandomPlayer = async () => {
+  // ── Accelerated mode: only pick from the curated pool ─────────────────────
+  const pool = acceleratedStore.getPool();
+  if (pool !== null) {
+    const poolIds = [...pool];
+    if (poolIds.length === 0) return null; // pool exhausted → auction completes
+
+    // Pick a random available player from the pool (Mongoose casts strings to ObjectId)
+    const available = await Player.find({ _id: { $in: poolIds }, status: 'available' }).lean();
+    if (!available.length) return null;
+    const pick = available[Math.floor(Math.random() * available.length)];
+    return Player.findById(pick._id);
+  }
+
+  // ── Normal mode ────────────────────────────────────────────────────────────
   // Only look at 'available' players — unsold players are NOT re-queued.
   const [nextSet] = await Player.aggregate([
     { $match: { status: 'available' } },
@@ -649,6 +664,9 @@ const endAuction = async (req, res) => {
     session.timerEndsAt = null;
     await session.save();
 
+    // Clear accelerated mode if it was running
+    acceleratedStore.reset();
+
     const io = getIO();
     await emitWithdrawState(io, session, { reason: 'reset' });
     io.emit('auction:completed');
@@ -656,6 +674,94 @@ const endAuction = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};
+
+/* ── Accelerated auction ─────────────────────────────────────────────────── */
+
+/**
+ * Pause the auction (if active) and open the player-selection phase.
+ * Returns { players, assignedTeamIds } or { error }.
+ */
+const openAcceleratedSelection = async (maxPicks) => {
+  const session = await AuctionSession.findOne();
+  if (!session) return { error: 'No auction session found' };
+
+  if (session.status !== 'active' && session.status !== 'paused') {
+    return { error: 'Auction must be active or paused to use accelerated mode' };
+  }
+
+  // Pause if currently running
+  if (session.status === 'active') {
+    timer.stop();
+    session.status = 'paused';
+    session.timerEndsAt = null;
+    await session.save();
+    getIO().emit('auction:status', { status: 'paused' });
+  }
+
+  // Fetch all available + unsold players
+  const players = await Player.find({ status: { $in: ['available', 'unsold'] } })
+    .select('_id name role nationality basePrice')
+    .lean();
+
+  const assignedTeamIds = getAssignedTeamIds();
+  acceleratedStore.initSelection(players, assignedTeamIds, maxPicks);
+
+  return { players, assignedTeamIds, maxPicks };
+};
+
+/**
+ * Build the pool from submitted picks, mark unsold selections as available,
+ * then start the accelerated auction.
+ * Returns { playerCount } or { error }.
+ */
+const beginAcceleratedAuction = async () => {
+  const session = await AuctionSession.findOne();
+  if (!session) return { error: 'No auction session found' };
+
+  const pool    = acceleratedStore.buildPool();
+  const poolIds = [...pool];
+
+  if (poolIds.length === 0) return { error: 'No players were selected — add picks first' };
+
+  // Mark any unsold selections back to available so the auction can pick them
+  await Player.updateMany({ _id: { $in: poolIds }, status: 'unsold' }, { $set: { status: 'available' } });
+
+  // Release any player that was mid-auction back to available
+  if (session.currentPlayer) {
+    await Player.findByIdAndUpdate(session.currentPlayer, { status: 'available' });
+  }
+
+  // Activate the pool filter (pickRandomPlayer will now respect it)
+  acceleratedStore.setPool(pool);
+  acceleratedStore.clearSelection();
+
+  // Reset session and start fresh
+  session.status = 'active';
+  session.currentPlayer = null;
+  session.currentBid = 0;
+  session.currentHighestBidder = null;
+  session.bids = [];
+  session.withdrawnTeams = [];
+  session.timerEndsAt = null;
+  await session.save();
+
+  const io = getIO();
+  io.emit('auction:status', { status: 'active' });
+
+  await bringNextPlayer(session, io);
+
+  // Count how many pool players are actually available
+  const playerCount = await Player.countDocuments({ _id: { $in: poolIds }, status: { $in: ['available', 'in-auction'] } });
+  return { playerCount };
+};
+
+/**
+ * Cancel accelerated mode — clear state, leave auction paused.
+ */
+const cancelAcceleratedMode = () => {
+  acceleratedStore.reset();
+  return { ok: true };
 };
 
 module.exports = {
@@ -667,4 +773,7 @@ module.exports = {
   resumeAuction,
   endAuction,
   computePlaying12,
+  openAcceleratedSelection,
+  beginAcceleratedAuction,
+  cancelAcceleratedMode,
 };
