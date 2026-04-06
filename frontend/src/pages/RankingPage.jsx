@@ -807,7 +807,7 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
               const others = ((b.fitness ?? 0) + (b.impact ?? 0) + (b.tactical ?? 0) + (b.age ?? 0) + (b.captaincy ?? 0)).toFixed(2);
               return `<tr style="border-top:1px solid #1e1e2e;background:${isMe ? '#1a1600' : 'transparent'};">
                 <td style="padding:9px 14px;font-size:12px;color:#f5c518;font-weight:700;">${MEDAL_TEXT[e.rank - 1] ?? `#${e.rank}`}</td>
-                <td style="padding:9px 14px;font-size:13px;color:#fff;font-weight:600;">${e.teamName}${isMe ? ' <span style="font-size:9px;font-weight:900;color:#f5c518;letter-spacing:1px;background:#f5c51822;padding:2px 6px;border-radius:4px;margin-left:6px;">YOUR TEAM</span>' : ''}</td>
+                <td style="padding:9px 14px;font-size:13px;color:#fff;font-weight:600;">${e.teamName}${isMe ? ' <span style="font-size:9px;font-weight:900;color:#f5c518;letter-spacing:1px;background:#f5c51822;padding:2px 6px;border-radius:4px;margin-left:6px;">YOUR TEAM</span>' : teamOwners[e.teamShortName] ? ` <span style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:1px;background:#ffffff0d;padding:2px 6px;border-radius:4px;margin-left:6px;">${teamOwners[e.teamShortName]}</span>` : ''}</td>
                 <td style="padding:9px 14px;font-size:14px;font-weight:900;color:#f5c518;text-align:right;font-variant-numeric:tabular-nums;">${e.score}</td>
                 <td style="padding:9px 14px;font-size:12px;color:#4a9eff;text-align:right;font-variant-numeric:tabular-nums;">${e.breakdown?.batting?.total ?? '—'}/40</td>
                 <td style="padding:9px 14px;font-size:12px;color:#ff6b6b;text-align:right;font-variant-numeric:tabular-nums;">${e.breakdown?.bowling?.total ?? '—'}/40</td>
