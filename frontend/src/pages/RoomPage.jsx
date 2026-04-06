@@ -824,7 +824,7 @@ function RulesTab() {
       {/* ── BATTING SCORING ── */}
       <Section title="Batting Score Breakdown">
         <h3 className="text-white font-semibold text-sm mb-2">
-          1. Wicket-Keeper Score
+          1. Wicket-Keeper Score (Max 3 pts)
         </h3>
         <Table
           headers={["Condition", "Points"]}
@@ -1047,8 +1047,8 @@ function RulesTab() {
         <p className="text-gray-400 text-xs mb-3">
           Requires ≥ 2 eligible bowlers. Takes top 4 bowlers per phase.
           <br />
-          Effective rating = base rating if designated for that phase, else base
-          − 2.
+          Effective rating = base rating if designated for that phase, else{" "}
+          <span className="text-red-400">base − 2.</span>
         </p>
         <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-3">
           Phase Score = avg(top 4 effective ratings) × multiplier [clamped to
