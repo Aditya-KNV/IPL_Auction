@@ -1,5 +1,4 @@
-import { useMemo, useEffect, useRef } from 'react';
-import { playTickBeep, playTimeUpSound } from '../../utils/auctionAudio';
+import { useMemo } from 'react';
 
 const SIZE           = 120;
 const STROKE         = 8;
@@ -16,18 +15,6 @@ export default function AuctionTimer({ timeLeft, totalDuration = 30, active }) {
   const pct    = totalDuration > 0 ? Math.min(1, Math.max(0, timeLeft / totalDuration)) : 0;
   const offset = CIRCUMFERENCE * (1 - pct);
   const display = Math.min(timeLeft, 99);
-
-  // ── Beep on every second tick (intensity scales with urgency) ───────────────
-  const prevTimeLeft = useRef(timeLeft);
-  useEffect(() => {
-    const prev = prevTimeLeft.current;
-    prevTimeLeft.current = timeLeft;
-    // Fire only when active, timer is running, and a whole second has elapsed
-    if (!active || timeLeft >= prev) return;
-    if (timeLeft === 0 && prev > 0) { playTimeUpSound(); return; }
-    if (timeLeft <= 0) return;
-    playTickBeep(timeLeft, totalDuration);
-  }, [timeLeft, totalDuration, active]);
 
   const ringColor = useMemo(() => {
     if (!active || timeLeft === 0) return '#4B5563';

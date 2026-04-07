@@ -85,7 +85,9 @@ const buildVerdict = (rankings) => {
 
 exports.getRankings = async (req, res) => {
   try {
-    const session = await AuctionSession.findOne().select('latestRankings latestVerdict');
+    const roomCode = req.query.roomCode;
+    const query = roomCode ? { roomCode } : {};
+    const session = await AuctionSession.findOne(query).select('latestRankings latestVerdict');
     if (!session || !session.latestRankings) {
       return res.json({ rankings: [], verdict: 'No rankings generated yet.' });
     }
@@ -253,18 +255,20 @@ exports.generateRankings = async (req, res) => {
           playing12: entry.newPlaying12Ids
         })
       ),
-      AuctionSession.findOneAndUpdate({}, {
+      AuctionSession.findOneAndUpdate(req.body.roomCode ? { roomCode: req.body.roomCode } : {}, {
         latestRankings: sanitizedRankings,
         latestVerdict: verdict,
       })
     ]);
 
-    // Broadcast to all clients to refetch or update their view
+    // Broadcast to the room that generated the rankings
     try {
-       const io = getIO();
-       io.emit('auction:rankings-updated');
+      const io = getIO();
+      const rc = req.body.roomCode;
+      if (rc) io.to(rc).emit('auction:rankings-updated');
+      else io.emit('auction:rankings-updated');
     } catch (socketErr) {
-       console.error('[rankingController] Socket.io not available to emit update');
+      console.error('[rankingController] Socket.io not available to emit update');
     }
 
     res.json({

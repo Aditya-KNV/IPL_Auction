@@ -1,68 +1,60 @@
 /**
- * In-memory state for accelerated auction mode.
+ * In-memory state for accelerated auction mode — per-room.
  *
- * Phase 1 — Selection: host opens it, each assigned team owner picks up to 7
- *   players from the unsold/available pool.
- * Phase 2 — Running: only players whose IDs are in _pool are auctioned.
- *   Normal pickRandomPlayer is replaced by a pool-filtered pick.
+ * All state is keyed by roomCode so concurrent rooms never share data.
  */
 
-/** @type {{ players: object[], picks: Record<string,string[]>, submittedTeamIds: Set<string>, expectedTeamIds: Set<string> } | null} */
-let _selection = null;
+/** @type {Map<string, { players, maxPicks, picks, submittedTeamIds, expectedTeamIds }>} */
+const _selections = new Map();
 
-/** @type {Set<string> | null} Active during accelerated auction. */
-let _pool = null;
+/** @type {Map<string, Set<string>>} Active pool during accelerated auction. */
+const _pools = new Map();
 
 /* ── Selection phase ─────────────────────────────────────────────────────── */
 
-const initSelection = (players, assignedTeamIds, maxPicks) => {
-  _selection = {
+const initSelection = (roomCode, players, assignedTeamIds, maxPicks) => {
+  _selections.set(roomCode, {
     players,
     maxPicks,
-    picks: {},
+    picks:            {},
     submittedTeamIds: new Set(),
-    expectedTeamIds: new Set(assignedTeamIds.map(String)),
-  };
+    expectedTeamIds:  new Set(assignedTeamIds.map(String)),
+  });
 };
 
-/**
- * Record a team's picks. Returns { ok } or { error }.
- */
-const submitPicks = (teamId, picks) => {
-  if (!_selection) return { error: 'No active selection' };
+/** Record a team's picks. Returns { ok } or { error }. */
+const submitPicks = (roomCode, teamId, picks) => {
+  const sel = _selections.get(roomCode);
+  if (!sel) return { error: 'No active selection for this room' };
   const tid = String(teamId);
-  if (!_selection.expectedTeamIds.has(tid)) return { error: 'Your team is not in this room' };
-  const max = _selection.maxPicks ?? 7;
+  if (!sel.expectedTeamIds.has(tid)) return { error: 'Your team is not in this room' };
+  const max = sel.maxPicks ?? 7;
   if (picks.length > max) return { error: `Maximum ${max} players allowed` };
-  _selection.picks[tid] = picks.map(String);
-  _selection.submittedTeamIds.add(tid);
+  sel.picks[tid] = picks.map(String);
+  sel.submittedTeamIds.add(tid);
   return { ok: true };
 };
 
-/**
- * Build the deduplicated pool from all submitted picks.
- * @returns {Set<string>}
- */
-const buildPool = () => {
-  if (!_selection) return new Set();
+/** Build deduplicated pool from all submitted picks. */
+const buildPool = (roomCode) => {
+  const sel = _selections.get(roomCode);
+  if (!sel) return new Set();
   const all = new Set();
-  for (const ids of Object.values(_selection.picks)) {
+  for (const ids of Object.values(sel.picks)) {
     for (const id of ids) all.add(id);
   }
   return all;
 };
 
-/**
- * Serialisable snapshot of the current selection state.
- * Returns null if no selection is open.
- */
-const getSelectionSnapshot = () => {
-  if (!_selection) return null;
-  const submittedTeamIds = [..._selection.submittedTeamIds];
-  const expectedTeamIds  = [..._selection.expectedTeamIds];
+/** Serialisable snapshot for broadcasting. Returns null if no selection open. */
+const getSelectionSnapshot = (roomCode) => {
+  const sel = _selections.get(roomCode);
+  if (!sel) return null;
+  const submittedTeamIds = [...sel.submittedTeamIds];
+  const expectedTeamIds  = [...sel.expectedTeamIds];
   return {
-    players:          _selection.players,
-    maxPicks:         _selection.maxPicks,
+    players:          sel.players,
+    maxPicks:         sel.maxPicks,
     submittedTeamIds,
     expectedTeamIds,
     allSubmitted:
@@ -71,23 +63,23 @@ const getSelectionSnapshot = () => {
   };
 };
 
-const clearSelection = () => { _selection = null; };
+const clearSelection = (roomCode) => _selections.delete(roomCode);
 
 /* ── Running phase ───────────────────────────────────────────────────────── */
 
-const setPool    = (pool) => { _pool = pool; };
-const getPool    = ()     => _pool;
-const clearPool  = ()     => { _pool = null; };
+const setPool   = (roomCode, pool) => _pools.set(roomCode, pool);
+const getPool   = (roomCode)       => _pools.get(roomCode) ?? null;
+const clearPool = (roomCode)       => _pools.delete(roomCode);
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
-const isSelectionOpen = () => _selection !== null;
-const isPoolActive    = () => _pool !== null;
+const isSelectionOpen = (roomCode) => _selections.has(roomCode);
+const isPoolActive    = (roomCode) => _pools.has(roomCode);
 
-/** Full reset — call on auction:end or server restart recovery. */
-const reset = () => {
-  _selection = null;
-  _pool      = null;
+/** Full reset for a room — call on auction end or server recovery. */
+const reset = (roomCode) => {
+  _selections.delete(roomCode);
+  _pools.delete(roomCode);
 };
 
 module.exports = {

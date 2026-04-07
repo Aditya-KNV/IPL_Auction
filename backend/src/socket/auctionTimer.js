@@ -1,147 +1,120 @@
 /**
- * Server-side countdown timer for the live auction.
+ * Server-side countdown timer — per-room.
  *
- * Singleton - one active timer at a time.
- *
- * Responsibilities:
- *  - Emit auction:timer { timeLeft, expiresAt } at key moments only
- *    (start / extend / expire).  Clients drive their own visual countdown
- *    from expiresAt — no server-side polling interval needed.
- *  - Call onExpire() when the clock hits zero
- *  - Expose extend() so a new bid resets the clock to the session's timerDuration
- *  - Expose stop() so manual sold/unsold cancels the auto-expire
+ * Each room gets its own isolated timer state stored in a Map keyed by roomCode.
+ * All public functions take roomCode as their first argument.
  */
 
-// Must be longer than the worst-case bid processing time (5 DB queries).
-// If extend() is called within this window after timer fires, expire is cancelled.
 const EXPIRE_GRACE_MS = 1500;
 
-let _io         = null;
-let _onExpire   = null;
-let _timeLeft   = 0;
-let _expiresAt  = 0;
-let _timeout    = null;
-let _generation = 0;
-let _duration   = 10; // tracks current session duration; updated on every start()
+// Map<roomCode, timerState>
+const _states = new Map();
 
-// ── Private ───────────────────────────────────────────────────────────────────
-
-const _clearAll = () => {
-  clearTimeout(_timeout);
-  _timeout = null;
+const _getState = (roomCode) => {
+  if (!_states.has(roomCode)) {
+    _states.set(roomCode, {
+      io:         null,
+      onExpire:   null,
+      timeLeft:   0,
+      expiresAt:  0,
+      timeout:    null,
+      generation: 0,
+      duration:   10,
+    });
+  }
+  return _states.get(roomCode);
 };
 
-const _computeTimeLeft = () => {
-  if (!_expiresAt) return 0;
-  return Math.max(0, Math.ceil((_expiresAt - Date.now()) / 1000));
+const _clearAll = (s) => {
+  clearTimeout(s.timeout);
+  s.timeout = null;
 };
 
-// Emit a single timer snapshot — clients recompute remaining time from
-// expiresAt using their local clock, so one push per event is enough.
-const _emitTimer = () => {
-  _timeLeft = _computeTimeLeft();
-  _io?.emit('auction:timer', { timeLeft: _timeLeft, expiresAt: _expiresAt });
+const _computeTimeLeft = (s) => {
+  if (!s.expiresAt) return 0;
+  return Math.max(0, Math.ceil((s.expiresAt - Date.now()) / 1000));
 };
 
-const _run = (seconds) => {
-  _clearAll();
-  _generation += 1;
-  const gen  = _generation;
-  _timeLeft  = seconds;
-  _expiresAt = Date.now() + seconds * 1000;
+const _emitTimer = (s, roomCode) => {
+  s.timeLeft = _computeTimeLeft(s);
+  // Emit only to this room's sockets
+  s.io?.to(roomCode).emit('auction:timer', { timeLeft: s.timeLeft, expiresAt: s.expiresAt });
+};
 
-  // Tell every client the new expiry; they drive their own visual countdown.
-  _emitTimer();
+const _run = (roomCode, seconds) => {
+  const s = _getState(roomCode);
+  _clearAll(s);
+  s.generation += 1;
+  const gen    = s.generation;
+  s.timeLeft   = seconds;
+  s.expiresAt  = Date.now() + seconds * 1000;
 
-  _timeout = setTimeout(async () => {
-    _clearAll();
-    _timeLeft = 0;
-    _io?.emit('auction:timer', { timeLeft: 0, expiresAt: _expiresAt });
+  _emitTimer(s, roomCode);
 
-    // Grace period: a bid that arrived just before the deadline may still call
-    // extend() within this window — that bumps _generation and aborts the expiry.
+  s.timeout = setTimeout(async () => {
+    _clearAll(s);
+    s.timeLeft = 0;
+    s.io?.to(roomCode).emit('auction:timer', { timeLeft: 0, expiresAt: s.expiresAt });
+
     await new Promise((resolve) => setTimeout(resolve, EXPIRE_GRACE_MS));
 
-    if (_generation !== gen) return;
+    if (s.generation !== gen) return;
 
-    if (_onExpire) {
-      try {
-        await _onExpire();
-      } catch (err) {
-        console.error('[auctionTimer] onExpire error:', err.message);
-      }
+    if (s.onExpire) {
+      try { await s.onExpire(); }
+      catch (err) { console.error('[auctionTimer] onExpire error:', err.message); }
     }
 
-    _expiresAt = 0;
+    s.expiresAt = 0;
   }, seconds * 1000);
 };
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// ── Public API (all take roomCode first) ────────────────────────────────────
 
-const start = (io, duration, onExpire) => {
-  _io       = io;
-  _onExpire = onExpire;
-  _duration = duration; // remember so extend() uses the same window
-  _run(duration);
+const start = (roomCode, io, duration, onExpire) => {
+  const s   = _getState(roomCode);
+  s.io      = io;
+  s.onExpire = onExpire;
+  s.duration = duration;
+  _run(roomCode, duration);
 };
 
-/**
- * holdGrace(now) — call this BEFORE any async work when a bid arrives after
- * the timer has already fired but within the grace window.
- *
- * Bumps _generation so the pending _onExpire callback aborts its generation
- * check and never calls executeSale.  The caller is then responsible for
- * either:
- *   • calling extend(now) on a successful bid, OR
- *   • calling releaseGrace() if the bid fails validation (to trigger expiry).
- *
- * Returns true  → grace held, caller must follow up.
- * Returns false → outside grace window, bid must be rejected.
- */
-const holdGrace = (now = Date.now()) => {
-  if (_timeout !== null) return true;  // timer still running — nothing to hold
-  if (!_expiresAt || now > _expiresAt + EXPIRE_GRACE_MS) return false;
-  _generation += 1; // aborts the pending _onExpire generation check
+const holdGrace = (roomCode, now = Date.now()) => {
+  const s = _getState(roomCode);
+  if (s.timeout !== null) return true;
+  if (!s.expiresAt || now > s.expiresAt + EXPIRE_GRACE_MS) return false;
+  s.generation += 1;
   return true;
 };
 
-/**
- * releaseGrace() — call this when a grace-held bid fails DB validation.
- * Triggers the expiry that was blocked by holdGrace() so the player is sold
- * to the previous highest bidder as if the bid never arrived.
- */
-const releaseGrace = async () => {
-  _expiresAt = 0;
-  if (_onExpire) {
-    try { await _onExpire(); } catch (err) {
-      console.error('[auctionTimer] releaseGrace onExpire error:', err.message);
-    }
+const releaseGrace = async (roomCode) => {
+  const s = _getState(roomCode);
+  s.expiresAt = 0;
+  if (s.onExpire) {
+    try { await s.onExpire(); }
+    catch (err) { console.error('[auctionTimer] releaseGrace error:', err.message); }
   }
 };
 
-/**
- * extend(asOf) — resets the countdown to _duration seconds.
- * asOf should be the timestamp captured at the START of the bid handler
- * (before any DB work) so that DB latency cannot push us past the grace
- * window and silently prevent the extension.
- */
-const extend = (asOf = Date.now()) => {
-  if (!_timeout) {
-    if (!_expiresAt || asOf > _expiresAt + EXPIRE_GRACE_MS) return;
+const extend = (roomCode, asOf = Date.now()) => {
+  const s = _getState(roomCode);
+  if (!s.timeout) {
+    if (!s.expiresAt || asOf > s.expiresAt + EXPIRE_GRACE_MS) return;
   }
-  _run(_duration);
+  _run(roomCode, s.duration);
 };
 
-const stop = () => {
-  _clearAll();
-  _onExpire  = null;
-  _timeLeft  = 0;
-  _expiresAt = 0;
+const stop = (roomCode) => {
+  const s = _getState(roomCode);
+  _clearAll(s);
+  s.onExpire  = null;
+  s.timeLeft  = 0;
+  s.expiresAt = 0;
 };
 
-const getTimeLeft  = () => _computeTimeLeft();
-const getExpiresAt = () => _expiresAt;
-const isRunning    = () => _timeout !== null;
+const getTimeLeft  = (roomCode) => _computeTimeLeft(_getState(roomCode));
+const getExpiresAt = (roomCode) => _getState(roomCode).expiresAt;
+const isRunning    = (roomCode) => _getState(roomCode).timeout !== null;
 
 module.exports = {
   start,

@@ -16,15 +16,17 @@ const registerRoomHandlers = (io, socket) => {
     const existing = getRoomBySocket(socket.id);
     if (existing) _leave(io, socket);
 
+    // Create the room first so we have the code for the scoped session reset
+    const room = createRoom(socket.id, userId, username);
+    socket.join(room.code);
+
     try {
-      await resetAuctionState(io);
+      await resetAuctionState(io, room.code);
     } catch (err) {
       console.error('[room:create] auction reset error:', err.message);
       return socket.emit('room:error', { message: 'Could not prepare a fresh auction room' });
     }
 
-    const room = createRoom(socket.id, userId, username);
-    socket.join(room.code);
     socket.emit('room:created', { room });
 
     // Broadcast fresh user list to the room (just the creator for now)
@@ -124,13 +126,23 @@ const registerRoomHandlers = (io, socket) => {
 };
 
 // ── Shared leave logic ────────────────────────────────────────────────────────
+
+/** Callback fired when the 3-min host grace timer expires. */
+const _onHostTransfer = (io) => (code, room) => {
+  io.to(code).emit('room:users', { users: room.users, hostId: room.hostId });
+  io.to(code).emit('room:host-transferred', {
+    newHostId: room.hostId,
+    reason: 'host-offline',
+  });
+};
+
 const _leave = (io, socket) => {
-  const updatedRoom = leaveRoom(socket.id); // keeps team assignment
+  const updatedRoom = leaveRoom(socket.id, { onHostTransfer: _onHostTransfer(io) });
   _broadcast(io, socket, updatedRoom);
 };
 
 const _leaveExplicit = (io, socket, options) => {
-  const updatedRoom = leaveRoomExplicit(socket.id, options);
+  const updatedRoom = leaveRoomExplicit(socket.id, { ...options, onHostTransfer: _onHostTransfer(io) });
   _broadcast(io, socket, updatedRoom);
 };
 

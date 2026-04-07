@@ -48,7 +48,12 @@ export const useAuction = () => {
   // ── Initial load ────────────────────────────────────────────────────────────
   const fetchSession = useCallback(async () => {
     try {
-      const { data } = await api.get('/auction/session');
+      const roomCode = room?.code;
+      if (!roomCode) {
+        setLoading(false);
+        return;
+      }
+      const { data } = await api.get(`/auction/session?roomCode=${roomCode}`);
       if (!data) {
         setSession(null);
         setCurrentPlayer(null);

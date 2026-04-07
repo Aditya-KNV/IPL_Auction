@@ -2,9 +2,11 @@ const AuctionSession = require('../models/AuctionSession');
 const Player = require('../models/Player');
 const Team = require('../models/Team');
 const timer = require('../socket/auctionTimer');
+const acceleratedStore = require('../socket/acceleratedStore');
 
-const resetAuctionState = async (io) => {
-  timer.stop();
+const resetAuctionState = async (io, roomCode) => {
+  timer.stop(roomCode);
+  acceleratedStore.reset(roomCode);
 
   await Player.updateMany(
     {},
@@ -31,9 +33,9 @@ const resetAuctionState = async (io) => {
     )
   );
 
-  let session = await AuctionSession.findOne();
+  let session = await AuctionSession.findOne({ roomCode });
   if (!session) {
-    session = new AuctionSession();
+    session = new AuctionSession({ roomCode });
   }
 
   session.status = 'waiting';
@@ -50,8 +52,8 @@ const resetAuctionState = async (io) => {
   await session.save();
 
   if (io) {
-    io.emit('auction:status', { status: 'waiting' });
-    io.emit('auction:rankings-updated');
+    io.to(roomCode).emit('auction:status', { status: 'waiting' });
+    io.to(roomCode).emit('auction:rankings-updated');
   }
 
   return session;

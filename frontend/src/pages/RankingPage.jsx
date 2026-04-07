@@ -847,7 +847,7 @@ export default function RankingPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.get('/ranking');
+      const res = await api.get(`/ranking${room?.code ? `?roomCode=${room.code}` : ''}`);
       setData(res.data);
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to fetch rankings.');
@@ -861,7 +861,7 @@ export default function RankingPage() {
     setError('');
     try {
       // POST triggers a new generation on the backend, which will then emit a socket event
-      const res = await api.post('/ranking');
+      const res = await api.post('/ranking', { roomCode: room?.code });
       setData(res.data);
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to generate rankings.');

@@ -1231,33 +1231,38 @@ function InRoomLayout() {
           </div>
         )}
 
-        {activeTab === "Auction" &&
-          (myAssignment ? (
+        {/* AuctionBoard stays mounted at all times — only hidden via CSS.
+            This eliminates the refetch lag when switching back to the Auction tab. */}
+        <div className={`h-full ${activeTab === "Auction" ? "" : "hidden"}`}>
+          {myAssignment ? (
             <div className="h-full overflow-y-auto lg:overflow-hidden">
               <AuctionBoard />
             </div>
           ) : (
-            <div className="h-full overflow-y-auto">
-              <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-10 text-center max-w-sm">
-                  <p className="text-4xl mb-4">🏏</p>
-                  <h2 className="text-white font-bold text-xl mb-2">
-                    Pick a Team First
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-6">
-                    Go to the Lobby tab and select your team before joining the
-                    auction.
-                  </p>
-                  <button
-                    onClick={() => setActiveTab("Lobby")}
-                    className="bg-ipl-gold text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
-                  >
-                    Go to Lobby
-                  </button>
+            activeTab === "Auction" && (
+              <div className="h-full overflow-y-auto">
+                <div className="flex items-center justify-center min-h-[60vh]">
+                  <div className="bg-gray-900 border border-gray-700 rounded-2xl p-10 text-center max-w-sm">
+                    <p className="text-4xl mb-4">🏏</p>
+                    <h2 className="text-white font-bold text-xl mb-2">
+                      Pick a Team First
+                    </h2>
+                    <p className="text-gray-400 text-sm mb-6">
+                      Go to the Lobby tab and select your team before joining the
+                      auction.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("Lobby")}
+                      className="bg-ipl-gold text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
+                    >
+                      Go to Lobby
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
+        </div>
 
         {activeTab === "Teams" && (
           <div className="h-full overflow-y-auto">

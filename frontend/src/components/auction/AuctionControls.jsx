@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import api from '../../services/api';
+import { useRoom } from '../../context/RoomContext';
 
 const Btn = ({ onClick, disabled, color, children }) => (
   <button
@@ -80,11 +81,12 @@ const AccelConfigPopover = ({ onConfirm, onClose }) => {
 export default function AuctionControls({ session, onRefetch, onAccelerated }) {
   const [loading, setLoading] = useState(false);
   const [showAccelConfig, setShowAccelConfig] = useState(false);
+  const { room } = useRoom();
 
   const action = async (endpoint) => {
     setLoading(true);
     try {
-      await api.post(`/auction/${endpoint}`);
+      await api.post(`/auction/${endpoint}`, { roomCode: room?.code });
       onRefetch();
     } catch (err) {
       alert(err.response?.data?.message || 'Error');

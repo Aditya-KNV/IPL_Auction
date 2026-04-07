@@ -57,6 +57,11 @@ export const RoomProvider = ({ children }) => {
     socket.on('room:users',         ({ users, hostId })   => dispatch({ type: 'USERS_UPDATED', users, hostId }));
     socket.on('room:teams-updated', ({ teamAssignments }) => dispatch({ type: 'TEAMS_UPDATED', teamAssignments }));
     socket.on('room:kicked',        ()                    => dispatch({ type: 'LEFT' }));
+    socket.on('room:host-transferred', ({ reason }) => {
+      if (reason === 'host-offline') {
+        dispatch({ type: 'ERROR', message: 'Host was offline for 3 minutes — host has been transferred.' });
+      }
+    });
     socket.on('room:error',         ({ message })         => {
       // If room not found on auto-rejoin, clear stale code
       if (message === 'Room not found') localStorage.removeItem(STORAGE_KEY);
@@ -69,6 +74,7 @@ export const RoomProvider = ({ children }) => {
       socket.off('room:users');
       socket.off('room:teams-updated');
       socket.off('room:kicked');
+      socket.off('room:host-transferred');
       socket.off('room:error');
     };
   }, [socket]);

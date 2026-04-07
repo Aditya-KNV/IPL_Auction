@@ -12,6 +12,12 @@ const { canTeamBuyPlayer, MAX_OVERSEAS_SQUAD, MAX_OVERSEAS_PLAYING } = require('
 
 let io;
 
+/** Returns the socket's current room code, or null if not in a room. */
+const getRoomCode = (socket) => {
+  const rawRoom = getRawRoom(socket.id) ?? getRawRoomByUserId(socket.user.userId);
+  return rawRoom?.code ?? null;
+};
+
 const getAssignedTeamForSocket = (socket) => {
   const rawRoom = getRawRoom(socket.id) ?? getRawRoomByUserId(socket.user.userId);
   return rawRoom?.teamAssignments.get(socket.user.userId) ?? null;
@@ -46,56 +52,48 @@ const initSocket = (server) => {
     socket.on('join:team', (teamId) => socket.join(`team:${teamId}`));
     socket.on('join:auctioneer', () => socket.join('auctioneer'));
 
+    // ── bid:place ────────────────────────────────────────────────────────────
     socket.on('bid:place', async ({ amount }) => {
       try {
+        const roomCode = getRoomCode(socket);
+        if (!roomCode) return socket.emit('bid:error', { message: 'You are not in a room' });
+
         const normalizedAmount = normalizeBidAmount(amount);
-        const now = Date.now(); // captured once — used for ALL timer checks below
+        const now = Date.now();
 
         if (typeof amount !== 'number' || !Number.isFinite(amount) || normalizedAmount <= 0) {
           return socket.emit('bid:error', { message: 'Invalid bid amount' });
         }
 
-        // ── Timer gate (must happen before any DB work) ───────────────────────
-        // If the timer is still running we proceed normally.
-        // If it has already fired we must be within the grace window AND we
-        // immediately hold the expiry (bump _generation) so _onExpire cannot
-        // run concurrently while we do DB validation.  Any early return after
-        // this point MUST call timer.releaseGrace() to trigger the expiry.
         let graceHeld = false;
-        if (!timer.isRunning()) {
-          const expiresAt = timer.getExpiresAt();
+        if (!timer.isRunning(roomCode)) {
+          const expiresAt = timer.getExpiresAt(roomCode);
           if (!expiresAt || now > expiresAt + timer.EXPIRE_GRACE_MS) {
             return socket.emit('bid:error', { message: 'Bidding window just closed' });
           }
-          if (!timer.holdGrace(now)) {
+          if (!timer.holdGrace(roomCode, now)) {
             return socket.emit('bid:error', { message: 'Bidding window just closed' });
           }
           graceHeld = true;
         }
 
-        // Convenience: reject with error and, if we held the grace window,
-        // release it so the expiry fires and the player is sold correctly.
         const reject = async (message) => {
-          if (graceHeld) await timer.releaseGrace();
+          if (graceHeld) await timer.releaseGrace(roomCode);
           socket.emit('bid:error', { message });
         };
 
         const assigned = getAssignedTeamForSocket(socket);
-        if (!assigned) {
-          return reject('You have not picked a team yet');
-        }
+        if (!assigned) return reject('You have not picked a team yet');
 
         const teamId = assigned.teamId;
         const team = await Team.findById(teamId);
-        if (!team) {
-          return reject('Team not found');
-        }
+        if (!team) return reject('Team not found');
 
         if (team.remainingPurse < normalizedAmount) {
           return reject(`Insufficient purse (Rs ${team.remainingPurse} Cr remaining)`);
         }
 
-        const currentSession = await AuctionSession.findOne()
+        const currentSession = await AuctionSession.findOne({ roomCode })
           .select('currentBid currentPlayer currentHighestBidder status')
           .populate('currentPlayer', 'nationality name');
 
@@ -122,49 +120,35 @@ const initSocket = (server) => {
 
         const updated = await AuctionSession.findOneAndUpdate(
           hasExistingBid
-            ? {
-                status: 'active',
-                currentPlayer: currentSession.currentPlayer._id,
-                currentBid: { $lt: normalizedAmount },
-              }
-            : {
-                status: 'active',
-                currentPlayer: currentSession.currentPlayer._id,
-                currentHighestBidder: null,
-              },
+            ? { roomCode, status: 'active', currentPlayer: currentSession.currentPlayer._id, currentBid: { $lt: normalizedAmount } }
+            : { roomCode, status: 'active', currentPlayer: currentSession.currentPlayer._id, currentHighestBidder: null },
           {
-            $set: {
-              currentBid: normalizedAmount,
-              currentHighestBidder: teamId,
-              withdrawnTeams: [],
-            },
+            $set: { currentBid: normalizedAmount, currentHighestBidder: teamId, withdrawnTeams: [] },
             $push: { bids: { team: teamId, amount: normalizedAmount, timestamp: new Date() } },
           },
           { new: true }
         );
 
         if (!updated) {
-          const fresh = await AuctionSession.findOne().select('currentBid status');
+          const fresh = await AuctionSession.findOne({ roomCode }).select('currentBid status');
           if (!fresh || fresh.status !== 'active') {
             return reject(fresh?.status === 'paused' ? 'Auction is paused' : 'Auction is not active');
           }
           return reject(`Bid too low - minimum is Rs ${getMinNextBid(fresh.currentBid)} Cr`);
         }
 
-        // Bid committed — extend the timer using the original `now` so that
-        // DB latency cannot silently push us past the grace window.
-        timer.extend(now);
-        graceHeld = false; // extend() took ownership; no need to release
-        const timerEndsAt = timer.getExpiresAt() ? new Date(timer.getExpiresAt()) : null;
+        timer.extend(roomCode, now);
+        graceHeld = false;
+        const timerEndsAt = timer.getExpiresAt(roomCode) ? new Date(timer.getExpiresAt(roomCode)) : null;
         if (timerEndsAt) {
           updated.timerEndsAt = timerEndsAt;
           await updated.save();
         }
 
         const { emitWithdrawState } = require('../controllers/auctionController');
-        await emitWithdrawState(io, updated, { reason: 'reset' });
+        await emitWithdrawState(io, roomCode, updated, { reason: 'reset' });
 
-        io.emit('bid:update', {
+        io.to(roomCode).emit('bid:update', {
           currentBid: normalizedAmount,
           highestBidder: { id: teamId, name: team.name, shortName: team.shortName, color: team.color },
           minNextBid: getMinNextBid(normalizedAmount, true),
@@ -176,22 +160,26 @@ const initSocket = (server) => {
           },
         });
 
-        console.log(`[bid] ${team.name} -> Rs ${normalizedAmount} Cr`);
+        console.log(`[bid] ${team.name} -> Rs ${normalizedAmount} Cr (room ${roomCode})`);
       } catch (err) {
         console.error('[bid:place] error:', err.message);
         socket.emit('bid:error', { message: 'Server error processing bid' });
       }
     });
 
+    // ── auction:withdraw ─────────────────────────────────────────────────────
     socket.on('auction:withdraw', async () => {
       try {
+        const roomCode = getRoomCode(socket);
+        if (!roomCode) return socket.emit('bid:error', { message: 'You are not in a room' });
+
         const assigned = getAssignedTeamForSocket(socket);
         if (!assigned?.teamId) {
           return socket.emit('bid:error', { message: 'Pick a team before you withdraw' });
         }
 
         const { applyWithdraw } = require('../controllers/auctionController');
-        const result = await applyWithdraw(assigned.teamId);
+        const result = await applyWithdraw(assigned.teamId, roomCode);
         if (result?.error) {
           return socket.emit('bid:error', { message: result.error });
         }
@@ -202,7 +190,6 @@ const initSocket = (server) => {
     });
 
     // ── settings:update-timer ────────────────────────────────────────────────
-    // Host-only: update how long the initial bidding window lasts.
     socket.on('settings:update-timer', async ({ duration }) => {
       try {
         const rawRoom = getRawRoom(socket.id);
@@ -215,9 +202,10 @@ const initSocket = (server) => {
           return socket.emit('room:error', { message: 'Timer must be between 5 and 120 seconds' });
         }
 
-        await AuctionSession.findOneAndUpdate({}, { $set: { timerDuration: d } });
-        io.emit('settings:timer-updated', { timerDuration: d });
-        console.log(`[settings] ${socket.user.username} set timer to ${d}s`);
+        const roomCode = rawRoom.code;
+        await AuctionSession.findOneAndUpdate({ roomCode }, { $set: { timerDuration: d } });
+        io.to(roomCode).emit('settings:timer-updated', { timerDuration: d });
+        console.log(`[settings] ${socket.user.username} set timer to ${d}s (room ${roomCode})`);
       } catch (err) {
         console.error('[settings:update-timer] error:', err.message);
         socket.emit('room:error', { message: 'Failed to update timer' });
@@ -225,7 +213,6 @@ const initSocket = (server) => {
     });
 
     // ── accelerated:init ─────────────────────────────────────────────────────
-    // Host-only: pause the auction and open the player-selection phase.
     socket.on('accelerated:init', async ({ maxPicks } = {}) => {
       try {
         const rawRoom = getRawRoom(socket.id);
@@ -233,15 +220,16 @@ const initSocket = (server) => {
           return socket.emit('room:error', { message: 'Only the host can start accelerated mode' });
         }
 
+        const roomCode = rawRoom.code;
         const max = Number.isFinite(Number(maxPicks)) && Number(maxPicks) >= 0
           ? Math.floor(Number(maxPicks))
           : 7;
 
         const { openAcceleratedSelection } = require('../controllers/auctionController');
-        const result = await openAcceleratedSelection(max);
+        const result = await openAcceleratedSelection(roomCode, max);
         if (result.error) return socket.emit('room:error', { message: result.error });
 
-        io.emit('accelerated:open', {
+        io.to(roomCode).emit('accelerated:open', {
           players:          result.players,
           maxPicks:         max,
           expectedTeamIds:  result.assignedTeamIds,
@@ -249,7 +237,7 @@ const initSocket = (server) => {
           allSubmitted:     result.assignedTeamIds.length === 0,
         });
 
-        console.log(`[accelerated] ${socket.user.username} opened selection (${result.players.length} players available)`);
+        console.log(`[accelerated] ${socket.user.username} opened selection in room ${roomCode} (${result.players.length} players)`);
       } catch (err) {
         console.error('[accelerated:init]', err.message);
         socket.emit('room:error', { message: 'Failed to open accelerated mode' });
@@ -257,9 +245,11 @@ const initSocket = (server) => {
     });
 
     // ── accelerated:submit ───────────────────────────────────────────────────
-    // Team owner submits their picks (up to 7 player IDs).
     socket.on('accelerated:submit', async ({ picks }) => {
       try {
+        const roomCode = getRoomCode(socket);
+        if (!roomCode) return socket.emit('room:error', { message: 'You are not in a room' });
+
         const assigned = getAssignedTeamForSocket(socket);
         if (!assigned?.teamId) {
           return socket.emit('room:error', { message: 'You must pick a team before submitting' });
@@ -268,20 +258,20 @@ const initSocket = (server) => {
           return socket.emit('room:error', { message: 'Invalid picks format' });
         }
 
-        const result = acceleratedStore.submitPicks(assigned.teamId, picks);
+        const result = acceleratedStore.submitPicks(roomCode, assigned.teamId, picks);
         if (result.error) return socket.emit('room:error', { message: result.error });
 
-        const snapshot = acceleratedStore.getSelectionSnapshot();
+        const snapshot = acceleratedStore.getSelectionSnapshot(roomCode);
         if (!snapshot) return;
 
-        io.emit('accelerated:progress', {
+        io.to(roomCode).emit('accelerated:progress', {
           submittedTeamIds: snapshot.submittedTeamIds,
           expectedTeamIds:  snapshot.expectedTeamIds,
           allSubmitted:     snapshot.allSubmitted,
           maxPicks:         snapshot.maxPicks,
         });
 
-        console.log(`[accelerated] ${socket.user.username} submitted ${picks.length} picks`);
+        console.log(`[accelerated] ${socket.user.username} submitted ${picks.length} picks in room ${roomCode}`);
       } catch (err) {
         console.error('[accelerated:submit]', err.message);
         socket.emit('room:error', { message: 'Failed to submit picks' });
@@ -289,7 +279,6 @@ const initSocket = (server) => {
     });
 
     // ── accelerated:begin ────────────────────────────────────────────────────
-    // Host-only: finalise pool and start the accelerated auction.
     socket.on('accelerated:begin', async () => {
       try {
         const rawRoom = getRawRoom(socket.id);
@@ -297,12 +286,13 @@ const initSocket = (server) => {
           return socket.emit('room:error', { message: 'Only the host can begin the accelerated auction' });
         }
 
+        const roomCode = rawRoom.code;
         const { beginAcceleratedAuction } = require('../controllers/auctionController');
-        const result = await beginAcceleratedAuction();
+        const result = await beginAcceleratedAuction(roomCode);
         if (result.error) return socket.emit('room:error', { message: result.error });
 
-        io.emit('accelerated:started', { playerCount: result.playerCount });
-        console.log(`[accelerated] started — ${result.playerCount} players in pool`);
+        io.to(roomCode).emit('accelerated:started', { playerCount: result.playerCount });
+        console.log(`[accelerated] started in room ${roomCode} — ${result.playerCount} players in pool`);
       } catch (err) {
         console.error('[accelerated:begin]', err.message);
         socket.emit('room:error', { message: 'Failed to begin accelerated auction' });
@@ -310,7 +300,6 @@ const initSocket = (server) => {
     });
 
     // ── accelerated:cancel ───────────────────────────────────────────────────
-    // Host-only: abort accelerated mode, leave auction paused.
     socket.on('accelerated:cancel', async () => {
       try {
         const rawRoom = getRawRoom(socket.id);
@@ -318,10 +307,11 @@ const initSocket = (server) => {
           return socket.emit('room:error', { message: 'Only the host can cancel accelerated mode' });
         }
 
+        const roomCode = rawRoom.code;
         const { cancelAcceleratedMode } = require('../controllers/auctionController');
-        cancelAcceleratedMode();
-        io.emit('accelerated:closed');
-        console.log(`[accelerated] ${socket.user.username} cancelled accelerated mode`);
+        cancelAcceleratedMode(roomCode);
+        io.to(roomCode).emit('accelerated:closed');
+        console.log(`[accelerated] ${socket.user.username} cancelled accelerated mode in room ${roomCode}`);
       } catch (err) {
         console.error('[accelerated:cancel]', err.message);
         socket.emit('room:error', { message: 'Failed to cancel accelerated mode' });

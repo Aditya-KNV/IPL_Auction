@@ -7,6 +7,7 @@ const bidSchema = new mongoose.Schema({
 });
 
 const auctionSessionSchema = new mongoose.Schema({
+  roomCode: { type: String, required: true, index: true },
   status: {
     type:    String,
     enum:    ['waiting', 'active', 'paused', 'completed'],

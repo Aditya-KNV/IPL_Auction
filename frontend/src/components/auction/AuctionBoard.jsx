@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useAuction } from "../../hooks/useAuction";
 import { useMyTeam } from "../../hooks/useMyTeam";
 import { useAuth } from "../../context/AuthContext";
@@ -14,7 +14,7 @@ import AuctionControls from "./AuctionControls";
 import AcceleratedModal from "./AcceleratedModal";
 import OtherTeamsPanel from "./OtherTeamsPanel";
 import { hasBattingStats, hasBowlingStats } from "../../utils/playerDisplay";
-import { setAudioMuted, isAudioMuted, playSoldSound } from "../../utils/auctionAudio";
+import { setAudioMuted, isAudioMuted } from "../../utils/auctionAudio";
 
 
 // ── Role-based section builder ────────────────────────────────────────────────
@@ -343,15 +343,6 @@ export default function AuctionBoard() {
     beginAcceleratedAuction,
     cancelAcceleratedMode,
   } = useAuction();
-
-  // Play sold sound whenever a new sold flash appears
-  const prevSoldFlash = useRef(null);
-  useEffect(() => {
-    if (soldFlash && soldFlash !== prevSoldFlash.current) {
-      playSoldSound();
-    }
-    prevSoldFlash.current = soldFlash;
-  }, [soldFlash]);
 
   const toggleMute = () => {
     const next = !muted;

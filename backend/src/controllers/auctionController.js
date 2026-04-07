@@ -241,9 +241,9 @@ const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
 
 const NEXT_PLAYER_DELAY_MS = 200;
 
-const pickRandomPlayer = async () => {
+const pickRandomPlayer = async (roomCode) => {
   // ── Accelerated mode: only pick from the curated pool ─────────────────────
-  const pool = acceleratedStore.getPool();
+  const pool = acceleratedStore.getPool(roomCode);
   if (pool !== null) {
     const poolIds = [...pool];
     if (poolIds.length === 0) return null; // pool exhausted → auction completes
@@ -296,16 +296,16 @@ const serializeWithdrawnTeams = async (withdrawnTeams) => {
   return teams.map((team) => team.toObject());
 };
 
-const emitWithdrawState = async (io, session, extra = {}) => {
-  io.emit('auction:withdraw-updated', {
+const emitWithdrawState = async (io, roomCode, session, extra = {}) => {
+  io.to(roomCode).emit('auction:withdraw-updated', {
     withdrawnTeams: await serializeWithdrawnTeams(session.withdrawnTeams),
     highestBidder: session.currentHighestBidder ? String(session.currentHighestBidder) : null,
     ...extra,
   });
 };
 
-const getWithdrawalState = (session) => {
-  const assignedTeamIds = getAssignedTeamIds();
+const getWithdrawalState = (session, roomCode) => {
+  const assignedTeamIds = getAssignedTeamIds(roomCode);
   const withdrawnIds = new Set((session.withdrawnTeams || []).map((teamId) => String(teamId)));
   const highestBidderId = session.currentHighestBidder ? String(session.currentHighestBidder) : null;
   const everyoneWithdrawn =
@@ -319,20 +319,21 @@ const getWithdrawalState = (session) => {
   return { assignedTeamIds, highestBidderId, everyoneWithdrawn, allNonLeadingWithdrawn };
 };
 
-const bringNextPlayer = async (session, io) => {
-  const player = await pickRandomPlayer();
+const bringNextPlayer = async (session, io, roomCode) => {
+  const player = await pickRandomPlayer(roomCode);
 
   if (!player) {
-    timer.stop();
+    timer.stop(roomCode);
+    acceleratedStore.reset(roomCode); // clear pool/selection so a fresh start isn't constrained
     session.status = 'completed';
     session.currentPlayer = null;
     session.withdrawnTeams = [];
     await session.save();
-    io.emit('auction:completed');
+    io.to(roomCode).emit('auction:completed');
     return;
   }
 
-  timer.stop();
+  timer.stop(roomCode);
 
   player.status = 'in-auction';
   await player.save();
@@ -346,7 +347,7 @@ const bringNextPlayer = async (session, io) => {
   session.timerEndsAt = endsAt;
   await session.save();
 
-  io.emit('auction:nextPlayer', {
+  io.to(roomCode).emit('auction:nextPlayer', {
     player: player.toObject(),
     currentBid: session.currentBid,
     timerDuration: session.timerDuration,
@@ -355,7 +356,7 @@ const bringNextPlayer = async (session, io) => {
     withdrawnTeams: [],
   });
 
-  timer.start(io, session.timerDuration, makeExpireCallback());
+  timer.start(roomCode, io, session.timerDuration, makeExpireCallback(roomCode));
 };
 
 const executeSale = async (session) => {
@@ -427,24 +428,24 @@ const executeUnsold = async (session) => {
   return player ? player.toObject() : null;
 };
 
-const finishCurrentPlayer = async ({ io, session, mode, auto = false, reason = null }) => {
-  timer.stop();
+const finishCurrentPlayer = async ({ io, session, roomCode, mode, auto = false, reason = null }) => {
+  timer.stop(roomCode);
 
   if (mode === 'sold') {
     const { player, team } = await executeSale(session);
-    io.emit('auction:sold', { player, team, amount: player.soldPrice, auto, reason });
+    io.to(roomCode).emit('auction:sold', { player, team, amount: player.soldPrice, auto, reason });
   } else {
     const player = await executeUnsold(session);
-    io.emit('auction:unsold', { player, auto, reason });
+    io.to(roomCode).emit('auction:unsold', { player, auto, reason });
   }
 
-  await emitWithdrawState(io, session, { reason: 'reset' });
+  await emitWithdrawState(io, roomCode, session, { reason: 'reset' });
 
   setTimeout(async () => {
     try {
-      const fresh = await AuctionSession.findOne();
+      const fresh = await AuctionSession.findOne({ roomCode });
       if (fresh && fresh.status === 'active') {
-        await bringNextPlayer(fresh, io);
+        await bringNextPlayer(fresh, io, roomCode);
       }
     } catch (err) {
       console.error('[auction] bringNextPlayer error:', err.message);
@@ -452,8 +453,8 @@ const finishCurrentPlayer = async ({ io, session, mode, auto = false, reason = n
   }, NEXT_PLAYER_DELAY_MS);
 };
 
-const applyWithdraw = async (teamId) => {
-  const session = await AuctionSession.findOne();
+const applyWithdraw = async (teamId, roomCode) => {
+  const session = await AuctionSession.findOne({ roomCode });
   if (!session || !session.currentPlayer) {
     return { error: 'Auction is not active' };
   }
@@ -461,7 +462,7 @@ const applyWithdraw = async (teamId) => {
     return { error: session.status === 'paused' ? 'Auction is paused' : 'Auction is not active' };
   }
 
-  const assignedTeamIds = getAssignedTeamIds();
+  const assignedTeamIds = getAssignedTeamIds(roomCode);
   const normalizedTeamId = String(teamId);
   if (!assignedTeamIds.includes(normalizedTeamId)) {
     return { error: 'You are not assigned to a team in this room' };
@@ -473,40 +474,41 @@ const applyWithdraw = async (teamId) => {
 
   // Atomic add — $addToSet prevents duplicates and is race-condition-safe
   const updated = await AuctionSession.findOneAndUpdate(
-    { _id: session._id, status: 'active', currentPlayer: { $ne: null } },
+    { roomCode, _id: session._id, status: 'active', currentPlayer: { $ne: null } },
     { $addToSet: { withdrawnTeams: teamId } },
     { new: true }
   );
   if (!updated) return { error: 'Auction state changed' };
 
   const io = getIO();
-  const withdrawalState = getWithdrawalState(updated);
-  await emitWithdrawState(io, updated);
+  const withdrawalState = getWithdrawalState(updated, roomCode);
+  await emitWithdrawState(io, roomCode, updated);
 
   if (withdrawalState.everyoneWithdrawn) {
-    await finishCurrentPlayer({ io, session: updated, mode: 'unsold', reason: 'all-withdrew' });
+    await finishCurrentPlayer({ io, session: updated, roomCode, mode: 'unsold', reason: 'all-withdrew' });
     return { session: updated, resolved: 'unsold' };
   }
 
   if (withdrawalState.allNonLeadingWithdrawn) {
-    await finishCurrentPlayer({ io, session: updated, mode: 'sold', reason: 'others-withdrew' });
+    await finishCurrentPlayer({ io, session: updated, roomCode, mode: 'sold', reason: 'others-withdrew' });
     return { session: updated, resolved: 'sold' };
   }
 
   return { session: updated, resolved: null };
 };
 
-const makeExpireCallback = () => async () => {
+const makeExpireCallback = (roomCode) => async () => {
   const io = getIO();
   let session;
 
   try {
-    session = await AuctionSession.findOne();
+    session = await AuctionSession.findOne({ roomCode });
     if (!session || !session.currentPlayer) return;
 
     await finishCurrentPlayer({
       io,
       session,
+      roomCode,
       mode: session.currentHighestBidder ? 'sold' : 'unsold',
       auto: true,
       reason: 'timer-expired',
@@ -532,7 +534,10 @@ const makeExpireCallback = () => async () => {
 
 const getSession = async (req, res) => {
   try {
-    const session = await AuctionSession.findOne()
+    const roomCode = req.query.roomCode;
+    if (!roomCode) return res.json(null);
+
+    const session = await AuctionSession.findOne({ roomCode })
       .populate('currentPlayer')
       .populate('currentHighestBidder', 'name shortName color')
       .populate('soldPlayers', 'name role soldPrice')
@@ -543,7 +548,7 @@ const getSession = async (req, res) => {
     }
 
     const plain = session.toObject();
-    plain.timeLeft = timer.getTimeLeft();
+    plain.timeLeft = timer.getTimeLeft(roomCode);
     plain.minNextBid = session.currentBid
       ? getMinNextBid(session.currentBid, !!session.currentHighestBidder)
       : 0;
@@ -556,8 +561,11 @@ const getSession = async (req, res) => {
 
 const startAuction = async (req, res) => {
   try {
-    let session = await AuctionSession.findOne();
-    if (!session) session = new AuctionSession();
+    const roomCode = req.body.roomCode;
+    if (!roomCode) return res.status(400).json({ message: 'roomCode required' });
+
+    let session = await AuctionSession.findOne({ roomCode });
+    if (!session) session = new AuctionSession({ roomCode });
 
     if (session.status === 'active') {
       return res.status(400).json({ message: 'Auction already running' });
@@ -577,8 +585,8 @@ const startAuction = async (req, res) => {
     await session.save();
 
     const io = getIO();
-    io.emit('auction:status', { status: 'active' });
-    await bringNextPlayer(session, io);
+    io.to(roomCode).emit('auction:status', { status: 'active' });
+    await bringNextPlayer(session, io, roomCode);
 
     res.json({ message: 'Auction started' });
   } catch (err) {
@@ -588,17 +596,20 @@ const startAuction = async (req, res) => {
 
 const pauseAuction = async (req, res) => {
   try {
-    const session = await AuctionSession.findOne();
+    const roomCode = req.body.roomCode;
+    if (!roomCode) return res.status(400).json({ message: 'roomCode required' });
+
+    const session = await AuctionSession.findOne({ roomCode });
     if (!session || session.status !== 'active') {
       return res.status(400).json({ message: 'Auction is not active' });
     }
 
-    timer.stop();
+    timer.stop(roomCode);
     session.status = 'paused';
     session.timerEndsAt = null;
     await session.save();
 
-    getIO().emit('auction:status', { status: 'paused' });
+    getIO().to(roomCode).emit('auction:status', { status: 'paused' });
     res.json({ status: 'paused' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -607,7 +618,10 @@ const pauseAuction = async (req, res) => {
 
 const resumeAuction = async (req, res) => {
   try {
-    const session = await AuctionSession.findOne();
+    const roomCode = req.body.roomCode;
+    if (!roomCode) return res.status(400).json({ message: 'roomCode required' });
+
+    const session = await AuctionSession.findOne({ roomCode });
     if (!session || session.status !== 'paused') {
       return res.status(400).json({ message: 'Auction is not paused' });
     }
@@ -621,21 +635,21 @@ const resumeAuction = async (req, res) => {
       await session.save();
       await session.populate('currentHighestBidder', 'name shortName color');
 
-      timer.start(io, session.timerDuration, makeExpireCallback());
-      io.emit('auction:resumed', {
+      timer.start(roomCode, io, session.timerDuration, makeExpireCallback(roomCode));
+      io.to(roomCode).emit('auction:resumed', {
         timerDuration: session.timerDuration,
         timerEndsAt: endsAt,
         currentBid: session.currentBid,
         minNextBid: getMinNextBid(session.currentBid, !!session.currentHighestBidder),
         highestBidder: session.currentHighestBidder || null,
       });
-      await emitWithdrawState(io, session);
+      await emitWithdrawState(io, roomCode, session);
     } else {
       await session.save();
-      await bringNextPlayer(session, io);
+      await bringNextPlayer(session, io, roomCode);
     }
 
-    io.emit('auction:status', { status: 'active' });
+    io.to(roomCode).emit('auction:status', { status: 'active' });
     res.json({ status: 'active' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -644,12 +658,15 @@ const resumeAuction = async (req, res) => {
 
 const endAuction = async (req, res) => {
   try {
-    const session = await AuctionSession.findOne();
+    const roomCode = req.body.roomCode;
+    if (!roomCode) return res.status(400).json({ message: 'roomCode required' });
+
+    const session = await AuctionSession.findOne({ roomCode });
     if (!session || session.status === 'completed') {
       return res.status(400).json({ message: 'Auction is already completed or not started' });
     }
 
-    timer.stop();
+    timer.stop(roomCode);
 
     if (session.currentPlayer) {
       await Player.findByIdAndUpdate(session.currentPlayer, { status: 'available' });
@@ -664,12 +681,11 @@ const endAuction = async (req, res) => {
     session.timerEndsAt = null;
     await session.save();
 
-    // Clear accelerated mode if it was running
-    acceleratedStore.reset();
+    acceleratedStore.reset(roomCode);
 
     const io = getIO();
-    await emitWithdrawState(io, session, { reason: 'reset' });
-    io.emit('auction:completed');
+    await emitWithdrawState(io, roomCode, session, { reason: 'reset' });
+    io.to(roomCode).emit('auction:completed');
     res.json({ status: 'completed' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -682,61 +698,59 @@ const endAuction = async (req, res) => {
  * Pause the auction (if active) and open the player-selection phase.
  * Returns { players, assignedTeamIds } or { error }.
  */
-const openAcceleratedSelection = async (maxPicks) => {
-  const session = await AuctionSession.findOne();
+const openAcceleratedSelection = async (roomCode, maxPicks) => {
+  const session = await AuctionSession.findOne({ roomCode });
   if (!session) return { error: 'No auction session found' };
 
   if (session.status !== 'active' && session.status !== 'paused') {
     return { error: 'Auction must be active or paused to use accelerated mode' };
   }
 
-  // Pause if currently running
   if (session.status === 'active') {
-    timer.stop();
+    timer.stop(roomCode);
     session.status = 'paused';
     session.timerEndsAt = null;
     await session.save();
-    getIO().emit('auction:status', { status: 'paused' });
+    getIO().to(roomCode).emit('auction:status', { status: 'paused' });
   }
 
-  // Fetch all available + unsold players
-  const players = await Player.find({ status: { $in: ['available', 'unsold'] } })
-    .select('_id name role nationality basePrice')
+  // Only show unsold players that belong to THIS session, not globally
+  const sessionUnsoldIds = (session.unsoldPlayers || []).map((id) => String(id));
+  const players = await Player.find({
+    $or: [
+      { status: 'available' },
+      ...(sessionUnsoldIds.length
+        ? [{ _id: { $in: sessionUnsoldIds }, status: 'unsold' }]
+        : []),
+    ],
+  })
+    .select('_id name role nationality basePrice status')
     .lean();
 
-  const assignedTeamIds = getAssignedTeamIds();
-  acceleratedStore.initSelection(players, assignedTeamIds, maxPicks);
+  const assignedTeamIds = getAssignedTeamIds(roomCode);
+  acceleratedStore.initSelection(roomCode, players, assignedTeamIds, maxPicks);
 
   return { players, assignedTeamIds, maxPicks };
 };
 
-/**
- * Build the pool from submitted picks, mark unsold selections as available,
- * then start the accelerated auction.
- * Returns { playerCount } or { error }.
- */
-const beginAcceleratedAuction = async () => {
-  const session = await AuctionSession.findOne();
+const beginAcceleratedAuction = async (roomCode) => {
+  const session = await AuctionSession.findOne({ roomCode });
   if (!session) return { error: 'No auction session found' };
 
-  const pool    = acceleratedStore.buildPool();
+  const pool    = acceleratedStore.buildPool(roomCode);
   const poolIds = [...pool];
 
   if (poolIds.length === 0) return { error: 'No players were selected — add picks first' };
 
-  // Mark any unsold selections back to available so the auction can pick them
   await Player.updateMany({ _id: { $in: poolIds }, status: 'unsold' }, { $set: { status: 'available' } });
 
-  // Release any player that was mid-auction back to available
   if (session.currentPlayer) {
     await Player.findByIdAndUpdate(session.currentPlayer, { status: 'available' });
   }
 
-  // Activate the pool filter (pickRandomPlayer will now respect it)
-  acceleratedStore.setPool(pool);
-  acceleratedStore.clearSelection();
+  acceleratedStore.setPool(roomCode, pool);
+  acceleratedStore.clearSelection(roomCode);
 
-  // Reset session and start fresh
   session.status = 'active';
   session.currentPlayer = null;
   session.currentBid = 0;
@@ -747,20 +761,16 @@ const beginAcceleratedAuction = async () => {
   await session.save();
 
   const io = getIO();
-  io.emit('auction:status', { status: 'active' });
+  io.to(roomCode).emit('auction:status', { status: 'active' });
 
-  await bringNextPlayer(session, io);
+  await bringNextPlayer(session, io, roomCode);
 
-  // Count how many pool players are actually available
   const playerCount = await Player.countDocuments({ _id: { $in: poolIds }, status: { $in: ['available', 'in-auction'] } });
   return { playerCount };
 };
 
-/**
- * Cancel accelerated mode — clear state, leave auction paused.
- */
-const cancelAcceleratedMode = () => {
-  acceleratedStore.reset();
+const cancelAcceleratedMode = (roomCode) => {
+  acceleratedStore.reset(roomCode);
   return { ok: true };
 };
 
