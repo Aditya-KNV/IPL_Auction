@@ -49,16 +49,29 @@ const initSocket = (server) => {
     cors: { origin: process.env.CLIENT_URL || true, methods: ['GET', 'POST'] },
   });
 
+  // Socket auth: cache user docs to avoid a DB hit on every (re)connect.
+  const _socketUserCache = new Map(); // userId → { username, expiresAt }
+  const SOCKET_CACHE_TTL = 10 * 60 * 1000;
+
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
       if (!token) return next(new Error('Authentication required'));
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.id).select('username _id');
+      const userId = String(decoded.id);
+
+      const cached = _socketUserCache.get(userId);
+      if (cached && Date.now() < cached.expiresAt) {
+        socket.user = { userId, username: cached.username };
+        return next();
+      }
+
+      const user = await User.findById(userId).select('username _id');
       if (!user) return next(new Error('User not found'));
 
-      socket.user = { userId: String(user._id), username: user.username };
+      _socketUserCache.set(userId, { username: user.username, expiresAt: Date.now() + SOCKET_CACHE_TTL });
+      socket.user = { userId, username: user.username };
       next();
     } catch {
       next(new Error('Invalid token'));
