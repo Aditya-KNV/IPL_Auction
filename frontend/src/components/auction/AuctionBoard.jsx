@@ -317,7 +317,7 @@ export default function AuctionBoard() {
   const { user } = useAuth();
   const { room, teamAssignments } = useRoom();
   const { socket } = useSocket();
-  const amHost = room?.hostId === socket?.id;
+  const amHost = user?.id != null && room?.hostUserId === String(user.id);
   const myTeamAssignment = user ? teamAssignments?.[user.id] : null;
 
   const {

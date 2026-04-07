@@ -27,7 +27,7 @@ const reducer = (state, action) => {
     case 'USERS_UPDATED':
       return {
         ...state,
-        room: state.room ? { ...state.room, users: action.users, hostId: action.hostId } : state.room,
+        room: state.room ? { ...state.room, users: action.users, hostId: action.hostId, hostUserId: action.hostUserId ?? state.room.hostUserId } : state.room,
       };
     case 'TEAMS_UPDATED':
       return { ...state, teamAssignments: action.teamAssignments };
@@ -54,7 +54,7 @@ export const RoomProvider = ({ children }) => {
 
     socket.on('room:created',       ({ room })            => dispatch({ type: 'JOINED', room }));
     socket.on('room:joined',        ({ room })            => dispatch({ type: 'JOINED', room }));
-    socket.on('room:users',         ({ users, hostId })   => dispatch({ type: 'USERS_UPDATED', users, hostId }));
+    socket.on('room:users',         ({ users, hostId, hostUserId }) => dispatch({ type: 'USERS_UPDATED', users, hostId, hostUserId }));
     socket.on('room:teams-updated', ({ teamAssignments }) => dispatch({ type: 'TEAMS_UPDATED', teamAssignments }));
     socket.on('room:kicked',        ()                    => dispatch({ type: 'LEFT' }));
     socket.on('room:host-transferred', ({ reason }) => {

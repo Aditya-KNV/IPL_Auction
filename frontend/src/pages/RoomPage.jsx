@@ -511,7 +511,7 @@ function SettingsTab() {
   const [selectedSocketId, setSelectedSocketId] = useState("");
 
   const mySocketId = socket?.id;
-  const amHost = room?.hostId === mySocketId;
+  const amHost = user?.id != null && room?.hostUserId === String(user.id);
 
   // Load current timer duration from session
   useEffect(() => {

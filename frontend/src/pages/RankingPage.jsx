@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useRoom } from '../context/RoomContext';
+import { useAuth } from '../context/AuthContext';
 import { useMyTeam } from '../hooks/useMyTeam';
 import PlayerStatsModal from '../components/players/PlayerStatsModal';
 
@@ -1147,7 +1148,8 @@ export default function RankingPage() {
     };
   }, [socket]);
 
-  const amHost = room?.hostId === socket?.id;
+  const { user } = useAuth();
+  const amHost = user?.id != null && room?.hostUserId === String(user.id);
   const hasRankings = data && data.rankings?.length > 0;
 
   const handleDownload = (reportMode = 'playing12') => {

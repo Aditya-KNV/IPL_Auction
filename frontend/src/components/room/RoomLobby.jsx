@@ -98,7 +98,7 @@ export default function RoomLobby() {
   const [auctionStatus,  setAuctionStatus] = useState(null);
 
   const mySocketId = socket?.id;
-  const amHost     = room?.hostId === mySocketId;
+  const amHost     = user?.id != null && room?.hostUserId === String(user.id);
 
   // Find my assignment
   const myAssignment = user ? teamAssignments[user.id] : null;

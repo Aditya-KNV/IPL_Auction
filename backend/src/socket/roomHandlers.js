@@ -30,7 +30,7 @@ const registerRoomHandlers = (io, socket) => {
     socket.emit('room:created', { room });
 
     // Broadcast fresh user list to the room (just the creator for now)
-    io.to(room.code).emit('room:users', { users: room.users, hostId: room.hostId });
+    io.to(room.code).emit('room:users', { users: room.users, hostId: room.hostId, hostUserId: room.hostUserId });
 
     console.log(`[room] ${username} created room ${room.code}`);
   });
@@ -129,7 +129,7 @@ const registerRoomHandlers = (io, socket) => {
 
 /** Callback fired when the 3-min host grace timer expires. */
 const _onHostTransfer = (io) => (code, room) => {
-  io.to(code).emit('room:users', { users: room.users, hostId: room.hostId });
+  io.to(code).emit('room:users', { users: room.users, hostId: room.hostId, hostUserId: room.hostUserId });
   io.to(code).emit('room:host-transferred', {
     newHostId: room.hostId,
     reason: 'host-offline',
