@@ -195,6 +195,13 @@ const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
 
 const NEXT_PLAYER_DELAY_MS = 200;
 
+// ── Concurrency guards ────────────────────────────────────────────────────────
+// Node.js is single-threaded, so a plain Set acquired synchronously is atomic.
+// These prevent two async paths (timer expire + applyWithdraw) from both trying
+// to finish the same player or bring the next player at the same time.
+const _finishing    = new Set(); // rooms currently executing finishCurrentPlayer
+const _bringingNext = new Set(); // rooms currently executing bringNextPlayer
+
 const pickRandomPlayer = async (roomCode) => {
   // ── Accelerated mode: only pick from the curated pool ─────────────────────
   const pool = acceleratedStore.getPool(roomCode);
@@ -274,44 +281,56 @@ const getWithdrawalState = (session, roomCode) => {
 };
 
 const bringNextPlayer = async (session, io, roomCode) => {
-  const player = await pickRandomPlayer(roomCode);
-
-  if (!player) {
-    timer.stop(roomCode);
-    acceleratedStore.reset(roomCode); // clear pool/selection so a fresh start isn't constrained
-    session.status = 'completed';
-    session.currentPlayer = null;
-    session.withdrawnTeams = [];
-    await session.save();
-    io.to(roomCode).emit('auction:completed');
+  // Guard: only one bringNextPlayer at a time per room.
+  // Acquired synchronously so it's atomic in Node.js's single-threaded model.
+  if (_bringingNext.has(roomCode)) {
+    console.log(`[auction] bringNextPlayer skipped — already in progress (room ${roomCode})`);
     return;
   }
+  _bringingNext.add(roomCode);
 
-  timer.stop(roomCode);
+  try {
+    const player = await pickRandomPlayer(roomCode);
 
-  player.status = 'in-auction';
-  await player.save();
+    if (!player) {
+      timer.stop(roomCode);
+      acceleratedStore.reset(roomCode); // clear pool/selection so a fresh start isn't constrained
+      session.status = 'completed';
+      session.currentPlayer = null;
+      session.withdrawnTeams = [];
+      await session.save();
+      io.to(roomCode).emit('auction:completed');
+      return;
+    }
 
-  const endsAt = new Date(Date.now() + session.timerDuration * 1000);
-  session.currentPlayer = player._id;
-  session.currentBid = normalizeBidAmount(player.basePrice);
-  session.currentHighestBidder = null;
-  session.bids = [];
-  session.withdrawnTeams = [];
-  session.timerEndsAt = endsAt;
-  await session.save();
+    timer.stop(roomCode);
 
-  io.to(roomCode).emit('auction:nextPlayer', {
-    player: player.toObject(),
-    currentBid: session.currentBid,
-    timerDuration: session.timerDuration,
-    timerEndsAt: endsAt,
-    serverNow: Date.now(),
-    minNextBid: getMinNextBid(session.currentBid, false),
-    withdrawnTeams: [],
-  });
+    player.status = 'in-auction';
+    await player.save();
 
-  timer.start(roomCode, io, session.timerDuration, makeExpireCallback(roomCode));
+    const endsAt = new Date(Date.now() + session.timerDuration * 1000);
+    session.currentPlayer = player._id;
+    session.currentBid = normalizeBidAmount(player.basePrice);
+    session.currentHighestBidder = null;
+    session.bids = [];
+    session.withdrawnTeams = [];
+    session.timerEndsAt = endsAt;
+    await session.save();
+
+    io.to(roomCode).emit('auction:nextPlayer', {
+      player: player.toObject(),
+      currentBid: session.currentBid,
+      timerDuration: session.timerDuration,
+      timerEndsAt: endsAt,
+      serverNow: Date.now(),
+      minNextBid: getMinNextBid(session.currentBid, false),
+      withdrawnTeams: [],
+    });
+
+    timer.start(roomCode, io, session.timerDuration, makeExpireCallback(roomCode));
+  } finally {
+    _bringingNext.delete(roomCode);
+  }
 };
 
 const executeSale = async (session) => {
@@ -374,22 +393,39 @@ const executeUnsold = async (session) => {
 };
 
 const finishCurrentPlayer = async ({ io, session, roomCode, mode, auto = false, reason = null }) => {
-  timer.stop(roomCode);
-
-  if (mode === 'sold') {
-    const { player, team } = await executeSale(session);
-    io.to(roomCode).emit('auction:sold', { player, team, amount: player.soldPrice, auto, reason });
-  } else {
-    const player = await executeUnsold(session);
-    io.to(roomCode).emit('auction:unsold', { player, auto, reason });
+  // Guard: only one finishCurrentPlayer at a time per room.
+  // Without this, the timer-expire callback and applyWithdraw can interleave at
+  // await points and both attempt to finish the same player — causing double
+  // unsold/sold marks and duplicate bringNextPlayer calls that corrupt auction state.
+  if (_finishing.has(roomCode)) {
+    console.log(`[auction] finishCurrentPlayer skipped — already finishing (room ${roomCode})`);
+    return;
   }
+  _finishing.add(roomCode);
 
-  await emitWithdrawState(io, roomCode, session, { reason: 'reset' });
+  try {
+    timer.stop(roomCode);
+
+    if (mode === 'sold') {
+      const { player, team } = await executeSale(session);
+      io.to(roomCode).emit('auction:sold', { player, team, amount: player.soldPrice, auto, reason });
+    } else {
+      const player = await executeUnsold(session);
+      io.to(roomCode).emit('auction:unsold', { player, auto, reason });
+    }
+
+    await emitWithdrawState(io, roomCode, session, { reason: 'reset' });
+  } finally {
+    // Release the finishing lock before the bringNextPlayer delay so that
+    // legitimate expire callbacks for the NEXT player are not blocked.
+    _finishing.delete(roomCode);
+  }
 
   setTimeout(async () => {
     try {
       const fresh = await AuctionSession.findOne({ roomCode });
-      if (fresh && fresh.status === 'active') {
+      // Double-guard: skip if another bringNextPlayer already set a new currentPlayer
+      if (fresh && fresh.status === 'active' && !fresh.currentPlayer) {
         await bringNextPlayer(fresh, io, roomCode);
       }
     } catch (err) {
@@ -519,6 +555,10 @@ const startAuction = async (req, res) => {
 
     await Player.updateMany({ status: 'in-auction' }, { $set: { status: 'available' } });
 
+    // Clear any stale per-room locks in case the previous auction crashed mid-operation
+    _finishing.delete(roomCode);
+    _bringingNext.delete(roomCode);
+
     session.status = 'active';
     session.currentPlayer = null;
     session.currentBid = 0;
@@ -629,6 +669,8 @@ const endAuction = async (req, res) => {
     await session.save();
 
     acceleratedStore.reset(roomCode);
+    _finishing.delete(roomCode);
+    _bringingNext.delete(roomCode);
 
     const io = getIO();
     await emitWithdrawState(io, roomCode, session, { reason: 'reset' });
