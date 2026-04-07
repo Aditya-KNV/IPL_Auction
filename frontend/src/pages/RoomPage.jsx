@@ -506,6 +506,7 @@ function TeamsTab() {
 function SettingsTab() {
   const { room, transferHost } = useRoom();
   const { socket } = useSocket();
+  const { user } = useAuth();
   const [timerDuration, setTimerDuration] = useState(10);
   const [timerSaved, setTimerSaved] = useState(false);
   const [selectedSocketId, setSelectedSocketId] = useState("");
