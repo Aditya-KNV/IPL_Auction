@@ -8,7 +8,7 @@ const ROLE_BADGE = {
   'Wicket-Keeper': { label: 'WK', color: '#f59e0b' },
 };
 
-const PlayerSummary = ({ player, role, compact, highlighted, currentBid, isLive }) => (
+const PlayerSummary = ({ player, role, compact, highlighted, currentBid, isLive, injuryRisk }) => (
   <div className={`flex items-center gap-4 ${compact ? 'p-4' : 'p-5'}`}>
     <div
       className={`${compact ? 'w-14 h-14 text-xl' : 'w-16 h-16 text-2xl'} rounded-full bg-gray-800 border-2 flex-shrink-0 flex items-center justify-center font-bold text-white uppercase`}
@@ -36,12 +36,24 @@ const PlayerSummary = ({ player, role, compact, highlighted, currentBid, isLive 
       <p className="mt-0.5 truncate text-xs text-gray-500">
         {[player.nationality, player.age ? `${player.age} yrs` : null].filter(Boolean).join(" · ")}
       </p>
-      <span
-        className="mt-1.5 inline-block rounded border px-2 py-0.5 text-[10px] font-bold"
-        style={{ color: role.color, borderColor: `${role.color}44`, backgroundColor: `${role.color}18` }}
-      >
-        {role.label} · {player.role}
-      </span>
+      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+        <span
+          className="inline-block rounded border px-2 py-0.5 text-[10px] font-bold"
+          style={{ color: role.color, borderColor: `${role.color}44`, backgroundColor: `${role.color}18` }}
+        >
+          {role.label} · {player.role}
+        </span>
+        {highlighted && (
+          <span className={`inline-flex items-center gap-0.5 rounded border px-2 py-0.5 text-[10px] font-bold ${
+            injuryRisk >= 8 ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+            injuryRisk >= 6 ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+            injuryRisk >= 4 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                              'bg-green-500/20 text-green-400 border-green-500/30'
+          }`}>
+            {injuryRisk >= 8 ? '🔴' : injuryRisk >= 6 ? '🟠' : injuryRisk >= 4 ? '🟡' : '🟢'} Risk {injuryRisk}/10
+          </span>
+        )}
+      </div>
     </div>
 
     {highlighted && (
@@ -75,6 +87,7 @@ export default function PlayerCard({ player, currentBid, highlighted, compact, o
     : [];
 
   const captaincy = player.tactical?.captaincy ?? 0;
+  const injuryRisk = player.fitness?.injury_risk ?? 0;
   const hasFooter = player.auctionSetName || positions || bowlingPhases.length > 0 || captaincy > 0 || onViewStats;
 
   return (
@@ -95,6 +108,7 @@ export default function PlayerCard({ player, currentBid, highlighted, compact, o
         highlighted={highlighted}
         currentBid={currentBid}
         isLive={isLive}
+        injuryRisk={injuryRisk}
       />
 
       {hasFooter && (

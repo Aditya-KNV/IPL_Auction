@@ -7,7 +7,7 @@ const bidSchema = new mongoose.Schema({
 });
 
 const auctionSessionSchema = new mongoose.Schema({
-  roomCode: { type: String, required: true, index: true },
+  roomCode: { type: String, required: true },
   status: {
     type:    String,
     enum:    ['waiting', 'active', 'paused', 'completed'],
@@ -25,5 +25,10 @@ const auctionSessionSchema = new mongoose.Schema({
   latestRankings:       { type: mongoose.Schema.Types.Mixed, default: null }, // Persisted latest ranking data
   latestVerdict:        { type: String, default: null },
 }, { timestamps: true });
+
+// Primary lookup key for every bid and session query
+auctionSessionSchema.index({ roomCode: 1 });
+// Speeds up the atomic findOneAndUpdate filter during bidding
+auctionSessionSchema.index({ roomCode: 1, status: 1, currentPlayer: 1 });
 
 module.exports = mongoose.model('AuctionSession', auctionSessionSchema);

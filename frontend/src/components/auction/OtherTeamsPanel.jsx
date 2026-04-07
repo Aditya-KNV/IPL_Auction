@@ -69,6 +69,12 @@ const SquadList = ({ players, onPlayerClick, loadingId }) => {
                       {p.name}
                       {isOverseasPlayer(p) && <span className="ml-1 text-sky-400">✈</span>}
                     </span>
+                    {(p.fitness?.injury_risk ?? 0) > 4 && (
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0 bg-yellow-400"
+                        title={`Injury risk ${p.fitness.injury_risk}/10 — needs bench backup`}
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                     {p.soldPrice != null && (

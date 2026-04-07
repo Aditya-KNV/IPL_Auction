@@ -595,9 +595,9 @@ const TeamCard = ({ entry, mode }) => {
 
             ) : (
               <>
-                {entry.changeLog && entry.changeLog !== 'No changes made to squad.' && (
+                {!isSquad && entry.changeLog && entry.changeLog !== 'No changes made to squad.' && (
                   <div className="mt-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
-                    <p className="font-bold text-xs uppercase tracking-wider mb-1">Recent Squad Changes</p>
+                    <p className="font-bold text-xs uppercase tracking-wider mb-1">Recent Playing 12 Changes</p>
                     <p>{entry.changeLog}</p>
                   </div>
                 )}

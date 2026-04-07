@@ -5,7 +5,7 @@ const { protect, auctioneerOnly } = require('../middleware/auth');
 
 router.get('/', protect, async (req, res) => {
   try {
-    const teams = await Team.find().populate('players', 'name role soldPrice nationality');
+    const teams = await Team.find().populate('players', 'name role soldPrice nationality fitness');
     res.json(teams);
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -43,11 +43,12 @@ export const useMyTeam = () => {
 
       // Build a minimal player record matching what the API returns
       const playerRecord = {
-        _id:       player._id,
-        name:      player.name,
-        role:      player.role,
-        soldPrice: amount,
+        _id:         player._id,
+        name:        player.name,
+        role:        player.role,
+        soldPrice:   amount,
         nationality: player.nationality,
+        fitness:     player.fitness,
       };
 
       // Update allTeams — adjust purse and add player to the buying team's list

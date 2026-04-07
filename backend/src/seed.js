@@ -1394,7 +1394,7 @@ const MARQUEE_SET_1 = [
     name: "Sunil Narine",
     nationality: "West Indian",
     role: "All-Rounder",
-    batting_style: "right-handed",
+    batting_style: "left-handed",
     bowling_style: "Right-arm off-spin",
     age: 38,
     batting: {

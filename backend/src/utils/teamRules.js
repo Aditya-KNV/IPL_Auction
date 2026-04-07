@@ -23,33 +23,23 @@ const getOverseasSquadCap = (maxPlayers) => {
   return 8;
 };
 
-const canTeamBuyPlayer = async (teamId, player) => {
+// teamDoc: optional pre-fetched team object (avoids a redundant DB round-trip)
+const canTeamBuyPlayer = async (teamId, player, teamDoc = null) => {
   if (!isOverseasPlayer(player)) {
-    return { allowed: true, overseasCount: 0 };
+    return { allowed: true };
   }
 
-  const team = await Team.findById(teamId).select('maxPlayers').lean();
-  const maxOverseasSquad = getOverseasSquadCap(team?.maxPlayers ?? 25);
+  const maxPlayers = teamDoc?.maxPlayers ?? (await Team.findById(teamId).select('maxPlayers').lean())?.maxPlayers ?? 25;
+  const maxOverseasSquad = getOverseasSquadCap(maxPlayers);
 
-  const [overseasCount, totalCount] = await Promise.all([
-    getOverseasCount(teamId),
-    getTotalSquadCount(teamId),
-  ]);
+  // totalCount is not needed for the eligibility check — skip that query
+  const overseasCount = await getOverseasCount(teamId);
 
-  // Enforce dynamic squad-level overseas cap only — no early playing-12 cap
-  // during bidding. The playing-12 overseas constraint (max 4) is enforced
-  // when selecting the playing 12, not at purchase time.
   if (overseasCount >= maxOverseasSquad) {
-    return {
-      allowed: false,
-      reason: 'squad',
-      overseasCount,
-      totalCount,
-      cap: maxOverseasSquad,
-    };
+    return { allowed: false, reason: 'squad', overseasCount, cap: maxOverseasSquad };
   }
 
-  return { allowed: true, overseasCount, totalCount };
+  return { allowed: true, overseasCount };
 };
 
 module.exports = {

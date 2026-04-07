@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AuctionSession = require('../models/AuctionSession');
 const Team = require('../models/Team');
+const Player = require('../models/Player');
 const { registerRoomHandlers } = require('./roomHandlers');
 const { getRawRoom, getRawRoomByUserId } = require('./roomStore');
 const acceleratedStore = require('./acceleratedStore');
@@ -11,6 +12,26 @@ const { getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
 const { canTeamBuyPlayer, MAX_OVERSEAS_SQUAD, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules');
 
 let io;
+
+// Cache the current player's lightweight data (nationality, name) per room.
+// Invalidated whenever the session advances to a new player.
+// This avoids one DB round-trip on every single bid in a round.
+const _currentPlayerCache = new Map(); // roomCode → { playerId, nationality, name }
+
+const getCachedCurrentPlayer = async (roomCode, playerObjectId) => {
+  const playerId = String(playerObjectId);
+  const cached = _currentPlayerCache.get(roomCode);
+  if (cached?.playerId === playerId) return cached;
+  const p = await Player.findById(playerId).select('nationality name').lean();
+  if (p) {
+    const entry = { playerId, nationality: p.nationality, name: p.name };
+    _currentPlayerCache.set(roomCode, entry);
+    return entry;
+  }
+  return null;
+};
+
+const invalidatePlayerCache = (roomCode) => _currentPlayerCache.delete(roomCode);
 
 /** Returns the socket's current room code, or null if not in a room. */
 const getRoomCode = (socket) => {
@@ -86,16 +107,20 @@ const initSocket = (server) => {
         if (!assigned) return reject('You have not picked a team yet');
 
         const teamId = assigned.teamId;
-        const team = await Team.findById(teamId);
+
+        // Fetch team + session in parallel — both lean for speed
+        const [team, currentSession] = await Promise.all([
+          Team.findById(teamId).select('name shortName color remainingPurse maxPlayers').lean(),
+          AuctionSession.findOne({ roomCode })
+            .select('currentBid currentPlayer currentHighestBidder status')
+            .lean(),
+        ]);
+
         if (!team) return reject('Team not found');
 
         if (team.remainingPurse < normalizedAmount) {
           return reject(`Insufficient purse (Rs ${team.remainingPurse} Cr remaining)`);
         }
-
-        const currentSession = await AuctionSession.findOne({ roomCode })
-          .select('currentBid currentPlayer currentHighestBidder status')
-          .populate('currentPlayer', 'nationality name');
 
         if (!currentSession || !currentSession.currentPlayer) {
           return reject('Auction is not active');
@@ -104,26 +129,37 @@ const initSocket = (server) => {
           return reject(currentSession.status === 'paused' ? 'Auction is paused' : 'Auction is not active');
         }
 
-        const eligibility = await canTeamBuyPlayer(teamId, currentSession.currentPlayer);
-        if (!eligibility.allowed) {
-          const message = eligibility.reason === 'playing12'
-            ? `Playing-12 overseas limit reached (${MAX_OVERSEAS_PLAYING}). Buy more Indian players to unlock the bench slots.`
-            : `Overseas squad limit reached (${MAX_OVERSEAS_SQUAD}). ${team.name} cannot buy more overseas players.`;
-          return reject(message);
-        }
-
         const hasExistingBid = !!currentSession.currentHighestBidder;
         const minRequired = getMinNextBid(currentSession.currentBid, hasExistingBid);
         if (normalizedAmount < minRequired) {
           return reject(`Minimum bid is Rs ${minRequired} Cr`);
         }
 
+        // Resolve current player via in-memory cache — only hits DB on first bid per player
+        const currentPlayer = await getCachedCurrentPlayer(roomCode, currentSession.currentPlayer);
+        if (!currentPlayer) return reject('Auction is not active');
+
+        const eligibility = await canTeamBuyPlayer(teamId, currentPlayer, team);
+        if (!eligibility.allowed) {
+          return reject(`Overseas squad limit reached (${MAX_OVERSEAS_SQUAD}). ${team.name} cannot buy more overseas players.`);
+        }
+
+        // Extend timer before the DB write so timerEndsAt goes in the same update
+        timer.extend(roomCode, now);
+        graceHeld = false;
+        const timerEndsAt = timer.getExpiresAt(roomCode) ? new Date(timer.getExpiresAt(roomCode)) : null;
+
         const updated = await AuctionSession.findOneAndUpdate(
           hasExistingBid
-            ? { roomCode, status: 'active', currentPlayer: currentSession.currentPlayer._id, currentBid: { $lt: normalizedAmount } }
-            : { roomCode, status: 'active', currentPlayer: currentSession.currentPlayer._id, currentHighestBidder: null },
+            ? { roomCode, status: 'active', currentPlayer: currentSession.currentPlayer, currentBid: { $lt: normalizedAmount } }
+            : { roomCode, status: 'active', currentPlayer: currentSession.currentPlayer, currentHighestBidder: null },
           {
-            $set: { currentBid: normalizedAmount, currentHighestBidder: teamId, withdrawnTeams: [] },
+            $set: {
+              currentBid: normalizedAmount,
+              currentHighestBidder: teamId,
+              withdrawnTeams: [],
+              ...(timerEndsAt && { timerEndsAt }),
+            },
             $push: { bids: { team: teamId, amount: normalizedAmount, timestamp: new Date() } },
           },
           { new: true }
@@ -137,16 +173,13 @@ const initSocket = (server) => {
           return reject(`Bid too low - minimum is Rs ${getMinNextBid(fresh.currentBid)} Cr`);
         }
 
-        timer.extend(roomCode, now);
-        graceHeld = false;
-        const timerEndsAt = timer.getExpiresAt(roomCode) ? new Date(timer.getExpiresAt(roomCode)) : null;
-        if (timerEndsAt) {
-          updated.timerEndsAt = timerEndsAt;
-          await updated.save();
-        }
-
-        const { emitWithdrawState } = require('../controllers/auctionController');
-        await emitWithdrawState(io, roomCode, updated, { reason: 'reset' });
+        // withdrawnTeams was reset to [] in the update above — emit directly
+        // without a DB round-trip to serializeWithdrawnTeams.
+        io.to(roomCode).emit('auction:withdraw-updated', {
+          withdrawnTeams: [],
+          highestBidder: String(teamId),
+          reason: 'reset',
+        });
 
         io.to(roomCode).emit('bid:update', {
           currentBid: normalizedAmount,
