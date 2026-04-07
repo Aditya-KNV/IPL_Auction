@@ -29,10 +29,25 @@ export const useAuction = () => {
 
   const tickRef = useRef(null);
 
-  const startLocalTick = useCallback((expiresAt) => {
+  // Compute the server-clock-adjusted expiry from a raw timerEndsAt + serverNow.
+  // clockOffset = serverNow - Date.now() (positive if server is ahead of client).
+  // adjustedExpiresAt = timerEndsAt - clockOffset → when subtracted from local
+  // Date.now() it gives the true remaining time regardless of local clock drift.
+  const adjustExpiry = (timerEndsAt, serverNow) => {
+    if (!timerEndsAt) return 0;
+    const endsAt = new Date(timerEndsAt).getTime();
+    if (!serverNow) return endsAt; // no offset info, fall back to raw
+    const clockOffset = serverNow - Date.now();
+    return endsAt - clockOffset;
+  };
+
+  // adjustedExpiresAt = timerEndsAt - clockOffset, where clockOffset = serverNow - Date.now()
+  // This corrects for the client's clock being ahead/behind the server, keeping all
+  // clients in sync regardless of their local system time.
+  const startLocalTick = useCallback((adjustedExpiresAt) => {
     clearInterval(tickRef.current);
     tickRef.current = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.ceil((adjustedExpiresAt - Date.now()) / 1000));
       setTimeLeft(remaining);
       if (remaining === 0) clearInterval(tickRef.current);
     }, 250);
@@ -77,11 +92,11 @@ export const useAuction = () => {
       setWithdrawnTeams(data.withdrawnTeams || []);
 
       if (data.timerEndsAt && data.status === 'active') {
-        const endsAt    = new Date(data.timerEndsAt).getTime();
-        const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+        const adj       = adjustExpiry(data.timerEndsAt, data.serverNow);
+        const remaining = Math.max(0, Math.ceil((adj - Date.now()) / 1000));
         setTimeLeft(remaining);
         setTimerTotal(data.timerDuration || remaining || 10);
-        if (remaining > 0) startLocalTick(endsAt);
+        if (remaining > 0) startLocalTick(adj);
       } else {
         setTimeLeft(0);
       }
@@ -108,9 +123,9 @@ export const useAuction = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const onNextPlayer = ({ player, currentBid, timerDuration, timerEndsAt, minNextBid }) => {
-      const endsAt    = timerEndsAt ? new Date(timerEndsAt).getTime() : Date.now() + timerDuration * 1000;
-      const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+    const onNextPlayer = ({ player, currentBid, timerDuration, timerEndsAt, serverNow, minNextBid }) => {
+      const adj       = timerEndsAt ? adjustExpiry(timerEndsAt, serverNow) : Date.now() + timerDuration * 1000;
+      const remaining = Math.max(0, Math.ceil((adj - Date.now()) / 1000));
       setCurrentPlayer(player);
       setCurrentBid(normalizeCroreAmount(currentBid));
       setMinNextBid(normalizeCroreAmount(minNextBid || 0));
@@ -120,20 +135,20 @@ export const useAuction = () => {
       setBidError('');
       setTimerTotal(timerDuration || 10);
       setTimeLeft(remaining);
-      startLocalTick(endsAt);
+      startLocalTick(adj);
     };
 
-    const onBidUpdate = ({ currentBid, highestBidder, minNextBid, bidEntry, timerEndsAt }) => {
+    const onBidUpdate = ({ currentBid, highestBidder, minNextBid, bidEntry, timerEndsAt, serverNow }) => {
       setCurrentBid(normalizeCroreAmount(currentBid));
       setMinNextBid(normalizeCroreAmount(minNextBid || 0));
       setHighestBidder(highestBidder);
       setWithdrawnTeams([]);
       if (timerEndsAt) {
-        const endsAt    = new Date(timerEndsAt).getTime();
-        const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+        const adj       = adjustExpiry(timerEndsAt, serverNow);
+        const remaining = Math.max(0, Math.ceil((adj - Date.now()) / 1000));
         setTimerTotal(remaining); // ring resets to full on each bid
         setTimeLeft(remaining);
-        startLocalTick(endsAt);
+        startLocalTick(adj);
       }
       if (bidEntry) {
         setBidHistory((prev) => [
@@ -143,13 +158,13 @@ export const useAuction = () => {
       }
     };
 
-    // Server emits auction:timer only at key moments (start/extend/expire=0).
-    // Use expiresAt to compute remaining locally — avoids server/client clock skew.
-    const onTimer = ({ expiresAt }) => {
+    // Server emits auction:timer at start/extend/expire. serverNow corrects clock skew.
+    const onTimer = ({ expiresAt, serverNow }) => {
       if (!expiresAt) { setTimeLeft(0); return; }
-      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      const adj       = adjustExpiry(expiresAt, serverNow);
+      const remaining = Math.max(0, Math.ceil((adj - Date.now()) / 1000));
       setTimeLeft(remaining);
-      startLocalTick(expiresAt);
+      startLocalTick(adj);
     };
 
     const onSold = ({ player, team, amount, auto }) => {
@@ -209,15 +224,15 @@ export const useAuction = () => {
       if (status === 'paused') { stopLocalTick(); setTimeLeft(0); }
     };
 
-    const onResumed = ({ timerDuration, timerEndsAt, currentBid, minNextBid, highestBidder }) => {
-      const endsAt    = timerEndsAt ? new Date(timerEndsAt).getTime() : Date.now() + timerDuration * 1000;
-      const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+    const onResumed = ({ timerDuration, timerEndsAt, serverNow, currentBid, minNextBid, highestBidder }) => {
+      const adj       = timerEndsAt ? adjustExpiry(timerEndsAt, serverNow) : Date.now() + timerDuration * 1000;
+      const remaining = Math.max(0, Math.ceil((adj - Date.now()) / 1000));
       if (typeof currentBid === 'number') setCurrentBid(normalizeCroreAmount(currentBid));
       if (typeof minNextBid === 'number') setMinNextBid(normalizeCroreAmount(minNextBid));
       if (highestBidder !== undefined) setHighestBidder(highestBidder || null);
       setTimerTotal(timerDuration || remaining || 10);
       setTimeLeft(remaining);
-      startLocalTick(endsAt);
+      startLocalTick(adj);
     };
 
     const onWithdrawUpdated = ({ withdrawnTeams = [], reason }) => {

@@ -306,6 +306,7 @@ const bringNextPlayer = async (session, io, roomCode) => {
     currentBid: session.currentBid,
     timerDuration: session.timerDuration,
     timerEndsAt: endsAt,
+    serverNow: Date.now(),
     minNextBid: getMinNextBid(session.currentBid, false),
     withdrawnTeams: [],
   });
@@ -493,6 +494,7 @@ const getSession = async (req, res) => {
 
     const plain = session.toObject();
     plain.timeLeft = timer.getTimeLeft(roomCode);
+    plain.serverNow = Date.now();
     plain.minNextBid = session.currentBid
       ? getMinNextBid(session.currentBid, !!session.currentHighestBidder)
       : 0;
@@ -583,6 +585,7 @@ const resumeAuction = async (req, res) => {
       io.to(roomCode).emit('auction:resumed', {
         timerDuration: session.timerDuration,
         timerEndsAt: endsAt,
+        serverNow: Date.now(),
         currentBid: session.currentBid,
         minNextBid: getMinNextBid(session.currentBid, !!session.currentHighestBidder),
         highestBidder: session.currentHighestBidder || null,

@@ -199,6 +199,7 @@ const initSocket = (server) => {
           highestBidder: { id: teamId, name: team.name, shortName: team.shortName, color: team.color },
           minNextBid: getMinNextBid(normalizedAmount, true),
           timerEndsAt,
+          serverNow: Date.now(),
           bidEntry: {
             team: { name: team.name, shortName: team.shortName, color: team.color },
             amount: normalizedAmount,

@@ -37,8 +37,8 @@ const _computeTimeLeft = (s) => {
 
 const _emitTimer = (s, roomCode) => {
   s.timeLeft = _computeTimeLeft(s);
-  // Emit only to this room's sockets
-  s.io?.to(roomCode).emit('auction:timer', { timeLeft: s.timeLeft, expiresAt: s.expiresAt });
+  // Include serverNow so clients can correct for local clock skew
+  s.io?.to(roomCode).emit('auction:timer', { timeLeft: s.timeLeft, expiresAt: s.expiresAt, serverNow: Date.now() });
 };
 
 const _run = (roomCode, seconds) => {
@@ -54,7 +54,7 @@ const _run = (roomCode, seconds) => {
   s.timeout = setTimeout(async () => {
     _clearAll(s);
     s.timeLeft = 0;
-    s.io?.to(roomCode).emit('auction:timer', { timeLeft: 0, expiresAt: s.expiresAt });
+    s.io?.to(roomCode).emit('auction:timer', { timeLeft: 0, expiresAt: s.expiresAt, serverNow: Date.now() });
 
     await new Promise((resolve) => setTimeout(resolve, EXPIRE_GRACE_MS));
 
