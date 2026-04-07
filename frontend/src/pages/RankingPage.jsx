@@ -67,20 +67,28 @@ const explainPhase = (score, max, phase) => {
   return `Weak ${phase} — bowlers are likely to be targeted in this phase.`;
 };
 
-const explainFitness = (score) => {
-  const pct = score / 5;
+const explainFitness = (score, max = 5) => {
+  const pct = score / max;
   if (pct >= 0.85) return 'Very fit squad — low injury risk and high stamina across the board.';
   if (pct >= 0.65) return 'Generally fit with a few players who carry injury concerns.';
   if (pct >= 0.45) return 'Mixed fitness — some players are injury-prone or low on stamina.';
   return 'High injury risk — squad availability could be a serious issue.';
 };
 
-const explainImpact = (score) => {
-  const pct = score / 7;
+const explainImpact = (score, max = 7) => {
+  const pct = score / max;
   if (pct >= 0.85) return 'High-impact squad — packed with match winners and clutch performers.';
   if (pct >= 0.65) return 'Good impact players who can win key moments in a game.';
   if (pct >= 0.45) return 'Moderate impact — squad lacks enough consistent match-changers.';
   return 'Low impact — few players capable of shifting the momentum of a match.';
+};
+
+const explainBenchStrength = (score) => {
+  if (score >= 9) return 'Excellent bench cover — all or nearly all injury-risk players have valid backups.';
+  if (score >= 7) return 'Good bench depth — most at-risk players are covered.';
+  if (score >= 5) return 'Partial coverage — roughly half the at-risk players have backups.';
+  if (score > 0)  return 'Thin bench — most injury-risk players have no adequate backup.';
+  return 'No bench cover — injury-risk players have no backups on the squad.';
 };
 
 const explainCaptaincy = (score) => {
@@ -157,45 +165,100 @@ const SCHEMA_SECTIONS = [
   },
 ];
 
-const InfoModal = ({ onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-    <div
-      className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h2 className="text-xl font-black text-ipl-gold">Rating Schema</h2>
-          <p className="mt-0.5 text-xs text-gray-500">How each team&apos;s score out of 100 is calculated</p>
-        </div>
-        <button onClick={onClose} className="ml-4 text-gray-500 hover:text-white">
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+const SCHEMA_SECTIONS_SQUAD = [
+  {
+    title: 'Batting — 40 pts',
+    color: 'text-blue-400',
+    rows: [
+      { label: 'Wicket Keeper', max: 3, desc: 'Same as Playing 12 mode' },
+      { label: 'Left/Right Balance', max: 3, desc: 'Same as Playing 12 mode' },
+      { label: 'Position Fit', max: 34, desc: 'Same as Playing 12 mode' },
+    ],
+  },
+  {
+    title: 'Bowling — 40 pts',
+    color: 'text-red-400',
+    rows: [
+      { label: 'Total Overs', max: 3, desc: 'Same as Playing 12 mode' },
+      { label: 'Pace Overs', max: 3, desc: 'Same as Playing 12 mode' },
+      { label: 'Spin Overs', max: 3, desc: 'Same as Playing 12 mode' },
+      { label: 'Powerplay Bowling', max: 10, desc: 'Same as Playing 12 mode' },
+      { label: 'Middle Overs Bowling', max: 11, desc: 'Same as Playing 12 mode' },
+      { label: 'Death Bowling', max: 10, desc: 'Same as Playing 12 mode' },
+    ],
+  },
+  {
+    title: 'Other — 20 pts (Squad Mode)',
+    color: 'text-green-400',
+    rows: [
+      { label: 'Fitness', max: 2, desc: 'Reduced from 5→2 pts. Avg of playing 12: (stamina + (10 − injury risk)) / 2 × 0.2' },
+      { label: 'Impact', max: 3, desc: 'Reduced from 7→3 pts. Avg of playing 12: (match winner + clutch + consistency) / 3 × 0.3' },
+      { label: 'Tactical', max: 0, desc: 'Removed in squad mode — replaced by Bench Strength' },
+      { label: 'Age', max: 1, desc: 'Same as Playing 12 mode' },
+      { label: 'Captaincy', max: 4, desc: 'Same as Playing 12 mode' },
+      {
+        label: 'Bench Strength', max: 10, desc:
+          'Score = (backed_up / at_risk) × 10. Full 10 pts if no injury-risk (risk > 4) players exist.\n' +
+          'Empty Playing 12 → 0 pts.\n\n' +
+          'Backup validity rules:\n' +
+          '• Nationality: Indian player must be backed by Indian; overseas can be backed by any\n' +
+          '• Wicket-Keeper (1 in XI) → bench backup must be a WK (batting slot + keeping role both uncovered)\n' +
+          '• Wicket-Keeper (2+ in XI) → bench backup can be WK or Batsman (keeping covered by second keeper; only batting slot needs replacement)\n' +
+          '• Batsman → backup must be Batsman or WK\n' +
+          '• Bowler (pace) → backup must be a pace Bowler only\n' +
+          '• Bowler (spin) → backup must be a spin Bowler only\n' +
+          '• All-Rounder → ONLY another All-Rounder of the same bowling category\n' +
+          '  (fast-bowling AR → fast AR only · spin AR → spin AR only)\n' +
+          '  Pure Bowlers cannot back up All-Rounders.',
+      },
+    ],
+  },
+];
 
-      <div className="space-y-5">
-        {SCHEMA_SECTIONS.map((section) => (
-          <div key={section.title}>
-            <p className={`mb-2 text-sm font-bold ${section.color}`}>{section.title}</p>
-            <div className="space-y-2">
-              {section.rows.map((row) => (
-                <div key={row.label} className="rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">{row.label}</span>
-                    <span className="text-xs text-gray-500">max {row.max}</span>
-                  </div>
-                  <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-gray-400">{row.desc}</p>
-                </div>
-              ))}
-            </div>
+const InfoModal = ({ onClose, mode }) => {
+  const sections = mode === 'squad' ? SCHEMA_SECTIONS_SQUAD : SCHEMA_SECTIONS;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div
+        className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-black text-ipl-gold">Rating Schema</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              {mode === 'squad' ? 'Squad mode — bench strength replaces tactical' : 'Playing 12 mode — how each team\'s score out of 100 is calculated'}
+            </p>
           </div>
-        ))}
+          <button onClick={onClose} className="ml-4 text-gray-500 hover:text-white">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="space-y-5">
+          {sections.map((section) => (
+            <div key={section.title}>
+              <p className={`mb-2 text-sm font-bold ${section.color}`}>{section.title}</p>
+              <div className="space-y-2">
+                {section.rows.map((row) => (
+                  <div key={row.label} className="rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-white">{row.label}</span>
+                      <span className="text-xs text-gray-500">max {row.max}</span>
+                    </div>
+                    <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-gray-400">{row.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ── Breakdown row with explanation ────────────────────────────────────────────
 
@@ -222,6 +285,132 @@ const ScoreBar = ({ score }) => (
     <span className="w-12 text-right text-xs tabular-nums text-gray-400">{score}/100</span>
   </div>
 );
+
+// ── Bench Strength Panel ──────────────────────────────────────────────────────
+const ROLE_BADGE = {
+  Batsman: 'text-blue-400 bg-blue-400/10 border-blue-400/30',
+  Bowler: 'text-red-400 bg-red-400/10 border-red-400/30',
+  'All-Rounder': 'text-purple-400 bg-purple-400/10 border-purple-400/30',
+  'Wicket-Keeper': 'text-amber-400 bg-amber-400/10 border-amber-400/30',
+};
+
+const BenchStrengthPanel = ({ benchStrength }) => {
+  if (!benchStrength) return null;
+  const { score, backed, total, details } = benchStrength;
+
+  if (total === 0) {
+    return (
+      <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-300 font-semibold">Bench Strength</span>
+            <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-400">
+              All clear
+            </span>
+          </div>
+          <span className="font-bold tabular-nums text-white">
+            {score}<span className="text-gray-600 font-normal">/10</span>
+          </span>
+        </div>
+        <p className="mt-1.5 text-xs text-green-400">No at-risk players need bench cover — full 10 pts awarded. (Keepers with 2+ keepers in XI are self-covered.)</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-gray-700 bg-gray-950/80 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2.5 bg-gray-900/60 border-b border-gray-800">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-200">Bench Strength</span>
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+            backed === total ? 'bg-green-500/15 text-green-400' :
+            backed > 0     ? 'bg-amber-500/15 text-amber-400' :
+                             'bg-red-500/15 text-red-400'
+          }`}>
+            {backed}/{total} backed
+          </span>
+        </div>
+        <span className="font-bold tabular-nums text-white text-sm">
+          {score}<span className="text-gray-600 font-normal">/10</span>
+        </span>
+      </div>
+
+      {/* Subheading */}
+      <div className="px-3 pt-2.5 pb-1">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+          Injury-risk players in playing 12 (risk &gt; 4)
+        </p>
+      </div>
+
+      {/* Player list — always visible */}
+      <div className="px-3 pb-3 space-y-2">
+        {details.map((d) => (
+          <div
+            key={d.playerId}
+            className={`rounded-lg border px-3 py-2 ${
+              d.hasBackup
+                ? 'border-green-500/25 bg-green-500/5'
+                : 'border-red-500/25 bg-red-500/5'
+            }`}
+          >
+            {/* Player row */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`flex-shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold ${
+                  ROLE_BADGE[d.role] ?? 'text-gray-400 bg-gray-400/10 border-gray-400/30'
+                }`}>
+                  {d.role === 'Wicket-Keeper' ? 'WK'
+                    : d.role === 'All-Rounder'  ? 'AR'
+                    : d.role === 'Batsman'       ? 'BAT'
+                    : 'BWL'}
+                </span>
+                <span className="text-xs font-semibold text-white truncate">{d.name}</span>
+                <span className="flex-shrink-0 text-[10px] text-gray-500">
+                  {d.nationality}{d.bowling_style ? ` · ${d.bowling_style}` : ''}
+                </span>
+              </div>
+              <span className={`flex-shrink-0 text-[10px] font-bold rounded px-1.5 py-0.5 ${
+                d.hasBackup
+                  ? 'bg-green-500/15 text-green-400'
+                  : 'bg-red-500/15 text-red-400'
+              }`}>
+                Risk {d.injuryRisk}/10
+              </span>
+            </div>
+
+            {/* Backup info */}
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">Backup:</span>
+              {d.hasBackup ? (
+                <span className="flex items-center gap-1 text-[10px]">
+                  <span className={`rounded border px-1 py-0.5 font-bold ${
+                    ROLE_BADGE[d.backupRole] ?? 'text-gray-400 bg-gray-400/10 border-gray-400/30'
+                  }`}>
+                    {d.backupRole === 'Wicket-Keeper' ? 'WK'
+                      : d.backupRole === 'All-Rounder'  ? 'AR'
+                      : d.backupRole === 'Batsman'       ? 'BAT'
+                      : d.backupRole === 'Bowler'        ? 'BWL'
+                      : d.backupRole ?? '—'}
+                  </span>
+                  <span className="font-semibold text-green-400">{d.backupName}</span>
+                  <span className="text-gray-600">(on bench)</span>
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-red-400">No Backup — not covered</span>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Summary line */}
+        <p className="text-[10px] text-gray-600 pt-0.5">
+          {explainBenchStrength(score)}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 const ROLE_COLOR = {
   Batsman: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
@@ -338,11 +527,18 @@ const Playing12 = ({ players }) => {
 
 // ── Team card ─────────────────────────────────────────────────────────────────
 
-const TeamCard = ({ entry }) => {
+const TeamCard = ({ entry, mode }) => {
   const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState('scores');
   const medal = MEDAL[entry.rank - 1] ?? `#${entry.rank}`;
-  const b = entry.breakdown;
+
+  const isSquad = mode === 'squad';
+  // b can be null if this mode hasn't been generated yet — guard all access below
+  const b = isSquad ? (entry.squadBreakdown ?? entry.breakdown) : entry.breakdown;
+  const displayScore = isSquad ? (entry.squadScore ?? entry.score ?? '—') : (entry.score ?? '—');
+  const fitnessMax = isSquad ? 2 : 5;
+  const impactMax  = isSquad ? 3 : 7;
+  const hasData = b != null;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/70">
@@ -356,7 +552,7 @@ const TeamCard = ({ entry }) => {
             </div>
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
-            <span className="text-2xl font-black tabular-nums text-ipl-gold">{entry.score}</span>
+            <span className="text-2xl font-black tabular-nums text-ipl-gold">{displayScore}</span>
             <svg
               className={`h-4 w-4 text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
               fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -365,11 +561,19 @@ const TeamCard = ({ entry }) => {
             </svg>
           </div>
         </div>
-        <ScoreBar score={entry.score} />
+        {hasData && <ScoreBar score={typeof displayScore === 'number' ? displayScore : 0} />}
       </button>
 
       {expanded && (
         <div className="border-t border-gray-800/60">
+          {!hasData ? (
+            <div className="px-5 py-8 text-center">
+              <p className="text-sm text-gray-500">
+                Click <span className="font-semibold text-gray-300">{isSquad ? '🛡️ Rate by Squad' : '🏏 Rate by Playing 12'}</span> above to generate this view.
+              </p>
+            </div>
+          ) : (
+            <>
           {/* Tabs */}
           <div className="flex border-b border-gray-800">
             {['scores', 'playing12'].map((t) => (
@@ -387,7 +591,8 @@ const TeamCard = ({ entry }) => {
 
           <div className="space-y-4 px-5 pb-5 pt-4">
             {tab === 'playing12' ? (
-              <Playing12 players={entry.playing12} />
+              <Playing12 players={isSquad ? (entry.squadPlaying12 ?? entry.playing12) : entry.playing12} />
+
             ) : (
               <>
                 {entry.changeLog && entry.changeLog !== 'No changes made to squad.' && (
@@ -401,12 +606,20 @@ const TeamCard = ({ entry }) => {
                 <div className="grid grid-cols-2 gap-2 mt-4">
                   <BreakdownRow label="Batting" value={b.batting.total} max={40} />
                   <BreakdownRow label="Bowling" value={b.bowling.total} max={40} />
-                  <BreakdownRow label="Fitness" value={b.fitness} max={5} explanation={explainFitness(b.fitness)} />
-                  <BreakdownRow label="Impact" value={b.impact} max={7} explanation={explainImpact(b.impact)} />
-                  <BreakdownRow label="Tactical" value={b.tactical} max={3} explanation={explainTactical(b.tactical)} />
+                  <BreakdownRow label="Fitness" value={b.fitness} max={fitnessMax} explanation={explainFitness(b.fitness, fitnessMax)} />
+                  <BreakdownRow label="Impact" value={b.impact} max={impactMax} explanation={explainImpact(b.impact, impactMax)} />
+                  {!isSquad && <BreakdownRow label="Tactical" value={b.tactical} max={3} explanation={explainTactical(b.tactical)} />}
                   <BreakdownRow label="Age" value={b.age} max={1} explanation={explainAge(b.age)} />
                   <BreakdownRow label="Captaincy" value={b.captaincy} max={4} explanation={explainCaptaincy(b.captaincy)} />
                 </div>
+
+                {/* Bench Strength in squad mode */}
+                {isSquad && b.benchStrength && (
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-orange-400">Bench Strength</p>
+                    <BenchStrengthPanel benchStrength={b.benchStrength} />
+                  </div>
+                )}
 
                 {/* Batting breakdown */}
                 <div>
@@ -512,6 +725,8 @@ const TeamCard = ({ entry }) => {
               </>
             )}
           </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -522,16 +737,24 @@ const TeamCard = ({ entry }) => {
 
 // ── Report generation ─────────────────────────────────────────────────────────
 
-function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, allTeams = []) {
+// reportMode: 'playing12' | 'squad' | 'both'
+function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, allTeams = [], reportMode = 'playing12') {
   const MEDAL_TEXT = ['🥇 1st', '🥈 2nd', '🥉 3rd'];
 
-  // Put user's team first, then the rest in rank order
+  // Sort by the primary score for this report
+  const sortedRankings = [...rankings].sort((a, b) =>
+    reportMode === 'squad'
+      ? (b.squadScore ?? 0) - (a.squadScore ?? 0)
+      : (b.score ?? 0) - (a.score ?? 0)
+  ).map((e, i) => ({ ...e, rank: i + 1 }));
+
+  // Put user's team first
   const sorted = myTeamShortName
     ? [
-        ...rankings.filter((r) => r.teamShortName === myTeamShortName),
-        ...rankings.filter((r) => r.teamShortName !== myTeamShortName),
+        ...sortedRankings.filter((r) => r.teamShortName === myTeamShortName),
+        ...sortedRankings.filter((r) => r.teamShortName !== myTeamShortName),
       ]
-    : rankings;
+    : sortedRankings;
 
   const bar = (val, max) => {
     const pct = Math.min(100, Math.round((val / max) * 100));
@@ -551,11 +774,142 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
       <span style="font-size:12px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">${val}<span style="color:#555;font-weight:400">/${max}</span></span>
     </div>`;
 
+  // Renders the score grid for one breakdown object
+  const scoreGrid = (b, isSquad) => {
+    if (!b) return `<p style="color:#555;font-size:12px;padding:12px;">Not generated yet.</p>`;
+    const otherMetrics = isSquad
+      ? [['Fitness', b.fitness, 2], ['Impact', b.impact, 3], ['Age', b.age, 1], ['Captaincy', b.captaincy, 4]]
+      : [['Fitness', b.fitness, 5], ['Impact', b.impact, 7], ['Tactical', b.tactical, 3], ['Age', b.age, 1], ['Captaincy', b.captaincy, 4]];
+    const benchBlock = isSquad && b.benchStrength
+      ? `<div style="background:#0a0a14;border-radius:10px;padding:12px 14px;grid-column:span 2;margin-top:0;">
+           <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#f5a623;text-transform:uppercase;margin-bottom:8px;">Bench Strength</div>
+           ${row('Score', b.benchStrength.score, 10)}
+           ${row('Backed', `${b.benchStrength.backed}/${b.benchStrength.total}`, b.benchStrength.total || 1)}
+         </div>` : '';
+    return `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+        <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;">
+          <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4a9eff;text-transform:uppercase;margin-bottom:8px;">Batting</div>
+          ${row('Total', b.batting.total, 40)}
+          ${row('Wicket Keeper', b.batting.wicketKeeper, 3)}
+          ${row('L/R Balance', b.batting.leftRightBalance, 3)}
+          ${row('Position Fit', b.batting.positions, 34)}
+        </div>
+        <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;">
+          <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#ff6b6b;text-transform:uppercase;margin-bottom:8px;">Bowling</div>
+          ${row('Total', b.bowling.total, 40)}
+          ${row('Total Overs', b.bowling.totalOvers, 3)}
+          ${row('Pace Overs', b.bowling.paceOvers, 3)}
+          ${row('Spin Overs', b.bowling.spinOvers, 3)}
+          ${row('Powerplay', b.bowling.powerplay, 10)}
+          ${row('Middle Overs', b.bowling.middle, 11)}
+          ${row('Death', b.bowling.death, 10)}
+        </div>
+        <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;grid-column:span 2;">
+          <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4caf50;text-transform:uppercase;margin-bottom:8px;">Other Metrics</div>
+          <div style="display:grid;grid-template-columns:repeat(${otherMetrics.length},1fr);gap:8px;">
+            ${otherMetrics.map(([l, v, m]) => `
+              <div style="text-align:center;">
+                <div style="font-size:10px;color:#555;margin-bottom:2px;">${l}</div>
+                <div style="font-size:16px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;">${v}<span style="font-size:10px;color:#444;font-weight:400">/${m}</span></div>
+              </div>`).join('')}
+          </div>
+        </div>
+        ${benchBlock}
+      </div>`;
+  };
+
+  // Batting order table for one breakdown
+  const battingOrderTable = (b) => {
+    if (!b?.batting?.battingOrder?.length) return '';
+    return `
+      <div style="margin-bottom:20px;">
+        <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4a9eff;text-transform:uppercase;margin-bottom:8px;">Batting Order Assignment</div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;background:#0a0a14;border-radius:10px;overflow:hidden;">
+          <thead>
+            <tr style="background:#0d0d1e;">
+              <th style="padding:6px 10px;color:#555;font-weight:700;text-align:center;letter-spacing:1px;font-size:9px;">#</th>
+              <th style="padding:6px 10px;color:#555;font-weight:700;text-align:left;letter-spacing:1px;font-size:9px;">PLAYER</th>
+              <th style="padding:6px 10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;font-size:9px;">CONTRIBUTION</th>
+              <th style="padding:6px 10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;font-size:9px;">SLOT MAX</th>
+              <th style="padding:6px 10px;color:#555;font-weight:700;text-align:center;letter-spacing:1px;font-size:9px;">FIT</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Array.from({ length: 12 }, (_, i) => i + 1).map((pos) => {
+              const e = b.batting.battingOrder.find((x) => x.position === pos);
+              if (!e) return `<tr style="border-top:1px solid #1a1a2e;">
+                <td style="padding:5px 10px;color:#f5c518;font-weight:700;text-align:center;">${pos}</td>
+                <td style="padding:5px 10px;color:#333;font-style:italic;" colspan="4">— empty —</td>
+              </tr>`;
+              return `<tr style="border-top:1px solid #1a1a2e;">
+                <td style="padding:5px 10px;color:#f5c518;font-weight:700;text-align:center;">${pos}</td>
+                <td style="padding:5px 10px;color:#ddd;font-weight:600;">${e.name}</td>
+                <td style="padding:5px 10px;color:#aaa;text-align:right;font-variant-numeric:tabular-nums;">${e.contribution != null ? e.contribution.toFixed(2) : '—'}</td>
+                <td style="padding:5px 10px;color:#555;text-align:right;font-variant-numeric:tabular-nums;">${e.slotMax != null ? e.slotMax.toFixed(2) : '—'}</td>
+                <td style="padding:5px 10px;text-align:center;">
+                  <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;${e.isPreferred ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
+                    ${e.isPreferred ? '✓ In pos' : '✗ Out of pos'}
+                  </span>
+                </td>
+              </tr>`;
+            }).join('')}
+            <tr style="border-top:2px solid #2a2a3a;">
+              <td colspan="2" style="padding:6px 10px;font-size:9px;font-weight:900;color:#888;letter-spacing:1px;text-transform:uppercase;">Total Position Fit</td>
+              <td colspan="3" style="padding:6px 10px;text-align:right;font-weight:900;color:#4a9eff;font-size:13px;font-variant-numeric:tabular-nums;">${b.batting.positions}<span style="font-size:10px;color:#444;font-weight:400">/34</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+  };
+
+  // Bowling phase table for one breakdown
+  const bowlingPhaseTable = (b) => {
+    if (!b?.bowling?.phaseAssignments) return '';
+    return `
+      <div style="margin-bottom:20px;">
+        <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#ff6b6b;text-transform:uppercase;margin-bottom:8px;">Bowling Phase Assignments (Top 4)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          ${[
+            { key: 'powerplay', label: 'Powerplay', score: b.bowling.powerplay, max: 10 },
+            { key: 'middle',    label: 'Middle',    score: b.bowling.middle,    max: 11 },
+            { key: 'death',     label: 'Death',     score: b.bowling.death,     max: 10 },
+          ].map(({ key, label, score, max }) => {
+            const bowlers = b.bowling.phaseAssignments[key] ?? [];
+            return `
+            <div style="background:#0a0a14;border-radius:10px;overflow:hidden;">
+              <div style="padding:8px 10px;background:#0d0d1e;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:9px;font-weight:900;letter-spacing:1px;color:#ff6b6b;text-transform:uppercase;">${label}</span>
+                <span style="font-size:11px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">${score}<span style="color:#444;font-weight:400;font-size:9px;">/${max}</span></span>
+              </div>
+              ${bowlers.length ? `
+              <table style="width:100%;border-collapse:collapse;font-size:10px;">
+                <tbody>
+                  ${bowlers.map((bw) => `
+                  <tr style="border-top:1px solid #1a1a2e;">
+                    <td style="padding:4px 8px;color:#ddd;">${bw.name}</td>
+                    <td style="padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums;color:#aaa;">${bw.designated ? bw.base : `${bw.base}<span style="color:#f5a623;">→${bw.effective}</span>`}</td>
+                    <td style="padding:4px 8px;text-align:center;">
+                      <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;${bw.designated ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
+                        ${bw.designated ? '✓' : '−2'}
+                      </span>
+                    </td>
+                  </tr>`).join('')}
+                </tbody>
+              </table>` : `<p style="padding:8px;font-size:10px;color:#333;text-align:center;">No bowlers</p>`}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  };
+
   const teamSection = (entry) => {
     const isMyTeam = entry.teamShortName === myTeamShortName;
     const owner = teamOwners[entry.teamShortName];
     const medal = MEDAL_TEXT[entry.rank - 1] ?? `#${entry.rank}`;
-    const b = entry.breakdown;
+    const displayScore = reportMode === 'squad' ? (entry.squadScore ?? '—') : (entry.score ?? '—');
+    const b = reportMode === 'squad' ? entry.squadBreakdown : entry.breakdown;
+    const isSquad = reportMode === 'squad';
 
     // Compute bench: full squad minus playing 12
     const fullTeam = allTeams.find((t) => t.shortName === entry.teamShortName);
@@ -589,9 +943,9 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
           </div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:36px;font-weight:900;color:#f5c518;font-variant-numeric:tabular-nums;line-height:1;">${entry.score}</div>
+          <div style="font-size:36px;font-weight:900;color:#f5c518;font-variant-numeric:tabular-nums;line-height:1;">${displayScore}</div>
           <div style="font-size:10px;color:#555;margin-top:2px;">/ 100 pts</div>
-          ${bar(entry.score, 100)}
+          ${bar(typeof displayScore === 'number' ? displayScore : 0, 100)}
         </div>
       </div>
 
@@ -602,124 +956,26 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
           <p style="font-size:12px;color:#81c784;margin:0;">${entry.changeLog}</p>
         </div>` : ''}
 
-        <!-- Score overview grid -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
-          <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;">
-            <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4a9eff;text-transform:uppercase;margin-bottom:8px;">Batting</div>
-            ${row('Total', b.batting.total, 40)}
-            ${row('Wicket Keeper', b.batting.wicketKeeper, 3)}
-            ${row('L/R Balance', b.batting.leftRightBalance, 3)}
-            ${row('Position Fit', b.batting.positions, 34)}
+        ${reportMode === 'both' ? `
+          <div style="margin-bottom:14px;padding:8px 12px;background:#0d0d1e;border-radius:8px;border-left:3px solid #f5c518;">
+            <span style="font-size:10px;font-weight:900;letter-spacing:1.5px;color:#f5c518;text-transform:uppercase;">🏏 Playing 12</span>
+            <span style="font-size:10px;color:#555;margin-left:8px;">Score: ${entry.score ?? '—'}/100</span>
           </div>
-          <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;">
-            <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#ff6b6b;text-transform:uppercase;margin-bottom:8px;">Bowling</div>
-            ${row('Total', b.bowling.total, 40)}
-            ${row('Total Overs', b.bowling.totalOvers, 3)}
-            ${row('Pace Overs', b.bowling.paceOvers, 3)}
-            ${row('Spin Overs', b.bowling.spinOvers, 3)}
-            ${row('Powerplay', b.bowling.powerplay, 10)}
-            ${row('Middle Overs', b.bowling.middle, 11)}
-            ${row('Death', b.bowling.death, 10)}
+          ${scoreGrid(entry.breakdown, false)}
+          ${battingOrderTable(entry.breakdown)}
+          ${bowlingPhaseTable(entry.breakdown)}
+          <div style="margin:20px 0 14px;padding:8px 12px;background:#0d0d1e;border-radius:8px;border-left:3px solid #4a9eff;">
+            <span style="font-size:10px;font-weight:900;letter-spacing:1.5px;color:#4a9eff;text-transform:uppercase;">🛡️ Squad Strength</span>
+            <span style="font-size:10px;color:#555;margin-left:8px;">Score: ${entry.squadScore ?? '—'}/100</span>
           </div>
-          <div style="background:#0a0a14;border-radius:10px;padding:12px 14px;grid-column:span 2;">
-            <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4caf50;text-transform:uppercase;margin-bottom:8px;">Other Metrics</div>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
-              ${[
-                ['Fitness', b.fitness, 5],
-                ['Impact', b.impact, 7],
-                ['Tactical', b.tactical, 3],
-                ['Age', b.age, 1],
-                ['Captaincy', b.captaincy, 4],
-              ]
-                .map(
-                  ([l, v, m]) => `
-                <div style="text-align:center;">
-                  <div style="font-size:10px;color:#555;margin-bottom:2px;">${l}</div>
-                  <div style="font-size:16px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;">${v}<span style="font-size:10px;color:#444;font-weight:400">/${m}</span></div>
-                </div>`
-                )
-                .join('')}
-            </div>
-          </div>
-        </div>
-
-        <!-- Batting order assignment -->
-        ${b.batting.battingOrder?.length ? `
-        <div style="margin-bottom:20px;">
-          <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#4a9eff;text-transform:uppercase;margin-bottom:8px;">Batting Order Assignment</div>
-          <table style="width:100%;border-collapse:collapse;font-size:11px;background:#0a0a14;border-radius:10px;overflow:hidden;">
-            <thead>
-              <tr style="background:#0d0d1e;">
-                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:center;letter-spacing:1px;font-size:9px;">#</th>
-                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:left;letter-spacing:1px;font-size:9px;">PLAYER</th>
-                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;font-size:9px;">CONTRIBUTION</th>
-                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;font-size:9px;">SLOT MAX</th>
-                <th style="padding:6px 10px;color:#555;font-weight:700;text-align:center;letter-spacing:1px;font-size:9px;">FIT</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${Array.from({ length: 12 }, (_, i) => i + 1).map((pos) => {
-                const e = b.batting.battingOrder.find((x) => x.position === pos);
-                if (!e) return `<tr style="border-top:1px solid #1a1a2e;">
-                  <td style="padding:5px 10px;color:#f5c518;font-weight:700;text-align:center;">${pos}</td>
-                  <td style="padding:5px 10px;color:#333;font-style:italic;" colspan="4">— empty —</td>
-                </tr>`;
-                return `<tr style="border-top:1px solid #1a1a2e;">
-                  <td style="padding:5px 10px;color:#f5c518;font-weight:700;text-align:center;">${pos}</td>
-                  <td style="padding:5px 10px;color:#ddd;font-weight:600;">${e.name}</td>
-                  <td style="padding:5px 10px;color:#aaa;text-align:right;font-variant-numeric:tabular-nums;">${e.contribution != null ? e.contribution.toFixed(2) : '—'}</td>
-                  <td style="padding:5px 10px;color:#555;text-align:right;font-variant-numeric:tabular-nums;">${e.slotMax != null ? e.slotMax.toFixed(2) : '—'}</td>
-                  <td style="padding:5px 10px;text-align:center;">
-                    <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;${e.isPreferred ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
-                      ${e.isPreferred ? '✓ In pos' : '✗ Out of pos'}
-                    </span>
-                  </td>
-                </tr>`;
-              }).join('')}
-              <tr style="border-top:2px solid #2a2a3a;">
-                <td colspan="2" style="padding:6px 10px;font-size:9px;font-weight:900;color:#888;letter-spacing:1px;text-transform:uppercase;">Total Position Fit</td>
-                <td colspan="3" style="padding:6px 10px;text-align:right;font-weight:900;color:#4a9eff;font-size:13px;font-variant-numeric:tabular-nums;">${b.batting.positions}<span style="font-size:10px;color:#444;font-weight:400">/34</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>` : ''}
-
-        <!-- Bowling phase assignments -->
-        ${b.bowling.phaseAssignments ? `
-        <div style="margin-bottom:20px;">
-          <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:#ff6b6b;text-transform:uppercase;margin-bottom:8px;">Bowling Phase Assignments (Top 4)</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-            ${[
-              { key: 'powerplay', label: 'Powerplay', score: b.bowling.powerplay, max: 10 },
-              { key: 'middle',    label: 'Middle',    score: b.bowling.middle,    max: 11 },
-              { key: 'death',     label: 'Death',     score: b.bowling.death,     max: 10 },
-            ].map(({ key, label, score, max }) => {
-              const bowlers = b.bowling.phaseAssignments[key] ?? [];
-              return `
-              <div style="background:#0a0a14;border-radius:10px;overflow:hidden;">
-                <div style="padding:8px 10px;background:#0d0d1e;display:flex;justify-content:space-between;align-items:center;">
-                  <span style="font-size:9px;font-weight:900;letter-spacing:1px;color:#ff6b6b;text-transform:uppercase;">${label}</span>
-                  <span style="font-size:11px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">${score}<span style="color:#444;font-weight:400;font-size:9px;">/${max}</span></span>
-                </div>
-                ${bowlers.length ? `
-                <table style="width:100%;border-collapse:collapse;font-size:10px;">
-                  <tbody>
-                    ${bowlers.map((bw) => `
-                    <tr style="border-top:1px solid #1a1a2e;">
-                      <td style="padding:4px 8px;color:#ddd;">${bw.name}</td>
-                      <td style="padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums;color:#aaa;">${bw.designated ? bw.base : `<span style="color:#aaa;">${bw.base}</span><span style="color:#f5a623;">→${bw.effective}</span>`}</td>
-                      <td style="padding:4px 8px;text-align:center;">
-                        <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;${bw.designated ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
-                          ${bw.designated ? '✓' : '−2'}
-                        </span>
-                      </td>
-                    </tr>`).join('')}
-                  </tbody>
-                </table>` : `<p style="padding:8px;font-size:10px;color:#333;text-align:center;">No bowlers</p>`}
-              </div>`;
-            }).join('')}
-          </div>
-        </div>` : ''}
+          ${scoreGrid(entry.squadBreakdown, true)}
+          ${battingOrderTable(entry.squadBreakdown)}
+          ${bowlingPhaseTable(entry.squadBreakdown)}
+        ` : `
+          ${scoreGrid(b, isSquad)}
+          ${battingOrderTable(b)}
+          ${bowlingPhaseTable(b)}
+        `}
 
         <!-- Bench / remaining players -->
         ${bench.length ? `
@@ -791,26 +1047,31 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
           <tr style="background:#0a0a18;">
             <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:left;letter-spacing:1px;">RANK</th>
             <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:left;letter-spacing:1px;">TEAM</th>
-            <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">SCORE</th>
+            ${reportMode === 'both'
+              ? `<th style="padding:10px 14px;font-size:10px;color:#f5c518;font-weight:700;text-align:right;letter-spacing:1px;">P12</th>
+                 <th style="padding:10px 14px;font-size:10px;color:#4a9eff;font-weight:700;text-align:right;letter-spacing:1px;">SQUAD</th>`
+              : `<th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">SCORE</th>`}
             <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">BATTING</th>
             <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">BOWLING</th>
             <th style="padding:10px 14px;font-size:10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;">OTHERS</th>
           </tr>
         </thead>
         <tbody>
-          ${rankings
-            .slice()
-            .sort((a, b) => a.rank - b.rank)
+          ${sortedRankings
             .map((e) => {
               const isMe = e.teamShortName === myTeamShortName;
-              const b = e.breakdown ?? {};
-              const others = ((b.fitness ?? 0) + (b.impact ?? 0) + (b.tactical ?? 0) + (b.age ?? 0) + (b.captaincy ?? 0)).toFixed(2);
+              const bd = reportMode === 'squad' ? (e.squadBreakdown ?? {}) : (e.breakdown ?? {});
+              const others = ((bd.fitness ?? 0) + (bd.impact ?? 0) + (bd.tactical ?? 0) + (bd.age ?? 0) + (bd.captaincy ?? 0) + (bd.benchStrength?.score ?? 0)).toFixed(2);
+              const scoreCell = reportMode === 'both'
+                ? `<td style="padding:9px 14px;font-size:13px;font-weight:900;color:#f5c518;text-align:right;font-variant-numeric:tabular-nums;">${e.score ?? '—'}</td>
+                   <td style="padding:9px 14px;font-size:13px;font-weight:900;color:#4a9eff;text-align:right;font-variant-numeric:tabular-nums;">${e.squadScore ?? '—'}</td>`
+                : `<td style="padding:9px 14px;font-size:14px;font-weight:900;color:#f5c518;text-align:right;font-variant-numeric:tabular-nums;">${reportMode === 'squad' ? (e.squadScore ?? '—') : (e.score ?? '—')}</td>`;
               return `<tr style="border-top:1px solid #1e1e2e;background:${isMe ? '#1a1600' : 'transparent'};">
                 <td style="padding:9px 14px;font-size:12px;color:#f5c518;font-weight:700;">${MEDAL_TEXT[e.rank - 1] ?? `#${e.rank}`}</td>
                 <td style="padding:9px 14px;font-size:13px;color:#fff;font-weight:600;">${e.teamName}${isMe ? ' <span style="font-size:9px;font-weight:900;color:#f5c518;letter-spacing:1px;background:#f5c51822;padding:2px 6px;border-radius:4px;margin-left:6px;">YOUR TEAM</span>' : teamOwners[e.teamShortName] ? ` <span style="font-size:9px;font-weight:700;color:#aaa;letter-spacing:1px;background:#ffffff0d;padding:2px 6px;border-radius:4px;margin-left:6px;">${teamOwners[e.teamShortName]}</span>` : ''}</td>
-                <td style="padding:9px 14px;font-size:14px;font-weight:900;color:#f5c518;text-align:right;font-variant-numeric:tabular-nums;">${e.score}</td>
-                <td style="padding:9px 14px;font-size:12px;color:#4a9eff;text-align:right;font-variant-numeric:tabular-nums;">${e.breakdown?.batting?.total ?? '—'}/40</td>
-                <td style="padding:9px 14px;font-size:12px;color:#ff6b6b;text-align:right;font-variant-numeric:tabular-nums;">${e.breakdown?.bowling?.total ?? '—'}/40</td>
+                ${scoreCell}
+                <td style="padding:9px 14px;font-size:12px;color:#4a9eff;text-align:right;font-variant-numeric:tabular-nums;">${bd.batting?.total ?? '—'}/40</td>
+                <td style="padding:9px 14px;font-size:12px;color:#ff6b6b;text-align:right;font-variant-numeric:tabular-nums;">${bd.bowling?.total ?? '—'}/40</td>
                 <td style="padding:9px 14px;font-size:12px;color:#4caf50;text-align:right;font-variant-numeric:tabular-nums;">${others}/20</td>
               </tr>`;
             })
@@ -834,9 +1095,11 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
 
 export default function RankingPage() {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingP12, setLoadingP12] = useState(false);
+  const [loadingSquad, setLoadingSquad] = useState(false);
   const [error, setError] = useState('');
   const [showInfo, setShowInfo] = useState(false);
+  const [mode, setMode] = useState('playing12'); // 'playing12' | 'squad'
 
   const { socket } = useSocket();
   const { room } = useRoom();
@@ -844,25 +1107,23 @@ export default function RankingPage() {
   const { teamAssignments } = useRoom();
 
   const fetchRankings = async () => {
-    setLoading(true);
     setError('');
     try {
       const res = await api.get(`/ranking${room?.code ? `?roomCode=${room.code}` : ''}`);
       setData(res.data);
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to fetch rankings.');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (genMode) => {
+    const setLoading = genMode === 'squad' ? setLoadingSquad : setLoadingP12;
     setLoading(true);
     setError('');
     try {
-      // POST triggers a new generation on the backend, which will then emit a socket event
-      const res = await api.post('/ranking', { roomCode: room?.code });
+      const res = await api.post('/ranking', { roomCode: room?.code, mode: genMode });
       setData(res.data);
+      setMode(genMode); // switch view to the mode just generated
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to generate rankings.');
     } finally {
@@ -870,9 +1131,12 @@ export default function RankingPage() {
     }
   };
 
+  // Only fetch once we have the room code — avoids the "failed to fetch" on mount
+  // when room context hasn't loaded yet, which caused the 10-second retry delay.
   useEffect(() => {
+    if (!room?.code) return;
     fetchRankings();
-  }, []);
+  }, [room?.code]);
 
   useEffect(() => {
     if (!socket) return;
@@ -886,7 +1150,7 @@ export default function RankingPage() {
   const amHost = room?.hostId === socket?.id;
   const hasRankings = data && data.rankings?.length > 0;
 
-  const handleDownload = () => {
+  const handleDownload = (reportMode = 'playing12') => {
     // Build shortName → username map from room team assignments
     const teamOwners = Object.values(teamAssignments ?? {}).reduce((acc, a) => {
       if (a.shortName && a.claimedBy) acc[a.shortName] = a.claimedBy;
@@ -898,7 +1162,8 @@ export default function RankingPage() {
       data.verdict,
       myTeam?.shortName ?? null,
       teamOwners,
-      allTeams
+      allTeams,
+      reportMode
     );
     const win = window.open('', '_blank');
     if (!win) return;
@@ -911,7 +1176,7 @@ export default function RankingPage() {
 
   return (
     <div className="mx-auto max-w-2xl p-6">
-      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
+      {showInfo && <InfoModal onClose={() => setShowInfo(false)} mode={mode} />}
 
       <div className="mb-6 flex items-start justify-between">
         <div>
@@ -921,19 +1186,40 @@ export default function RankingPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {hasRankings && (
-            <button
-              onClick={handleDownload}
-              title="Download ratings report"
-              className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-semibold text-gray-300 transition hover:border-ipl-gold hover:text-ipl-gold"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {hasRankings && (() => {
+            const hasP12  = data.rankings.some((r) => r.breakdown != null);
+            const hasSquad = data.rankings.some((r) => r.squadBreakdown != null);
+            const dlIcon = (
+              <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Download Report
-            </button>
-          )}
+            );
+            if (hasP12 && hasSquad) {
+              return (
+                <div className="flex gap-1.5">
+                  <button onClick={() => handleDownload('playing12')} title="Download Playing 12 report"
+                    className="flex items-center gap-1 rounded-full border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:border-ipl-gold hover:text-ipl-gold">
+                    {dlIcon} P12
+                  </button>
+                  <button onClick={() => handleDownload('squad')} title="Download Squad report"
+                    className="flex items-center gap-1 rounded-full border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:border-ipl-blue hover:text-ipl-blue">
+                    {dlIcon} Squad
+                  </button>
+                  <button onClick={() => handleDownload('both')} title="Download combined P12 + Squad report"
+                    className="flex items-center gap-1 rounded-full border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:border-purple-400 hover:text-purple-400">
+                    {dlIcon} Both
+                  </button>
+                </div>
+              );
+            }
+            return (
+              <button onClick={() => handleDownload(hasSquad ? 'squad' : 'playing12')} title="Download ratings report"
+                className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-semibold text-gray-300 transition hover:border-ipl-gold hover:text-ipl-gold">
+                {dlIcon} Download Report
+              </button>
+            );
+          })()}
           <button
             onClick={() => setShowInfo(true)}
             title="How are teams rated?"
@@ -947,29 +1233,97 @@ export default function RankingPage() {
         </div>
       </div>
 
+      {/* Rating mode toggle — only show tabs for modes that have been generated */}
+      {hasRankings && (() => {
+        const hasP12  = data.rankings.some((r) => r.breakdown != null);
+        const hasSquad = data.rankings.some((r) => r.squadBreakdown != null);
+        if (!hasP12 && !hasSquad) return null;
+        return (
+          <div className="mb-5 flex gap-2 rounded-xl border border-gray-800 bg-gray-900/60 p-1">
+            <button
+              id="mode-playing12"
+              disabled={!hasP12}
+              onClick={() => setMode('playing12')}
+              title={hasP12 ? undefined : 'Click "🏏 Rate by Playing 12" to generate'}
+              className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                !hasP12
+                  ? 'cursor-not-allowed opacity-40 text-gray-600'
+                  : mode === 'playing12'
+                    ? 'bg-ipl-gold text-gray-950 shadow'
+                    : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              🏏 Playing 12{!hasP12 && <span className="ml-1 text-[9px] font-normal">(not generated)</span>}
+            </button>
+            <button
+              id="mode-squad"
+              disabled={!hasSquad}
+              onClick={() => setMode('squad')}
+              title={hasSquad ? undefined : 'Click "🛡️ Rate by Squad" to generate'}
+              className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                !hasSquad
+                  ? 'cursor-not-allowed opacity-40 text-gray-600'
+                  : mode === 'squad'
+                    ? 'bg-ipl-gold text-gray-950 shadow'
+                    : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              🛡️ Squad{!hasSquad && <span className="ml-1 text-[9px] font-normal">(not generated)</span>}
+            </button>
+          </div>
+        );
+      })()}
+
       {amHost && (
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl bg-ipl-gold py-3.5 text-sm font-bold text-gray-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loading ? (
-            <>
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-              Calculating team scores…
-            </>
-          ) : (
-            <>
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              {data && data.rankings?.length ? 'Recalculate Rankings' : 'Create Rankings'}
-            </>
-          )}
-        </button>
+        <div className="mb-6 flex gap-3">
+          {/* Playing 12 generate button */}
+          <button
+            onClick={() => handleGenerate('playing12')}
+            disabled={loadingP12 || loadingSquad}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-ipl-gold bg-ipl-gold py-3 text-sm font-bold text-gray-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingP12 ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Calculating…
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                🏏 Rate by Playing 12
+              </>
+            )}
+          </button>
+
+          {/* Squad generate button */}
+          <button
+            onClick={() => handleGenerate('squad')}
+            disabled={loadingP12 || loadingSquad}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-ipl-blue bg-ipl-blue/10 py-3 text-sm font-bold text-ipl-blue transition hover:bg-ipl-blue/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingSquad ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Calculating…
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                🛡️ Rate by Squad
+              </>
+            )}
+          </button>
+        </div>
       )}
 
       {error && (
@@ -993,10 +1347,21 @@ export default function RankingPage() {
             <p className="text-sm leading-relaxed text-gray-200">{data.verdict}</p>
           </div>
 
+          {/* Sorted by the active mode's score */}
           <div className="space-y-3">
-            {data.rankings.map((entry) => (
-              <TeamCard key={entry.teamShortName} entry={entry} />
-            ))}
+            {[...data.rankings]
+              .sort((a, b) =>
+                mode === 'squad'
+                  ? (b.squadScore ?? b.score) - (a.squadScore ?? a.score)
+                  : b.score - a.score
+              )
+              .map((entry, idx) => ({
+                ...entry,
+                rank: idx + 1,
+              }))
+              .map((entry) => (
+                <TeamCard key={entry.teamShortName} entry={entry} mode={mode} />
+              ))}
           </div>
         </>
       ) : null}

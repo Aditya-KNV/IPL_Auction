@@ -1153,6 +1153,59 @@ function RulesTab() {
         </div>
       </Section>
 
+      {/* ── SQUAD RATING MODE ── */}
+      <Section title="Squad Rating Mode">
+        <p className="text-gray-300 text-sm mb-4">
+          When you click <strong className="text-ipl-gold">🛡️ Rate by Squad</strong>, the scoring formula changes to
+          reward bench depth over tactical flexibility. The Playing 12 is still selected optimally, but the{" "}
+          <em>Other</em> metrics are re-weighted and a Bench Strength score is added.
+        </p>
+
+        <h3 className="text-white font-semibold text-sm mb-2">Differences from Playing 12 mode</h3>
+        <Table
+          headers={["Component", "Playing 12 mode", "Squad mode"]}
+          rows={[
+            ["Fitness (max)", "5 pts  (×0.5)", "2 pts  (×0.2)"],
+            ["Impact (max)", "7 pts  (×0.7)", "3 pts  (×0.3)"],
+            ["Tactical", "3 pts  (×0.3)", "Removed (0)"],
+            ["Bench Strength", "Not scored", "10 pts"],
+            ["Batting + Bowling", "40 + 40", "40 + 40  (unchanged)"],
+            ["Age + Captaincy", "1 + 4", "1 + 4  (unchanged)"],
+          ]}
+        />
+
+        <h3 className="text-white font-semibold text-sm mt-5 mb-2">Bench Strength (Max 10 pts)</h3>
+        <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-3">
+          Score = (backed_up / at_risk) × 10
+        </div>
+        <p className="text-gray-400 text-xs mb-3">
+          <em>at_risk</em> = players in the Playing 12 with injury_risk &gt; 4.{" "}
+          If no at-risk players exist, full 10 pts are awarded automatically.{" "}
+          If the Playing 12 is empty, score is 0.
+        </p>
+
+        <h3 className="text-white font-semibold text-sm mb-2">Backup Validity Rules</h3>
+        <p className="text-gray-400 text-xs mb-3">
+          A bench player is a valid backup for an at-risk Playing 12 player if:
+        </p>
+        <Table
+          headers={["At-risk role", "Condition", "Valid backup on bench"]}
+          rows={[
+            ["Wicket-Keeper", "Only 1 keeper in XI", "Wicket-Keeper only — keeping role is fully uncovered"],
+            ["Wicket-Keeper", "2+ keepers in XI", "Wicket-Keeper or Batsman — keeping is covered by the second keeper; only the batting slot needs replacement"],
+            ["Batsman", "—", "Batsman or Wicket-Keeper"],
+            ["Bowler (pace)", "—", "Pace Bowler only"],
+            ["Bowler (spin)", "—", "Spin Bowler only"],
+            ["All-Rounder (fast)", "—", "Fast All-Rounder only (pure Bowlers cannot back up ARs)"],
+            ["All-Rounder (spin)", "—", "Spin All-Rounder only (pure Bowlers cannot back up ARs)"],
+          ]}
+        />
+        <p className="text-gray-500 text-xs mt-3">
+          Nationality constraint: an Indian at-risk player must be backed by an Indian bench player;
+          overseas players can be backed by any nationality.
+        </p>
+      </Section>
+
       {/* ── GAME CONSTANTS ── */}
       <Section title="Game Constants">
         <Table
@@ -1222,78 +1275,66 @@ function InRoomLayout() {
         </div>
       </div>
 
+      {/* All tabs are always mounted — hidden via CSS to preserve state across tab switches */}
       <div className="h-full pt-[57px] overflow-hidden">
-        {activeTab === "Lobby" && (
-          <div className="h-full overflow-y-auto">
-            <div className="max-w-2xl mx-auto px-4 py-8">
-              <RoomLobby />
-            </div>
+        <div className={`h-full overflow-y-auto ${activeTab === "Lobby" ? "" : "hidden"}`}>
+          <div className="max-w-2xl mx-auto px-4 py-8">
+            <RoomLobby />
           </div>
-        )}
+        </div>
 
-        {/* AuctionBoard stays mounted at all times — only hidden via CSS.
-            This eliminates the refetch lag when switching back to the Auction tab. */}
         <div className={`h-full ${activeTab === "Auction" ? "" : "hidden"}`}>
           {myAssignment ? (
             <div className="h-full overflow-y-auto lg:overflow-hidden">
               <AuctionBoard />
             </div>
           ) : (
-            activeTab === "Auction" && (
-              <div className="h-full overflow-y-auto">
-                <div className="flex items-center justify-center min-h-[60vh]">
-                  <div className="bg-gray-900 border border-gray-700 rounded-2xl p-10 text-center max-w-sm">
-                    <p className="text-4xl mb-4">🏏</p>
-                    <h2 className="text-white font-bold text-xl mb-2">
-                      Pick a Team First
-                    </h2>
-                    <p className="text-gray-400 text-sm mb-6">
-                      Go to the Lobby tab and select your team before joining the
-                      auction.
-                    </p>
-                    <button
-                      onClick={() => setActiveTab("Lobby")}
-                      className="bg-ipl-gold text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
-                    >
-                      Go to Lobby
-                    </button>
-                  </div>
+            <div className="h-full overflow-y-auto">
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-10 text-center max-w-sm">
+                  <p className="text-4xl mb-4">🏏</p>
+                  <h2 className="text-white font-bold text-xl mb-2">
+                    Pick a Team First
+                  </h2>
+                  <p className="text-gray-400 text-sm mb-6">
+                    Go to the Lobby tab and select your team before joining the
+                    auction.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab("Lobby")}
+                    className="bg-ipl-gold text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
+                  >
+                    Go to Lobby
+                  </button>
                 </div>
               </div>
-            )
+            </div>
           )}
         </div>
 
-        {activeTab === "Teams" && (
-          <div className="h-full overflow-y-auto">
-            <TeamsTab />
-          </div>
-        )}
-        {activeTab === "Players" && (
-          <div className="h-full overflow-y-auto">
-            <PlayersTab />
-          </div>
-        )}
-        {activeTab === "Dashboard" && (
-          <div className="h-full overflow-y-auto">
-            <DashboardPage />
-          </div>
-        )}
-        {activeTab === "Rankings" && (
-          <div className="h-full overflow-y-auto">
-            <RankingPage />
-          </div>
-        )}
-        {activeTab === "Rules" && (
-          <div className="h-full overflow-y-auto">
-            <RulesTab />
-          </div>
-        )}
-        {activeTab === "Settings" && (
-          <div className="h-full overflow-y-auto">
-            <SettingsTab />
-          </div>
-        )}
+        <div className={`h-full overflow-y-auto ${activeTab === "Teams" ? "" : "hidden"}`}>
+          <TeamsTab />
+        </div>
+
+        <div className={`h-full overflow-y-auto ${activeTab === "Players" ? "" : "hidden"}`}>
+          <PlayersTab />
+        </div>
+
+        <div className={`h-full overflow-y-auto ${activeTab === "Dashboard" ? "" : "hidden"}`}>
+          <DashboardPage />
+        </div>
+
+        <div className={`h-full overflow-y-auto ${activeTab === "Rankings" ? "" : "hidden"}`}>
+          <RankingPage />
+        </div>
+
+        <div className={`h-full overflow-y-auto ${activeTab === "Rules" ? "" : "hidden"}`}>
+          <RulesTab />
+        </div>
+
+        <div className={`h-full overflow-y-auto ${activeTab === "Settings" ? "" : "hidden"}`}>
+          <SettingsTab />
+        </div>
       </div>
     </div>
   );

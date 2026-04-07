@@ -21,74 +21,53 @@ const { canTeamBuyPlayer, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules')
 //      remaining improvements the direct pass misses.
 const { scoreBreakdown, playerOverallComposite, playerBowlingComposite, playerBattingComposite } = require('../utils/teamScoring');
 
-const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
-  const allPlayers = await Player.find({ team: teamId, status: 'sold' }).lean();
-
+// ── Core optimizer — pure, no DB calls ───────────────────────────────────────
+// allPlayers : player objects already in memory
+// prevIds    : previous playing-12 IDs (warm-start seed)
+// objFn      : optional objective (squad => number). Defaults to scoreBreakdown rawFinal.
+// Returns    : array of player objects (the optimal playing 12)
+const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn = null) => {
   const isOverseas = (p) => {
     const nat = String(p.nationality || '').trim().toLowerCase();
     return nat.length > 0 && nat !== 'indian';
   };
 
-  // ── STRICT 4-overseas cap: if not enough Indians, leave slots empty ─────
   const indianPlayers   = allPlayers.filter((p) => !isOverseas(p));
   const overseasPlayers = allPlayers.filter(isOverseas);
-
   const maxAllowedOverseas = Math.min(MAX_OVERSEAS_PLAYING, overseasPlayers.length);
   const targetSize = Math.min(12, maxAllowedOverseas + indianPlayers.length);
 
   if (allPlayers.length <= targetSize) {
-    if (overseasPlayers.length <= MAX_OVERSEAS_PLAYING) {
-      return allPlayers.map((p) => p._id);
-    }
+    if (overseasPlayers.length <= MAX_OVERSEAS_PLAYING) return allPlayers;
     const topOverseas = [...overseasPlayers]
       .sort((a, b) => playerOverallComposite(b) - playerOverallComposite(a))
       .slice(0, MAX_OVERSEAS_PLAYING);
-    return [...indianPlayers, ...topOverseas].map((p) => p._id);
+    return [...indianPlayers, ...topOverseas];
   }
 
   const playerById = new Map(allPlayers.map((p) => [String(p._id), p]));
 
-  // ── Shared helpers ────────────────────────────────────────────────────────
-  const teamScore = (squad) => {
-    try { return scoreBreakdown(squad).rawFinal; } catch { return 0; }
-  };
+  const scoreFn = objFn
+    ? (squad) => { try { return objFn(squad); } catch { return 0; } }
+    : (squad) => { try { return scoreBreakdown(squad).rawFinal; } catch { return 0; } };
 
-  const impactFactor = (p) => {
-    const mw = p.role_impact?.match_winner ?? 0;
-    const cl = p.role_impact?.clutch ?? 0;
-    const co = p.role_impact?.consistency ?? 0;
-    return (mw + cl + co) / 30; // normalized 0–1
-  };
-
-  // Role-dominant score: bowling phases dominate for Bowlers, batting for Batsmen/WK.
-  // Impact is a secondary tiebreaker (scaled 0–1 so it never overrides role phases).
-  // Example: 9/9/9 bowler (27.0) always beats 8/8/8 bowler (24.x) regardless of impact.
+  const impactFactor = (p) =>
+    ((p.role_impact?.match_winner ?? 0) + (p.role_impact?.clutch ?? 0) + (p.role_impact?.consistency ?? 0)) / 30;
   const roleScore = (p) => {
-    const impact = impactFactor(p);
-    if (p.role === 'Bowler')  return playerBowlingComposite(p) + impact;
-    if (p.role === 'Batsman' || p.role === 'Wicket-Keeper') return playerBattingComposite(p) + impact;
-    return playerOverallComposite(p) + impact; // All-Rounder
+    const imp = impactFactor(p);
+    if (p.role === 'Bowler') return playerBowlingComposite(p) + imp;
+    if (p.role === 'Batsman' || p.role === 'Wicket-Keeper') return playerBattingComposite(p) + imp;
+    return playerOverallComposite(p) + imp;
   };
-
   const overseasCount = (squad) => squad.filter(isOverseas).length;
 
-  // ── Seed builder: greedy by overall composite respecting overseas cap ────
   const buildGreedySeed = () => {
-    const sorted = [...allPlayers].sort(
-      (a, b) => playerOverallComposite(b) - playerOverallComposite(a)
-    );
-    const playing = [];
-    const bench   = [];
-    let overseas  = 0;
+    const sorted = [...allPlayers].sort((a, b) => playerOverallComposite(b) - playerOverallComposite(a));
+    const playing = []; const bench = []; let overseas = 0;
     for (const p of sorted) {
-      if (playing.length >= targetSize || (isOverseas(p) && overseas >= MAX_OVERSEAS_PLAYING)) {
-        bench.push(p);
-      } else {
-        playing.push(p);
-        if (isOverseas(p)) overseas++;
-      }
+      if (playing.length >= targetSize || (isOverseas(p) && overseas >= MAX_OVERSEAS_PLAYING)) bench.push(p);
+      else { playing.push(p); if (isOverseas(p)) overseas++; }
     }
-    // Backfill with Indians if overseas cap pushed us short
     while (playing.length < targetSize) {
       const idx = bench.findIndex((p) => !isOverseas(p));
       if (idx === -1) break;
@@ -97,145 +76,120 @@ const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
     return { playing, bench };
   };
 
-  // ── Step 2 (role-replacement) + Step 3 (hill-climb) bundled ─────────────
-  // Runs from a given seed all the way to convergence.
-  // Returns { playing, score }.
+  // Optimiser: Phase A (role replacement) + Phase B (1-opt then 2-opt, repeated).
+  // Phase B2 (2-opt double-swap) escapes local optima that 1-opt can never escape.
   const optimise = async (seedPlaying, seedBench) => {
-    const playing = [...seedPlaying];
-    const bench   = [...seedBench];
+    const playing = [...seedPlaying]; const bench = [...seedBench];
 
-    // ─ Phase A: Direct role-based replacement ──────────────────────────────
-    // For every bench player that is strictly better (by role score) than the
-    // weakest same-role player in the playing 12, swap unconditionally.
-    // This guarantees a 10/10/10 bowler always beats an 8/8/8 bowler.
+    // Phase A: direct role-based replacement
     let changed = true;
     while (changed) {
       changed = false;
       for (let j = 0; j < bench.length; j++) {
-        const benchPlayer    = bench[j];
-        const benchRS        = roleScore(benchPlayer);
-        const benchIsOverseas = isOverseas(benchPlayer);
-
-        let worstIdx = -1;
-        let worstRS  = Infinity;
+        const bRS = roleScore(bench[j]); const bOvs = isOverseas(bench[j]);
+        let worstIdx = -1; let worstRS = Infinity;
         for (let i = 0; i < playing.length; i++) {
-          if (playing[i].role !== benchPlayer.role) continue;
-          const s = roleScore(playing[i]);
-          if (s < worstRS) { worstRS = s; worstIdx = i; }
+          if (playing[i].role !== bench[j].role) continue;
+          const s = roleScore(playing[i]); if (s < worstRS) { worstRS = s; worstIdx = i; }
         }
-
-        if (worstIdx === -1 || benchRS <= worstRS) continue;
-
-        // Overseas cap check
-        if (benchIsOverseas && !isOverseas(playing[worstIdx])) {
-          if (overseasCount(playing) >= MAX_OVERSEAS_PLAYING) continue;
-        }
-
-        const evicted = playing[worstIdx];
-        playing[worstIdx] = benchPlayer;
-        bench[j] = evicted;
-        changed = true;
+        if (worstIdx === -1 || bRS <= worstRS) continue;
+        if (bOvs && !isOverseas(playing[worstIdx]) && overseasCount(playing) >= MAX_OVERSEAS_PLAYING) continue;
+        const ev = playing[worstIdx]; playing[worstIdx] = bench[j]; bench[j] = ev; changed = true;
       }
     }
 
-    // ─ Phase B: Hill-climbing to full convergence ──────────────────────────
-    // Uses rawFinal (full precision) and runs until no single swap improves
-    // the score — no artificial iteration cap.
-    // Role-score protection: same-role swaps may not downgrade the dominant
-    // metric. This stops the raw team score from evicting a 10/10/10 bowler
-    // in favour of an 8/8/8 bowler with inflated batting stats.
-    let bestScore = teamScore(playing);
-    let improved  = true;
+    let bestScore = scoreFn(playing);
+    let outerImproved = true;
 
-    while (improved) {
-      improved = false;
-      let bestSwapScore = bestScore;
-      let bestI = -1;
-      let bestJ = -1;
+    while (outerImproved) {
+      outerImproved = false;
 
-      for (let i = 0; i < playing.length; i++) {
-        // Yield to the event loop so live auction sockets stay responsive
-        await new Promise(resolve => setImmediate(resolve));
-
-        for (let j = 0; j < bench.length; j++) {
-          const candidate = [...playing];
-          candidate[i] = bench[j];
-
-          if (overseasCount(candidate) > MAX_OVERSEAS_PLAYING) continue;
-
-          // Role-score protection for same-role swaps
-          if (playing[i].role === bench[j].role && roleScore(bench[j]) < roleScore(playing[i])) continue;
-
-          const swapScore = teamScore(candidate);
-          if (swapScore > bestSwapScore) {
-            bestSwapScore = swapScore;
-            bestI = i;
-            bestJ = j;
+      // Phase B1: 1-opt single swaps to convergence
+      let singleImproved = true;
+      while (singleImproved) {
+        singleImproved = false;
+        let best1Score = bestScore; let bestI = -1; let bestJ = -1;
+        for (let i = 0; i < playing.length; i++) {
+          await new Promise(resolve => setImmediate(resolve));
+          for (let j = 0; j < bench.length; j++) {
+            const cand = [...playing]; cand[i] = bench[j];
+            if (overseasCount(cand) > MAX_OVERSEAS_PLAYING) continue;
+            if (playing[i].role === bench[j].role && roleScore(bench[j]) < roleScore(playing[i])) continue;
+            const s = scoreFn(cand);
+            if (s > best1Score) { best1Score = s; bestI = i; bestJ = j; }
           }
+        }
+        if (bestI !== -1) {
+          const ev = playing[bestI]; playing[bestI] = bench[bestJ]; bench[bestJ] = ev;
+          bestScore = best1Score; singleImproved = true; outerImproved = true;
         }
       }
 
-      if (bestI !== -1) {
-        const evicted  = playing[bestI];
-        playing[bestI] = bench[bestJ];
-        bench[bestJ]   = evicted;
-        bestScore      = bestSwapScore;
-        improved       = true;
+      // Phase B2: 2-opt — all pairs of simultaneous swaps to escape local optima
+      let best2Score = bestScore;
+      let bI1 = -1; let bI2 = -1; let bJ1 = -1; let bJ2 = -1;
+      for (let i1 = 0; i1 < playing.length; i1++) {
+        await new Promise(resolve => setImmediate(resolve));
+        for (let i2 = i1 + 1; i2 < playing.length; i2++) {
+          for (let j1 = 0; j1 < bench.length; j1++) {
+            for (let j2 = j1 + 1; j2 < bench.length; j2++) {
+              const cand = [...playing]; cand[i1] = bench[j1]; cand[i2] = bench[j2];
+              if (overseasCount(cand) > MAX_OVERSEAS_PLAYING) continue;
+              const s = scoreFn(cand);
+              if (s > best2Score) { best2Score = s; bI1 = i1; bI2 = i2; bJ1 = j1; bJ2 = j2; }
+            }
+          }
+        }
+      }
+      if (bI1 !== -1) {
+        const e1 = playing[bI1]; const e2 = playing[bI2];
+        playing[bI1] = bench[bJ1]; playing[bI2] = bench[bJ2];
+        bench[bJ1] = e1; bench[bJ2] = e2;
+        bestScore = best2Score; outerImproved = true;
       }
     }
 
     return { playing, score: bestScore };
   };
 
-  // ── Build seeds ───────────────────────────────────────────────────────────
   const seeds = [];
-
-  // Seed A – previous playing 12 (always try it, even if size mismatches,
-  // by padding with the best available bench players)
   const prevIds     = new Set((previousPlaying12Ids || []).map(String));
-  const prevPlaying = (previousPlaying12Ids || [])
-    .map((id) => playerById.get(String(id)))
-    .filter(Boolean);
+  const prevPlaying = (previousPlaying12Ids || []).map((id) => playerById.get(String(id))).filter(Boolean);
   const prevBench   = allPlayers.filter((p) => !prevIds.has(String(p._id)));
 
   if (prevPlaying.length > 0 && overseasCount(prevPlaying) <= MAX_OVERSEAS_PLAYING) {
-    // Pad up to targetSize if needed (e.g. a new player was just bought)
-    const padPlaying = [...prevPlaying];
-    const padBench   = [...prevBench];
+    const padPlaying = [...prevPlaying]; const padBench = [...prevBench];
     while (padPlaying.length < targetSize && padBench.length > 0) {
-      // Prefer the highest overall-composite available player
       padBench.sort((a, b) => playerOverallComposite(b) - playerOverallComposite(a));
       const next = padBench.shift();
       if (isOverseas(next) && overseasCount(padPlaying) >= MAX_OVERSEAS_PLAYING) continue;
       padPlaying.push(next);
     }
-    if (padPlaying.length === targetSize) {
-      seeds.push({ playing: padPlaying, bench: padBench });
-    }
+    if (padPlaying.length === targetSize) seeds.push({ playing: padPlaying, bench: padBench });
   }
-
-  // Seed B – greedy by overall composite
   seeds.push(buildGreedySeed());
 
-  // ── Run optimiser from every seed; keep the best result ──────────────────
   let best = null;
-
   for (const seed of seeds) {
     const result = await optimise(seed.playing, seed.bench);
     if (!best || result.score > best.score) best = result;
   }
 
-  // Final safety: if the raw previous playing 12 (unchanged) scores higher
-  // than everything the optimiser found, keep it as-is.
+  // Final safety: raw previous 12 always wins if it scores higher
   if (prevPlaying.length === targetSize && overseasCount(prevPlaying) <= MAX_OVERSEAS_PLAYING) {
-    const prevScore = teamScore(prevPlaying);
-    if (prevScore > best.score) {
-      return prevPlaying.map((p) => p._id);
-    }
+    if (scoreFn(prevPlaying) > best.score) return prevPlaying;
   }
 
-  return best.playing.map((p) => p._id);
+  return best.playing;
 };
+
+// DB-backed wrapper — used by live auction after every sale
+const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
+  const allPlayers = await Player.find({ team: teamId, status: 'sold' }).lean();
+  const playing    = await computeBestPlaying12(allPlayers, previousPlaying12Ids);
+  return playing.map((p) => p._id);
+};
+
 
 
 
@@ -386,16 +340,6 @@ const executeSale = async (session) => {
 
   // Save the new player immediately so auction moves fast.
   await team.save();
-
-  // Recompute the optimal playing 12 asynchronously in the background.
-  // The host clicking 'Recalculate Ratings' will manually compute diffs anyway.
-  const prevPlaying12Ids = (team.playing12 || []).map((id) => String(id));
-  computePlaying12(team._id, prevPlaying12Ids)
-    .then(async (playing12Ids) => {
-      team.playing12 = playing12Ids;
-      await team.save();
-    })
-    .catch((err) => console.error('[bg-computePlaying12]', err.message));
 
   session.soldPlayers.push(player._id);
   session.currentPlayer = null;
@@ -783,6 +727,7 @@ module.exports = {
   resumeAuction,
   endAuction,
   computePlaying12,
+  computeBestPlaying12,
   openAcceleratedSelection,
   beginAcceleratedAuction,
   cancelAcceleratedMode,

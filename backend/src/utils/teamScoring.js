@@ -214,6 +214,105 @@ const bowlingArm = (style = '') => {
   return 'unknown';
 };
 
+// ── Bowling category helpers used by bench-strength logic ────────────────────
+// Returns 'spinner' | 'pacer' | null
+const bowlingCategory = (style = '') => {
+  if (!style) return null;
+  if (isSpinner(style)) return 'spinner';
+  if (isPacer(style)) return 'pacer';
+  return null;
+};
+
+// Determine if two bowling styles are compatible backups:
+// spinners back up spinners, pacers back up pacers.
+const bowlingStylesCompatible = (styleA = '', styleB = '') => {
+  const catA = bowlingCategory(styleA);
+  const catB = bowlingCategory(styleB);
+  if (!catA || !catB) return false;
+  return catA === catB;
+};
+
+// Returns true if `benchPlayer` is a valid backup for `p12Player`
+// given the nationality + role/bowling rules described in the spec.
+// keeperCountInXI: number of Wicket-Keepers currently in the Playing 12.
+const isValidBackup = (p12Player, benchPlayer, keeperCountInXI = 1) => {
+  // Nationality constraint: Indian risk-player => backup must be Indian
+  const p12Overseas = p12Player.nationality && p12Player.nationality.toLowerCase() !== 'indian';
+  const benchOverseas = benchPlayer.nationality && benchPlayer.nationality.toLowerCase() !== 'indian';
+  if (!p12Overseas && benchOverseas) return false; // Indian player needs Indian backup
+
+  const p12Role = p12Player.role;
+  const benchRole = benchPlayer.role;
+
+  // Wicket-Keeper backup rule depends on how many keepers are in the XI:
+  //   2+ keepers → the other keeper covers WK duties; bench only needs to
+  //                replace the batting slot → WK or Batsman both valid.
+  //   1 keeper   → no one in the XI can keep; bench MUST include a WK.
+  if (p12Role === 'Wicket-Keeper') {
+    if (keeperCountInXI >= 2) {
+      return benchRole === 'Wicket-Keeper' || benchRole === 'Batsman';
+    }
+    return benchRole === 'Wicket-Keeper';
+  }
+
+  // Pure Batsman: backup must be Batsman or Wicket-Keeper
+  if (p12Role === 'Batsman') {
+    return benchRole === 'Batsman' || benchRole === 'Wicket-Keeper';
+  }
+
+  // Pure Bowler: backup must be a pure Bowler of the same category (pace or spin)
+  // All-Rounders are NOT valid backups for bowlers
+  if (p12Role === 'Bowler') {
+    if (benchRole !== 'Bowler') return false;
+    return bowlingStylesCompatible(p12Player.bowling_style, benchPlayer.bowling_style);
+  }
+
+  // All-Rounder: ONLY another All-Rounder can be a backup, and bowling categories must match
+  // (fast-bowling AR → fast-bowling AR, spin AR → spin AR)
+  if (p12Role === 'All-Rounder') {
+    if (benchRole !== 'All-Rounder') return false;
+    const p12Cat = bowlingCategory(p12Player.bowling_style);
+    if (!p12Cat) return true; // AR with no bowling style — any AR is fine
+    return bowlingStylesCompatible(p12Player.bowling_style, benchPlayer.bowling_style);
+  }
+
+  return false;
+};
+
+// Bench Strength scoring (10 pts).
+// playing12: array of populated player objects in the Playing 12
+// benchPlayers: array of populated player objects NOT in Playing 12 (bench/squad remainder)
+const benchStrengthScore = (playing12, benchPlayers) => {
+  if (!playing12.length) {
+    return { score: 0, backed: 0, total: 0, details: [] };
+  }
+  const keeperCount = playing12.filter((p) => p.role === 'Wicket-Keeper').length;
+  const atRisk = playing12.filter((p) => (p.fitness?.injury_risk ?? 0) > 4);
+  if (atRisk.length === 0) {
+    return { score: 10, backed: 0, total: 0, details: [] };
+  }
+
+  const details = atRisk.map((riskPlayer) => {
+    const backup = benchPlayers.find((b) => isValidBackup(riskPlayer, b, keeperCount)) ?? null;
+    return {
+      playerId: String(riskPlayer._id),
+      name: riskPlayer.name,
+      role: riskPlayer.role,
+      bowling_style: riskPlayer.bowling_style,
+      nationality: riskPlayer.nationality,
+      injuryRisk: riskPlayer.fitness?.injury_risk ?? 0,
+      hasBackup: backup !== null,
+      backupName: backup?.name ?? null,
+      backupRole: backup?.role ?? null,
+    };
+  });
+
+  const backed = details.filter((d) => d.hasBackup).length;
+  const score = round((backed / atRisk.length) * 10);
+
+  return { score, backed, total: atRisk.length, details };
+};
+
 const spinType = (style = '') => {
   if (/(off-spin|off spin|orthodox|offbreak|off break)/i.test(style)) return 'off';
   return 'leg'; // leg-spin, wrist-spin, chinaman, mystery spin, and anything else
@@ -411,6 +510,63 @@ const scoreBreakdown = (players) => {
   };
 };
 
+// Squad-mode scoring: same batting/bowling, but fitness=2pts, impact=3pts,
+// no tactical (0), plus benchStrength=10pts.
+// playing12: the selected 12 player objects
+// fullSquad: ALL players belonging to the team (including bench)
+const scoreBreakdownSquad = (playing12, fullSquad) => {
+  const batting = battingScore(playing12);
+  const bowling = bowlingScore(playing12);
+
+  // Reduced multipliers: fitness max=2 (×0.2), impact max=3 (×0.3)
+  const fitnessRaw = average(playing12.map(playerFitnessComposite)) * 0.2;
+  const impactRaw  = average(playing12.map(playerImpactComposite)) * 0.3;
+  const age        = ageScore(playing12);
+  const captaincyScore = captaincy(playing12);
+
+  // Bench = full squad minus the playing 12
+  const p12Ids = new Set(playing12.map((p) => String(p._id)));
+  const bench  = fullSquad.filter((p) => !p12Ids.has(String(p._id)));
+
+  const bench_strength = benchStrengthScore(playing12, bench);
+
+  const finalRaw =
+    batting.total + bowling.total + fitnessRaw + impactRaw + age + captaincyScore + bench_strength.score;
+
+  return {
+    batting: {
+      wicketKeeper: round(batting.wicketKeeper),
+      leftRightBalance: round(batting.balance),
+      positions: round(batting.positions),
+      total: round(batting.total),
+      battingOrder: batting.battingOrder,
+    },
+    bowling: {
+      totalOvers: round(bowling.totalOvers),
+      paceOvers: round(bowling.paceOvers),
+      spinOvers: round(bowling.spinOvers),
+      powerplay: round(bowling.powerplay),
+      middle: round(bowling.middle),
+      death: round(bowling.death),
+      total: round(bowling.total),
+      phaseAssignments: bowling.phaseAssignments,
+    },
+    fitness: round(fitnessRaw),
+    impact: round(impactRaw),
+    tactical: 0,     // not used in squad mode
+    age: round(age),
+    captaincy: round(captaincyScore),
+    benchStrength: {
+      score: bench_strength.score,
+      backed: bench_strength.backed,
+      total: bench_strength.total,
+      details: bench_strength.details,
+    },
+    final: round(finalRaw),
+    rawFinal: finalRaw,
+  };
+};
+
 // ── Per-player composite helpers (for direct player-vs-player comparison) ─────
 const playerBowlingComposite = (p) => {
   const pp = p.bowling?.phases?.powerplay ?? 0;
@@ -430,6 +586,7 @@ const playerOverallComposite = (p) => {
 
 module.exports = {
   scoreBreakdown,
+  scoreBreakdownSquad,
   playerBowlingComposite,
   playerBattingComposite: playerBattingCompositeFn,
   playerOverallComposite,

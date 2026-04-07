@@ -1,9 +1,11 @@
 const Team = require('../models/Team');
 const AuctionSession = require('../models/AuctionSession');
-const { scoreBreakdown } = require('../utils/teamScoring');
+const { scoreBreakdown, scoreBreakdownSquad } = require('../utils/teamScoring');
 const { getIO } = require('../socket');
-const { isUserHost } = require('../socket/roomStore');
-const { computePlaying12 } = require('./auctionController');
+const { isUserHost, getRawRoomByCode } = require('../socket/roomStore');
+const { computePlaying12, computeBestPlaying12 } = require('./auctionController');
+
+const round = (value, decimals = 2) => Number(Number(value).toFixed(decimals));
 
 const selectSquad = (team) => {
   if (team.playing12?.length) return team.playing12;
@@ -24,17 +26,19 @@ const topMetric = (entry) => {
 
 const explainBatting = (b) => {
   const parts = [];
-  if (b.wicketKeeper === 4) parts.push('two keepers (full backup)');
-  else if (b.wicketKeeper === 3.5) parts.push('one fit keeper (low injury risk)');
-  else if (b.wicketKeeper === 3) parts.push('one keeper (no backup)');
+  // wicketKeeperScore returns 3 (2+ keepers), 2.5 (1 fit keeper), 2 (1 keeper), 0 (none)
+  if (b.wicketKeeper >= 3) parts.push('two or more keepers (full backup)');
+  else if (b.wicketKeeper >= 2.5) parts.push('one fit keeper (low injury risk)');
+  else if (b.wicketKeeper >= 2) parts.push('one keeper (no backup)');
   else parts.push('no wicket keeper (critical gap)');
 
-  if (b.leftRightBalance >= 4.5) parts.push('excellent left/right batting mix');
-  else if (b.leftRightBalance >= 3) parts.push('decent batting balance');
+  // battingBalanceScore max is 3
+  if (b.leftRightBalance >= 2.7) parts.push('excellent left/right batting mix');
+  else if (b.leftRightBalance >= 1.5) parts.push('decent batting balance');
   else parts.push('uneven left/right balance');
 
-  if (b.positions >= 25) parts.push('batters fit their preferred positions very well');
-  else if (b.positions >= 15) parts.push('most batters reasonably placed in the order');
+  if (b.positions >= 28) parts.push('batters fit their preferred positions very well');
+  else if (b.positions >= 20) parts.push('most batters reasonably placed in the order');
   else parts.push('several batters out of their natural position');
 
   return `Batting (${b.total}/40): ${parts.join('; ')}.`;
@@ -42,20 +46,22 @@ const explainBatting = (b) => {
 
 const explainBowling = (b) => {
   const parts = [];
-  if (b.totalOvers >= 5) parts.push('full 24+ overs covered');
-  else if (b.totalOvers >= 3) parts.push('22-23 overs covered');
+  // totalOversScore max is 3 (24+ overs), then 2.5, 2, 1, 0.5, 0
+  if (b.totalOvers >= 3) parts.push('full 24+ overs covered');
+  else if (b.totalOvers >= 2) parts.push('22-23 overs covered');
   else if (b.totalOvers >= 1) parts.push('only 20-21 overs covered — thin bowling depth');
   else parts.push('under 20 overs — dangerous bowling gap');
 
-  if (b.paceOvers >= 4) parts.push('strong pace attack');
-  else if (b.paceOvers >= 2) parts.push('moderate pace depth');
+  // paceOversScore and spinOversScore are clamped to max 3
+  if (b.paceOvers >= 2.5) parts.push('strong pace attack');
+  else if (b.paceOvers >= 1.5) parts.push('moderate pace depth');
   else parts.push('weak pace cover');
 
-  if (b.spinOvers >= 4) parts.push('good spin variety');
-  else if (b.spinOvers >= 2) parts.push('some spin cover');
+  if (b.spinOvers >= 2.5) parts.push('good spin variety');
+  else if (b.spinOvers >= 1.5) parts.push('some spin cover');
   else parts.push('limited spin');
 
-  const phaseAvg = ((b.powerplay / 11) + (b.middle / 12) + (b.death / 11)) / 3;
+  const phaseAvg = ((b.powerplay / 10) + (b.middle / 11) + (b.death / 10)) / 3;
   if (phaseAvg >= 0.75) parts.push('elite phase bowling across powerplay, middle and death');
   else if (phaseAvg >= 0.5) parts.push('solid phase bowling');
   else parts.push('bowling phases need improvement');
@@ -70,7 +76,7 @@ const buildSummary = (entry) => {
     `${entry.teamShortName} score ${entry.score}/100. Strongest area: ${strongest.label} (${strongest.value}).`,
     explainBatting(b.batting),
     explainBowling(b.bowling),
-    `Fitness ${b.fitness}/5 · Impact ${b.impact}/5 · Tactical ${b.tactical}/3 · Age ${b.age}/1.`,
+    `Fitness ${b.fitness}/5 · Impact ${b.impact}/7 · Tactical ${b.tactical}/3 · Age ${b.age}/1.`,
   ];
   return lines.join(' ');
 };
@@ -101,180 +107,198 @@ exports.getRankings = async (req, res) => {
   }
 };
 
+// Annotate a squad's players with their optimal batting positions.
+const annotateWithBattingOrder = (squad, breakdown) => {
+  const boMap = new Map((breakdown.batting.battingOrder ?? []).map((b) => [b.playerId, b]));
+  return squad
+    .map((p) => {
+      const bo = boMap.get(String(p._id));
+      return {
+        _id: p._id, name: p.name, role: p.role,
+        nationality: p.nationality, batting_style: p.batting_style,
+        bowling_style: p.bowling_style, age: p.age,
+        battingPosition: bo?.position ?? null,
+        isPreferred: bo?.isPreferred ?? null,
+      };
+    })
+    .sort((a, b) => {
+      if (a.battingPosition === null) return 1;
+      if (b.battingPosition === null) return -1;
+      return a.battingPosition - b.battingPosition;
+    });
+};
+
 exports.generateRankings = async (req, res) => {
   try {
-    if (!isUserHost(req.user.id)) {
+    const roomCode = req.body.roomCode;
+
+    // Check host: prefer scoped room lookup (works after auction end); fall back to global scan.
+    const room = roomCode ? getRawRoomByCode(roomCode) : null;
+    const userIsHost = room
+      ? room.hostUserId === String(req.user.id)
+      : isUserHost(req.user.id);
+    if (!userIsHost) {
       return res.status(403).json({ message: 'Only the room host can generate rankings.' });
     }
+    // mode controls which half of the computation runs:
+    //   'playing12' → standard optimizer only (fast, updates Team.playing12)
+    //   'squad'     → squad optimizer only   (informational, no Team updates)
+    const mode = req.body.mode === 'squad' ? 'squad' : 'playing12';
+    const sessionQuery = roomCode ? { roomCode } : {};
 
-    const teams = await Team.find()
-      .populate('players')
-      .populate('playing12')
-      .lean();
-
+    const teams = await Team.find().populate('players').populate('playing12').lean();
     if (!teams.length) {
       return res.status(400).json({ message: 'No teams found to rank.' });
     }
 
+    // Load the existing session now — we need it to merge the OTHER mode's data.
+    const existingSession = await AuctionSession.findOne(sessionQuery).select('latestRankings latestVerdict');
+    const existingByName = new Map(
+      (existingSession?.latestRankings ?? []).map((r) => [r.teamShortName, r])
+    );
+
     const rankingsPromises = teams.map(async (team) => {
-        const prevPlaying12Ids = (team.playing12 || []).map((p) => String(p._id));
+      const prevPlaying12Ids = (team.playing12 || []).map((p) => String(p._id));
+      const existing = existingByName.get(team.shortName) ?? {};
+
+      if (mode === 'playing12') {
+        // ── Standard (Playing 12) optimization ─────────────────────────────
         const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
         const oldScore = scoreBreakdown(oldSquad).final;
 
         const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids);
-        
-        const newPlaying12Objs = team.players.filter(p => newPlaying12Ids.some(id => String(id) === String(p._id)));
+        const newPlaying12Objs = team.players.filter((p) =>
+          newPlaying12Ids.some((id) => String(id) === String(p._id))
+        );
         const newSquad = selectSquad({ ...team, playing12: newPlaying12Objs });
-        
         const breakdown = scoreBreakdown(newSquad);
         const newScore = breakdown.final;
 
-        const addedIds = newPlaying12Ids.map(String).filter(id => !prevPlaying12Ids.includes(id));
-        const removedIds = prevPlaying12Ids.filter(id => !newPlaying12Ids.map(String).includes(id));
-
-        const scoreDiff = newScore - oldScore;
+        // Build change log
+        const addedIds   = newPlaying12Ids.map(String).filter((id) => !prevPlaying12Ids.includes(id));
+        const removedIds = prevPlaying12Ids.filter((id) => !newPlaying12Ids.map(String).includes(id));
         let changeLog = '';
         if (addedIds.length > 0 || removedIds.length > 0) {
-            let currentTempSquad = [...oldSquad];
-            let currentTempScore = oldScore;
-            const logSteps = [];
-            
-            let remainingAdded = addedIds.map(id => team.players.find(p => String(p._id) === id)).filter(Boolean);
-            let remainingRemoved = removedIds.map(id => oldSquad.find(p => String(p._id) === id)).filter(Boolean);
-
-            while (remainingAdded.length > 0 && remainingRemoved.length > 0) {
-                let addIdx = remainingAdded.findIndex(p => p.role === remainingRemoved[0].role);
-                if (addIdx === -1) addIdx = 0;
-                
-                const remPlayer = remainingRemoved.splice(0, 1)[0];
-                const addPlayer = remainingAdded.splice(addIdx, 1)[0];
-                
-                currentTempSquad = currentTempSquad.filter(p => String(p._id) !== String(remPlayer._id));
-                currentTempSquad.push(addPlayer);
-                
-                const nextScore = scoreBreakdown(currentTempSquad).final;
-                const delta = nextScore - currentTempScore;
-                const diffStr = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
-                
-                logSteps.push(`Dropped ${remPlayer.name} for ${addPlayer.name} (${diffStr})`);
-                currentTempScore = nextScore;
-            }
-            
-            for (const addPlayer of remainingAdded) {
-                currentTempSquad.push(addPlayer);
-                const nextScore = scoreBreakdown(currentTempSquad).final;
-                const delta = nextScore - currentTempScore;
-                const diffStr = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
-                logSteps.push(`Added ${addPlayer.name} (${diffStr})`);
-                currentTempScore = nextScore;
-            }
-            
-            for (const remPlayer of remainingRemoved) {
-                currentTempSquad = currentTempSquad.filter(p => String(p._id) !== String(remPlayer._id));
-                const nextScore = scoreBreakdown(currentTempSquad).final;
-                const delta = nextScore - currentTempScore;
-                const diffStr = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2);
-                logSteps.push(`Dropped ${remPlayer.name} (${diffStr})`);
-                currentTempScore = nextScore;
-            }
-            
-            const totalDiff = newScore - oldScore;
-            const totalStr = totalDiff >= 0 ? `+${totalDiff.toFixed(2)}` : totalDiff.toFixed(2);
-            changeLog = logSteps.join('. ') + `. Total change: ${totalStr}`;
+          let tempSquad = [...oldSquad];
+          let tempScore = oldScore;
+          const steps = [];
+          let toAdd = addedIds.map((id) => team.players.find((p) => String(p._id) === id)).filter(Boolean);
+          let toRem = removedIds.map((id) => oldSquad.find((p) => String(p._id) === id)).filter(Boolean);
+          while (toAdd.length && toRem.length) {
+            let ai = toAdd.findIndex((p) => p.role === toRem[0].role);
+            if (ai === -1) ai = 0;
+            const rem = toRem.splice(0, 1)[0];
+            const add = toAdd.splice(ai, 1)[0];
+            tempSquad = tempSquad.filter((p) => String(p._id) !== String(rem._id));
+            tempSquad.push(add);
+            const next = scoreBreakdown(tempSquad).final;
+            const d = next - tempScore;
+            steps.push(`Dropped ${rem.name} for ${add.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
+            tempScore = next;
+          }
+          for (const add of toAdd) {
+            tempSquad.push(add);
+            const next = scoreBreakdown(tempSquad).final;
+            const d = next - tempScore;
+            steps.push(`Added ${add.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
+            tempScore = next;
+          }
+          for (const rem of toRem) {
+            tempSquad = tempSquad.filter((p) => String(p._id) !== String(rem._id));
+            const next = scoreBreakdown(tempSquad).final;
+            const d = next - tempScore;
+            steps.push(`Dropped ${rem.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
+            tempScore = next;
+          }
+          const total = newScore - oldScore;
+          changeLog = steps.join('. ') + `. Total change: ${total >= 0 ? '+' : ''}${total.toFixed(2)}`;
         } else {
-            changeLog = 'No changes made to squad.';
+          changeLog = 'No changes made to squad.';
         }
 
-        const battingOrderMap = new Map(
-          (breakdown.batting.battingOrder ?? []).map((b) => [b.playerId, b])
-        );
-        const playing12 = newSquad
-          .map((p) => {
-            const bo = battingOrderMap.get(String(p._id));
-            return {
-              _id: p._id,
-              name: p.name,
-              role: p.role,
-              nationality: p.nationality,
-              batting_style: p.batting_style,
-              bowling_style: p.bowling_style,
-              age: p.age,
-              battingPosition: bo?.position ?? null,
-              isPreferred: bo?.isPreferred ?? null,
-            };
-          })
-          .sort((a, b) => {
-            if (a.battingPosition === null) return 1;
-            if (b.battingPosition === null) return -1;
-            return a.battingPosition - b.battingPosition;
-          });
+        return {
+          teamId:        team._id,
+          teamName:      team.name,
+          teamShortName: team.shortName,
+          newPlaying12Ids,
+          // ── Playing 12 fields (freshly computed) ────────────────────────
+          score:         round(newScore),
+          breakdown,
+          playing12:     annotateWithBattingOrder(newSquad, breakdown),
+          summary:       buildSummary({ teamName: team.name, teamShortName: team.shortName, score: newScore, breakdown }),
+          changeLog,
+          // ── Squad fields (preserved from last squad generation) ──────────
+          squadScore:     existing.squadScore    ?? null,
+          squadBreakdown: existing.squadBreakdown ?? null,
+          squadPlaying12: existing.squadPlaying12 ?? null,
+        };
+
+      } else {
+        // ── Squad optimization ──────────────────────────────────────────────
+        const squadObjFn = (squad) => {
+          try { return scoreBreakdownSquad(squad, team.players).rawFinal; } catch { return 0; }
+        };
+        const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn);
+        const squadBreakdown = scoreBreakdownSquad(squadP12Objs, team.players);
 
         return {
-          teamId: team._id,
-          teamName: team.name,
+          teamId:        team._id,
+          teamName:      team.name,
           teamShortName: team.shortName,
-          score: breakdown.final,
-          breakdown,
-          playing12,
-          newPlaying12Ids,
-          changeLog,
-          summary: buildSummary({
-            teamName: team.name,
-            teamShortName: team.shortName,
-            score: breakdown.final,
-            breakdown,
-          }),
+          newPlaying12Ids: null,
+          // ── Squad fields (freshly computed) ─────────────────────────────
+          squadScore:     round(squadBreakdown.final),
+          squadBreakdown,
+          squadPlaying12: annotateWithBattingOrder(squadP12Objs, squadBreakdown),
+          // ── Playing 12 fields (preserved from last p12 generation) ───────
+          score:         existing.score         ?? 0,
+          breakdown:     existing.breakdown     ?? null,
+          playing12:     existing.playing12     ?? null,
+          summary:       existing.summary       ?? '',
+          changeLog:     existing.changeLog     ?? '',
         };
-      });
+      }
+    });
 
-    const unsortedRankings = await Promise.all(rankingsPromises);
+    const unsorted = await Promise.all(rankingsPromises);
 
-    const rankings = unsortedRankings
-      .sort((a, b) => b.score - a.score)
-      .map((entry, index) => ({
-        rank: index + 1,
-        teamName: entry.teamName,
-        teamShortName: entry.teamShortName,
-        score: entry.score,
-        breakdown: entry.breakdown,
-        playing12: entry.playing12,
-        summary: entry.summary,
-        changeLog: entry.changeLog,
-        teamId: entry.teamId,
-        newPlaying12Ids: entry.newPlaying12Ids,
-      }));
+    // Sort by playing12 score (or squad score as tie-break when p12 is 0)
+    const rankings = unsorted
+      .sort((a, b) => (b.score - a.score) || ((b.squadScore ?? 0) - (a.squadScore ?? 0)))
+      .map((entry, index) => ({ rank: index + 1, ...entry }));
 
-    // Remove teamId from the output being sent/saved
     const sanitizedRankings = rankings.map(({ teamId, newPlaying12Ids, ...entry }) => entry);
     const verdict = buildVerdict(rankings);
 
-    await Promise.all([
-      ...rankings.map((entry) =>
-        Team.findByIdAndUpdate(entry.teamId, { 
-          rating: Math.round(entry.score),
-          playing12: entry.newPlaying12Ids
-        })
-      ),
-      AuctionSession.findOneAndUpdate(req.body.roomCode ? { roomCode: req.body.roomCode } : {}, {
-        latestRankings: sanitizedRankings,
-        latestVerdict: verdict,
-      })
-    ]);
+    const saves = [
+      AuctionSession.findOneAndUpdate(sessionQuery, { latestRankings: sanitizedRankings, latestVerdict: verdict }),
+    ];
 
-    // Broadcast to the room that generated the rankings
+    // Only update Team documents (playing12 + rating) when running playing12 mode
+    if (mode === 'playing12') {
+      for (const entry of rankings) {
+        if (entry.newPlaying12Ids) {
+          saves.push(
+            Team.findByIdAndUpdate(entry.teamId, {
+              rating:   Math.round(entry.score),
+              playing12: entry.newPlaying12Ids,
+            })
+          );
+        }
+      }
+    }
+
+    await Promise.all(saves);
+
     try {
       const io = getIO();
-      const rc = req.body.roomCode;
-      if (rc) io.to(rc).emit('auction:rankings-updated');
+      if (roomCode) io.to(roomCode).emit('auction:rankings-updated');
       else io.emit('auction:rankings-updated');
-    } catch (socketErr) {
+    } catch (_) {
       console.error('[rankingController] Socket.io not available to emit update');
     }
 
-    res.json({
-      rankings: sanitizedRankings,
-      verdict,
-    });
+    res.json({ rankings: sanitizedRankings, verdict });
 
   } catch (err) {
     console.error('[rankingController generateRankings]', err.message);
