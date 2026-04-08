@@ -240,7 +240,7 @@ exports.generateRankings = async (req, res) => {
         const squadObjFn = (squad) => {
           try { return scoreBreakdownSquad(squad, team.players).rawFinal; } catch { return 0; }
         };
-        const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn);
+        const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn, true);
         const squadBreakdown = scoreBreakdownSquad(squadP12Objs, team.players);
 
         entry = {

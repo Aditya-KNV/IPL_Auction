@@ -26,7 +26,7 @@ const { scoreBreakdown, playerOverallComposite, playerBowlingComposite, playerBa
 // prevIds    : previous playing-12 IDs (warm-start seed)
 // objFn      : optional objective (squad => number). Defaults to scoreBreakdown rawFinal.
 // Returns    : array of player objects (the optimal playing 12)
-const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn = null) => {
+const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn = null, skip2opt = false) => {
   const isOverseas = (p) => {
     const nat = String(p.nationality || '').trim().toLowerCase();
     return nat.length > 0 && nat !== 'indian';
@@ -126,26 +126,29 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
       }
 
       // Phase B2: 2-opt — all pairs of simultaneous swaps to escape local optima
-      let best2Score = bestScore;
-      let bI1 = -1; let bI2 = -1; let bJ1 = -1; let bJ2 = -1;
-      for (let i1 = 0; i1 < playing.length; i1++) {
-        await new Promise(resolve => setImmediate(resolve));
-        for (let i2 = i1 + 1; i2 < playing.length; i2++) {
-          for (let j1 = 0; j1 < bench.length; j1++) {
-            for (let j2 = j1 + 1; j2 < bench.length; j2++) {
-              const cand = [...playing]; cand[i1] = bench[j1]; cand[i2] = bench[j2];
-              if (overseasCount(cand) > MAX_OVERSEAS_PLAYING) continue;
-              const s = scoreFn(cand);
-              if (s > best2Score) { best2Score = s; bI1 = i1; bI2 = i2; bJ1 = j1; bJ2 = j2; }
+      // Skipped in squad mode (skip2opt=true) — O(n²·m²) is too expensive for informational rankings.
+      if (!skip2opt) {
+        let best2Score = bestScore;
+        let bI1 = -1; let bI2 = -1; let bJ1 = -1; let bJ2 = -1;
+        for (let i1 = 0; i1 < playing.length; i1++) {
+          await new Promise(resolve => setImmediate(resolve));
+          for (let i2 = i1 + 1; i2 < playing.length; i2++) {
+            for (let j1 = 0; j1 < bench.length; j1++) {
+              for (let j2 = j1 + 1; j2 < bench.length; j2++) {
+                const cand = [...playing]; cand[i1] = bench[j1]; cand[i2] = bench[j2];
+                if (overseasCount(cand) > MAX_OVERSEAS_PLAYING) continue;
+                const s = scoreFn(cand);
+                if (s > best2Score) { best2Score = s; bI1 = i1; bI2 = i2; bJ1 = j1; bJ2 = j2; }
+              }
             }
           }
         }
-      }
-      if (bI1 !== -1) {
-        const e1 = playing[bI1]; const e2 = playing[bI2];
-        playing[bI1] = bench[bJ1]; playing[bI2] = bench[bJ2];
-        bench[bJ1] = e1; bench[bJ2] = e2;
-        bestScore = best2Score; outerImproved = true;
+        if (bI1 !== -1) {
+          const e1 = playing[bI1]; const e2 = playing[bI2];
+          playing[bI1] = bench[bJ1]; playing[bI2] = bench[bJ2];
+          bench[bJ1] = e1; bench[bJ2] = e2;
+          bestScore = best2Score; outerImproved = true;
+        }
       }
     }
 
