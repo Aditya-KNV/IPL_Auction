@@ -87,13 +87,13 @@ const holdGrace = (roomCode, now = Date.now()) => {
   return true;
 };
 
-const releaseGrace = async (roomCode) => {
+const releaseGrace = (roomCode) => {
   const s = _getState(roomCode);
-  s.expiresAt = 0;
-  if (s.onExpire) {
-    try { await s.onExpire(); }
-    catch (err) { console.error('[auctionTimer] releaseGrace error:', err.message); }
-  }
+  if (!s.expiresAt && s.timeout === null) return; // nothing to release
+  // Restart a short window instead of firing onExpire immediately.
+  // This lets other teams bid before the auction closes.
+  // If no bid comes in and extends the timer, onExpire fires after EXPIRE_GRACE_MS.
+  _run(roomCode, EXPIRE_GRACE_MS / 1000);
 };
 
 const extend = (roomCode, asOf = Date.now()) => {

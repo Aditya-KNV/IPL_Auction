@@ -334,60 +334,96 @@ const bringNextPlayer = async (session, io, roomCode) => {
 };
 
 const executeSale = async (session) => {
-  const player = await Player.findById(session.currentPlayer);
-  const team = await Team.findById(session.currentHighestBidder);
+  const playerIdToFinish  = session.currentPlayer;
+  const teamIdToBuy       = session.currentHighestBidder;
+
+  if (!playerIdToFinish) throw new Error('No current player');
+  if (!teamIdToBuy)      throw new Error('No team has placed a bid');
+
+  // Atomically claim this player — only succeeds if currentPlayer still matches.
+  // Prevents overwriting a newer session state (e.g. bringNextPlayer already ran).
+  const updatedSession = await AuctionSession.findOneAndUpdate(
+    { _id: session._id, currentPlayer: playerIdToFinish },
+    {
+      $set: {
+        currentPlayer:        null,
+        currentBid:           0,
+        currentHighestBidder: null,
+        bids:                 [],
+        withdrawnTeams:       [],
+        timerEndsAt:          null,
+      },
+      $push: { soldPlayers: playerIdToFinish },
+    },
+    { new: true }
+  );
+
+  if (!updatedSession) {
+    console.log('[auction] executeSale: player already processed, skipping');
+    throw new Error('Player already processed by another path');
+  }
+
+  const [player, team] = await Promise.all([
+    Player.findById(playerIdToFinish),
+    Team.findById(teamIdToBuy),
+  ]);
 
   if (!player) throw new Error('Player not found');
-  if (!team) throw new Error('No team has placed a bid');
+  if (!team)   throw new Error('Team not found');
 
   const finalBid = normalizeBidAmount(session.currentBid);
   if (team.remainingPurse < finalBid) throw new Error('Insufficient purse');
 
   const eligibility = await canTeamBuyPlayer(team._id, player);
   if (!eligibility.allowed) {
-    throw new Error(
-      `Overseas squad limit reached (max ${eligibility.cap ?? 8} overseas per squad)`
-    );
+    throw new Error(`Overseas squad limit reached (max ${eligibility.cap ?? 8} overseas per squad)`);
   }
 
-  player.status = 'sold';
-  player.team = team._id;
+  player.status    = 'sold';
+  player.team      = team._id;
   player.soldPrice = finalBid;
   await player.save();
 
   team.remainingPurse = normalizeBidAmount(team.remainingPurse - finalBid);
   team.players.push(player._id);
-
-  // Save the new player immediately so auction moves fast.
   await team.save();
-
-  session.soldPlayers.push(player._id);
-  session.currentPlayer = null;
-  session.currentBid = 0;
-  session.currentHighestBidder = null;
-  session.bids = [];
-  session.withdrawnTeams = [];
-  session.timerEndsAt = null;
-  await session.save();
 
   return { player: player.toObject(), team: team.toObject() };
 };
 
 const executeUnsold = async (session) => {
-  const player = await Player.findById(session.currentPlayer);
-  if (player) {
+  const playerIdToFinish = session.currentPlayer;
+  if (!playerIdToFinish) return null;
+
+  // Atomically claim this player — only succeeds if currentPlayer still matches.
+  // Prevents overwriting a newer session state (e.g. bringNextPlayer already ran).
+  const updatedSession = await AuctionSession.findOneAndUpdate(
+    { _id: session._id, currentPlayer: playerIdToFinish },
+    {
+      $set: {
+        currentPlayer:        null,
+        currentBid:           0,
+        currentHighestBidder: null,
+        bids:                 [],
+        withdrawnTeams:       [],
+        timerEndsAt:          null,
+      },
+      $push: { unsoldPlayers: playerIdToFinish },
+    },
+    { new: true }
+  );
+
+  if (!updatedSession) {
+    // Another concurrent path already cleared this player — do nothing.
+    console.log('[auction] executeUnsold: player already processed, skipping');
+    return false; // sentinel: atomic claim failed
+  }
+
+  const player = await Player.findById(playerIdToFinish);
+  if (player && player.status === 'in-auction') {
     player.status = 'unsold';
     await player.save();
   }
-
-  session.unsoldPlayers.push(session.currentPlayer);
-  session.currentPlayer = null;
-  session.currentBid = 0;
-  session.currentHighestBidder = null;
-  session.bids = [];
-  session.withdrawnTeams = [];
-  session.timerEndsAt = null;
-  await session.save();
 
   return player ? player.toObject() : null;
 };
@@ -403,23 +439,33 @@ const finishCurrentPlayer = async ({ io, session, roomCode, mode, auto = false, 
   }
   _finishing.add(roomCode);
 
+  let processed = false;
   try {
     timer.stop(roomCode);
 
     if (mode === 'sold') {
-      const { player, team } = await executeSale(session);
-      io.to(roomCode).emit('auction:sold', { player, team, amount: player.soldPrice, auto, reason });
+      let result;
+      try {
+        result = await executeSale(session);
+      } catch (err) {
+        if (err.message === 'Player already processed by another path') return;
+        throw err;
+      }
+      processed = true;
+      io.to(roomCode).emit('auction:sold', { player: result.player, team: result.team, amount: result.player.soldPrice, auto, reason });
     } else {
-      const player = await executeUnsold(session);
-      io.to(roomCode).emit('auction:unsold', { player, auto, reason });
+      const result = await executeUnsold(session);
+      if (result === false) return; // atomic claim failed — another path already processed this player
+      processed = true;
+      io.to(roomCode).emit('auction:unsold', { player: result, auto, reason });
     }
 
     await emitWithdrawState(io, roomCode, session, { reason: 'reset' });
   } finally {
-    // Release the finishing lock before the bringNextPlayer delay so that
-    // legitimate expire callbacks for the NEXT player are not blocked.
     _finishing.delete(roomCode);
   }
+
+  if (!processed) return;
 
   setTimeout(async () => {
     try {
@@ -483,8 +529,10 @@ const makeExpireCallback = (roomCode) => async () => {
   let session;
 
   try {
+    // Always fetch fresh — never rely on a captured session object which may be stale.
     session = await AuctionSession.findOne({ roomCode });
     if (!session || !session.currentPlayer) return;
+    if (session.status !== 'active') return;
 
     await finishCurrentPlayer({
       io,
@@ -497,15 +545,14 @@ const makeExpireCallback = (roomCode) => async () => {
   } catch (err) {
     console.error('[auction] timer expire error:', err.message);
     try {
+      // Recovery: return the stuck player to available so it re-enters the queue
       if (session?.currentPlayer) {
+        await AuctionSession.findOneAndUpdate(
+          { _id: session._id, currentPlayer: session.currentPlayer },
+          { $set: { currentPlayer: null, currentBid: 0, currentHighestBidder: null,
+                    bids: [], withdrawnTeams: [], timerEndsAt: null } }
+        );
         await Player.findByIdAndUpdate(session.currentPlayer, { status: 'available' });
-        session.currentPlayer = null;
-        session.currentBid = 0;
-        session.currentHighestBidder = null;
-        session.bids = [];
-        session.withdrawnTeams = [];
-        session.timerEndsAt = null;
-        await session.save();
       }
     } catch (recErr) {
       console.error('[auction] recovery error:', recErr.message);

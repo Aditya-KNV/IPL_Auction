@@ -111,8 +111,8 @@ const initSocket = (server) => {
           graceHeld = true;
         }
 
-        const reject = async (message) => {
-          if (graceHeld) await timer.releaseGrace(roomCode);
+        const reject = (message) => {
+          if (graceHeld) timer.releaseGrace(roomCode);
           socket.emit('bid:error', { message });
         };
 
