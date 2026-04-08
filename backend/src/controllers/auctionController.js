@@ -19,7 +19,7 @@ const { canTeamBuyPlayer, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules')
 //      This guarantees a 9/9/9 bowler always replaces an 8/8/8 bowler.
 //   3. Hill-climbing with rawFinal (full-precision, no rounding) to catch any
 //      remaining improvements the direct pass misses.
-const { scoreBreakdown, playerOverallComposite, playerBowlingComposite, playerBattingComposite } = require('../utils/teamScoring');
+const { scoreBreakdown, scoreBreakdownFast, playerOverallComposite, playerBowlingComposite, playerBattingComposite } = require('../utils/teamScoring');
 
 // ── Core optimizer — pure, no DB calls ───────────────────────────────────────
 // allPlayers : player objects already in memory
@@ -49,7 +49,9 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
 
   const scoreFn = objFn
     ? (squad) => { try { return objFn(squad); } catch { return 0; } }
-    : (squad) => { try { return scoreBreakdown(squad).rawFinal; } catch { return 0; } };
+    : fastMode
+      ? (squad) => { try { return scoreBreakdownFast(squad); } catch { return 0; } }
+      : (squad) => { try { return scoreBreakdown(squad).rawFinal; } catch { return 0; } };
 
   const impactFactor = (p) =>
     ((p.role_impact?.match_winner ?? 0) + (p.role_impact?.clutch ?? 0) + (p.role_impact?.consistency ?? 0)) / 30;

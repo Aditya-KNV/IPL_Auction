@@ -567,6 +567,49 @@ const scoreBreakdownSquad = (playing12, fullSquad) => {
   };
 };
 
+// ── Fast greedy batting order (O(n log n), no DFS) ───────────────────────────
+// Used by scoreBreakdownFast during hill-climbing to avoid the expensive DFS.
+const battingPositionScoreFast = (players) => {
+  // Separate by role constraints (mirrors the DFS hard constraints)
+  const topOrder = players.filter((p) => p.role !== 'Bowler');
+  const tailOrder = players.filter((p) => p.role === 'Bowler');
+
+  // Sort by batting composite descending
+  topOrder.sort((a, b) => battingComposite(b) - battingComposite(a));
+  tailOrder.sort((a, b) => battingComposite(b) - battingComposite(a));
+
+  const ordered = [...topOrder, ...tailOrder].slice(0, 12);
+  let positionFitScore = 0;
+
+  ordered.forEach((p, idx) => {
+    const position = idx + 1;
+    const slotMax = POSITION_SLOT_MAX[position] ?? 0;
+    const preferred = p.tactical?.positions ?? [];
+    const weights = battingFormulaForPosition(position);
+    const base = weightedNormalizedScore(getBattingMetrics(p), weights);
+    const slotScore = preferred.includes(position) ? base : base - 3;
+    positionFitScore += Math.max(0, slotScore / 10) * slotMax;
+  });
+
+  return round(positionFitScore);
+};
+
+// Fast scoring for use during hill-climbing — same formula but greedy batting order.
+// Only called as the optimizer's objective function; the final breakdown always uses the full DFS.
+const scoreBreakdownFast = (players) => {
+  const wk = wicketKeeperScore(players);
+  const balance = battingBalanceScore(players);
+  const positions = battingPositionScoreFast(players);
+  const battingTotal = wk + balance + positions;
+  const bowling = bowlingScore(players);
+  const fitness = fitnessScore(players);
+  const impact = impactScore(players);
+  const tactical = tacticalScore(players);
+  const age = ageScore(players);
+  const cap = captaincy(players);
+  return battingTotal + bowling.total + fitness + impact + tactical + age + cap;
+};
+
 // ── Per-player composite helpers (for direct player-vs-player comparison) ─────
 const playerBowlingComposite = (p) => {
   const pp = p.bowling?.phases?.powerplay ?? 0;
@@ -586,6 +629,7 @@ const playerOverallComposite = (p) => {
 
 module.exports = {
   scoreBreakdown,
+  scoreBreakdownFast,
   scoreBreakdownSquad,
   playerBowlingComposite,
   playerBattingComposite: playerBattingCompositeFn,
