@@ -9,6 +9,15 @@ const { initSocket } = require('./socket');
 dotenv.config();
 connectDB();
 
+// Prevent unhandled promise rejections from crashing the process.
+// Log them instead so the server stays up for all connected clients.
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[server] Unhandled rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception:', err);
+});
+
 const app = express();
 const server = http.createServer(app);
 

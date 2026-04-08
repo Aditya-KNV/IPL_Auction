@@ -157,10 +157,14 @@ exports.generateRankings = async (req, res) => {
       (existingSession?.latestRankings ?? []).map((r) => [r.teamShortName, r])
     );
 
-    const rankingsPromises = teams.map(async (team) => {
+    // Run teams sequentially — parallel execution overwhelms Node's event loop
+    // when each team runs the hill-climbing optimizer concurrently.
+    const unsorted = [];
+    for (const team of teams) {
       const prevPlaying12Ids = (team.playing12 || []).map((p) => String(p._id));
       const existing = existingByName.get(team.shortName) ?? {};
 
+      let entry;
       if (mode === 'playing12') {
         // ── Standard (Playing 12) optimization ─────────────────────────────
         const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
@@ -216,18 +220,16 @@ exports.generateRankings = async (req, res) => {
           changeLog = 'No changes made to squad.';
         }
 
-        return {
+        entry = {
           teamId:        team._id,
           teamName:      team.name,
           teamShortName: team.shortName,
           newPlaying12Ids,
-          // ── Playing 12 fields (freshly computed) ────────────────────────
           score:         round(newScore),
           breakdown,
           playing12:     annotateWithBattingOrder(newSquad, breakdown),
           summary:       buildSummary({ teamName: team.name, teamShortName: team.shortName, score: newScore, breakdown }),
           changeLog,
-          // ── Squad fields (preserved from last squad generation) ──────────
           squadScore:     existing.squadScore    ?? null,
           squadBreakdown: existing.squadBreakdown ?? null,
           squadPlaying12: existing.squadPlaying12 ?? null,
@@ -241,16 +243,14 @@ exports.generateRankings = async (req, res) => {
         const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn);
         const squadBreakdown = scoreBreakdownSquad(squadP12Objs, team.players);
 
-        return {
+        entry = {
           teamId:        team._id,
           teamName:      team.name,
           teamShortName: team.shortName,
           newPlaying12Ids: null,
-          // ── Squad fields (freshly computed) ─────────────────────────────
           squadScore:     round(squadBreakdown.final),
           squadBreakdown,
           squadPlaying12: annotateWithBattingOrder(squadP12Objs, squadBreakdown),
-          // ── Playing 12 fields (preserved from last p12 generation) ───────
           score:         existing.score         ?? 0,
           breakdown:     existing.breakdown     ?? null,
           playing12:     existing.playing12     ?? null,
@@ -258,9 +258,8 @@ exports.generateRankings = async (req, res) => {
           changeLog:     existing.changeLog     ?? '',
         };
       }
-    });
-
-    const unsorted = await Promise.all(rankingsPromises);
+      unsorted.push(entry);
+    }
 
     // Sort by playing12 score (or squad score as tie-break when p12 is 0)
     const rankings = unsorted
