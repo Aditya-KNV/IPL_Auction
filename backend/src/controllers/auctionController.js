@@ -600,7 +600,12 @@ const startAuction = async (req, res) => {
       return res.status(400).json({ message: 'Auction already running' });
     }
 
-    await Player.updateMany({ status: 'in-auction' }, { $set: { status: 'available' } });
+    // Reset both 'in-auction' (crashed/stuck) and 'unsold' (from previous auction run)
+    // so every player re-enters the fresh auction. 'sold' players are intentionally kept.
+    await Player.updateMany(
+      { status: { $in: ['in-auction', 'unsold'] } },
+      { $set: { status: 'available' } }
+    );
 
     // Clear any stale per-room locks in case the previous auction crashed mid-operation
     _finishing.delete(roomCode);
