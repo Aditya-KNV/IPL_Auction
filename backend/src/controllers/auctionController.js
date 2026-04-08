@@ -26,7 +26,7 @@ const { scoreBreakdown, playerOverallComposite, playerBowlingComposite, playerBa
 // prevIds    : previous playing-12 IDs (warm-start seed)
 // objFn      : optional objective (squad => number). Defaults to scoreBreakdown rawFinal.
 // Returns    : array of player objects (the optimal playing 12)
-const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn = null, skip2opt = false) => {
+const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn = null, skip2opt = false, fastMode = false) => {
   const isOverseas = (p) => {
     const nat = String(p.nationality || '').trim().toLowerCase();
     return nat.length > 0 && nat !== 'indian';
@@ -96,6 +96,28 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
         if (bOvs && !isOverseas(playing[worstIdx]) && overseasCount(playing) >= MAX_OVERSEAS_PLAYING) continue;
         const ev = playing[worstIdx]; playing[worstIdx] = bench[j]; bench[j] = ev; changed = true;
       }
+    }
+
+    // fastMode: run Phase B1 synchronously (no setImmediate yields) with a 3-pass cap.
+    // Much faster than async B1 while giving near-optimal results (vs Phase A only).
+    if (fastMode) {
+      let bestScore = scoreFn(playing);
+      for (let pass = 0; pass < 3; pass++) {
+        let best1Score = bestScore; let bestI = -1; let bestJ = -1;
+        for (let i = 0; i < playing.length; i++) {
+          for (let j = 0; j < bench.length; j++) {
+            const cand = [...playing]; cand[i] = bench[j];
+            if (overseasCount(cand) > MAX_OVERSEAS_PLAYING) continue;
+            if (playing[i].role === bench[j].role && roleScore(bench[j]) < roleScore(playing[i])) continue;
+            const s = scoreFn(cand);
+            if (s > best1Score) { best1Score = s; bestI = i; bestJ = j; }
+          }
+        }
+        if (bestI === -1) break; // converged early
+        const ev = playing[bestI]; playing[bestI] = bench[bestJ]; bench[bestJ] = ev;
+        bestScore = best1Score;
+      }
+      return { playing, score: bestScore };
     }
 
     let bestScore = scoreFn(playing);
@@ -187,10 +209,10 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
 };
 
 // DB-backed wrapper — used by live auction after every sale.
-// Pass skip2opt=true from ranking generation to avoid O(n²·m²) crash.
-const computePlaying12 = async (teamId, previousPlaying12Ids = [], skip2opt = false) => {
+// fastMode=true from ranking generation: Phase A only, no hill-climbing (avoids crash).
+const computePlaying12 = async (teamId, previousPlaying12Ids = [], skip2opt = false, fastMode = false) => {
   const allPlayers = await Player.find({ team: teamId, status: 'sold' }).lean();
-  const playing    = await computeBestPlaying12(allPlayers, previousPlaying12Ids, null, skip2opt);
+  const playing    = await computeBestPlaying12(allPlayers, previousPlaying12Ids, null, skip2opt, fastMode);
   return playing.map((p) => p._id);
 };
 

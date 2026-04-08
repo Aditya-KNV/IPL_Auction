@@ -24,6 +24,9 @@ const auctionSessionSchema = new mongoose.Schema({
   timerEndsAt:          { type: Date,   default: null },  // absolute deadline, for reconnects
   latestRankings:       { type: mongoose.Schema.Types.Mixed, default: null }, // Persisted latest ranking data
   latestVerdict:        { type: String, default: null },
+  // Room metadata — persisted so the room can be restored after a server restart
+  roomHostUserId:       { type: String, default: null },
+  roomTeamAssignments:  { type: mongoose.Schema.Types.Mixed, default: {} }, // { [userId]: { teamId, name, shortName, color, claimedBy } }
 }, { timestamps: true });
 
 // Primary lookup key for every bid and session query

@@ -161,6 +161,9 @@ exports.generateRankings = async (req, res) => {
     // when each team runs the hill-climbing optimizer concurrently.
     const unsorted = [];
     for (const team of teams) {
+      // Skip teams with no players — nothing to rank.
+      if (!team.players || team.players.length === 0) continue;
+
       const prevPlaying12Ids = (team.playing12 || []).map((p) => String(p._id));
       const existing = existingByName.get(team.shortName) ?? {};
 
@@ -170,7 +173,7 @@ exports.generateRankings = async (req, res) => {
         const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
         const oldScore = scoreBreakdown(oldSquad).final;
 
-        const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids, true); // skip2opt for rankings
+        const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids, true, true); // fastMode for rankings
         const newPlaying12Objs = team.players.filter((p) =>
           newPlaying12Ids.some((id) => String(id) === String(p._id))
         );
@@ -240,7 +243,7 @@ exports.generateRankings = async (req, res) => {
         const squadObjFn = (squad) => {
           try { return scoreBreakdownSquad(squad, team.players).rawFinal; } catch { return 0; }
         };
-        const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn, true);
+        const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn, true, true); // fastMode
         const squadBreakdown = scoreBreakdownSquad(squadP12Objs, team.players);
 
         entry = {

@@ -236,6 +236,26 @@ const transferHost = (fromSocketId, toSocketId) => {
   return { room: serializeRoom(room) };
 };
 
+/**
+ * Restore a room from persisted DB data (called after server restart when room not in memory).
+ * hostUserId: the userId of the original host
+ * teamAssignments: plain object { [userId]: { teamId, name, shortName, color, claimedBy } }
+ */
+const restoreRoom = (code, hostUserId, teamAssignments = {}) => {
+  if (rooms.has(code)) return; // already in memory
+  const room = {
+    code,
+    hostId:     null,        // no socket connected yet
+    hostUserId: String(hostUserId),
+    users:      new Map(),
+    teamAssignments: new Map(Object.entries(teamAssignments)),
+    createdAt:  new Date(),
+  };
+  rooms.set(code, room);
+  scheduleRoomCleanup(code); // clean up if no one joins within TTL
+  console.log(`[room] restored room ${code} from DB (host: ${hostUserId})`);
+};
+
 const getRoom          = (code)     => { const r = rooms.get(code); return r ? serializeRoom(r) : null; };
 const getRoomBySocket  = (socketId) => { const code = socketToRoom.get(socketId); return code ? getRoom(code) : null; };
 const getRawRoom       = (socketId) => { const code = socketToRoom.get(socketId); return code ? rooms.get(code) : null; };
@@ -277,6 +297,7 @@ module.exports = {
   leaveRoomExplicit,
   pickTeam,
   transferHost,
+  restoreRoom,
   getRoom,
   getRoomBySocket,
   getRawRoom,

@@ -1,5 +1,6 @@
-const { createRoom, joinRoom, leaveRoom, leaveRoomExplicit, pickTeam, transferHost, getRoomBySocket } = require('./roomStore');
+const { createRoom, joinRoom, leaveRoom, leaveRoomExplicit, pickTeam, transferHost, restoreRoom, getRoomBySocket } = require('./roomStore');
 const { resetAuctionState } = require('../services/auctionReset');
+const AuctionSession = require('../models/AuctionSession');
 
 /**
  * Attach all room:* handlers to a connected socket.
@@ -22,6 +23,11 @@ const registerRoomHandlers = (io, socket) => {
 
     try {
       await resetAuctionState(io, room.code);
+      // Persist hostUserId so the room can be restored after a server restart
+      await AuctionSession.findOneAndUpdate(
+        { roomCode: room.code },
+        { $set: { roomHostUserId: userId, roomTeamAssignments: {} } }
+      );
     } catch (err) {
       console.error('[room:create] auction reset error:', err.message);
       return socket.emit('room:error', { message: 'Could not prepare a fresh auction room' });
@@ -40,7 +46,7 @@ const registerRoomHandlers = (io, socket) => {
   // Server emits to caller:         room:joined  { room }
   // Server emits to all in room:    room:users   { users, hostId }
   // Server emits to existing members: room:userJoined { user }
-  socket.on('room:join', ({ code }) => {
+  socket.on('room:join', async ({ code }) => {
     if (!code || typeof code !== 'string') {
       return socket.emit('room:error', { message: 'Invalid room code' });
     }
@@ -48,7 +54,24 @@ const registerRoomHandlers = (io, socket) => {
     const existing = getRoomBySocket(socket.id);
     if (existing) _leave(io, socket);
 
-    const result = joinRoom(code.toUpperCase(), socket.id, userId, username);
+    const roomCode = code.toUpperCase();
+    let result = joinRoom(roomCode, socket.id, userId, username);
+
+    // Room not in memory — try to restore from DB (server may have restarted)
+    if (result.error === 'Room not found') {
+      try {
+        const session = await AuctionSession.findOne({ roomCode })
+          .select('roomHostUserId roomTeamAssignments status')
+          .lean();
+        if (session?.roomHostUserId) {
+          restoreRoom(roomCode, session.roomHostUserId, session.roomTeamAssignments ?? {});
+          result = joinRoom(roomCode, socket.id, userId, username);
+        }
+      } catch (err) {
+        console.error('[room:join] DB restore error:', err.message);
+      }
+    }
+
     if (result.error) {
       return socket.emit('room:error', { message: result.error });
     }
@@ -77,7 +100,7 @@ const registerRoomHandlers = (io, socket) => {
   // ── room:pick-team ─────────────────────────────────────────────────────────
   // Client sends: { teamId, name, shortName, color }
   // Server emits to all in room: room:teams-updated { teamAssignments }
-  socket.on('room:pick-team', (teamInfo) => {
+  socket.on('room:pick-team', async (teamInfo) => {
     if (!teamInfo?.teamId) return socket.emit('room:error', { message: 'Invalid team' });
 
     const result = pickTeam(socket.id, teamInfo);
@@ -86,6 +109,16 @@ const registerRoomHandlers = (io, socket) => {
     io.to(result.room.code).emit('room:teams-updated', {
       teamAssignments: result.room.teamAssignments,
     });
+
+    // Persist team assignments so they survive a server restart
+    try {
+      await AuctionSession.findOneAndUpdate(
+        { roomCode: result.room.code },
+        { $set: { roomTeamAssignments: result.room.teamAssignments } }
+      );
+    } catch (err) {
+      console.error('[room:pick-team] persist error:', err.message);
+    }
   });
 
   // ── room:kick ──────────────────────────────────────────────────────────────
