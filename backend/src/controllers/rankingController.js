@@ -128,11 +128,156 @@ const annotateWithBattingOrder = (squad, breakdown) => {
     });
 };
 
+// ── Background computation — runs after HTTP response is sent ─────────────────
+const _runRankings = async (roomCode, mode, sessionQuery) => {
+  const teams = await Team.find().populate('players').populate('playing12').lean();
+  if (!teams.length) return;
+
+  const existingSession = await AuctionSession.findOne(sessionQuery).select('latestRankings latestVerdict');
+  const existingByName = new Map(
+    (existingSession?.latestRankings ?? []).map((r) => [r.teamShortName, r])
+  );
+
+  const unsorted = [];
+  for (const team of teams) {
+    if (!team.players || team.players.length === 0) continue;
+
+    const prevPlaying12Ids = (team.playing12 || []).map((p) => String(p._id));
+    const existing = existingByName.get(team.shortName) ?? {};
+
+    let entry;
+    if (mode === 'playing12') {
+      const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
+      const oldScore = scoreBreakdown(oldSquad).final;
+
+      const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids, true, true);
+      const newPlaying12Objs = team.players.filter((p) =>
+        newPlaying12Ids.some((id) => String(id) === String(p._id))
+      );
+      const newSquad = selectSquad({ ...team, playing12: newPlaying12Objs });
+      const breakdown = scoreBreakdown(newSquad);
+      const newScore = breakdown.final;
+
+      const addedIds   = newPlaying12Ids.map(String).filter((id) => !prevPlaying12Ids.includes(id));
+      const removedIds = prevPlaying12Ids.filter((id) => !newPlaying12Ids.map(String).includes(id));
+      let changeLog = '';
+      if (addedIds.length > 0 || removedIds.length > 0) {
+        let tempSquad = [...oldSquad];
+        let tempScore = oldScore;
+        const steps = [];
+        let toAdd = addedIds.map((id) => team.players.find((p) => String(p._id) === id)).filter(Boolean);
+        let toRem = removedIds.map((id) => oldSquad.find((p) => String(p._id) === id)).filter(Boolean);
+        while (toAdd.length && toRem.length) {
+          let ai = toAdd.findIndex((p) => p.role === toRem[0].role);
+          if (ai === -1) ai = 0;
+          const rem = toRem.splice(0, 1)[0];
+          const add = toAdd.splice(ai, 1)[0];
+          tempSquad = tempSquad.filter((p) => String(p._id) !== String(rem._id));
+          tempSquad.push(add);
+          const next = scoreBreakdown(tempSquad).final;
+          const d = next - tempScore;
+          steps.push(`Dropped ${rem.name} for ${add.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
+          tempScore = next;
+        }
+        for (const add of toAdd) {
+          tempSquad.push(add);
+          const next = scoreBreakdown(tempSquad).final;
+          const d = next - tempScore;
+          steps.push(`Added ${add.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
+          tempScore = next;
+        }
+        for (const rem of toRem) {
+          tempSquad = tempSquad.filter((p) => String(p._id) !== String(rem._id));
+          const next = scoreBreakdown(tempSquad).final;
+          const d = next - tempScore;
+          steps.push(`Dropped ${rem.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
+          tempScore = next;
+        }
+        const total = newScore - oldScore;
+        changeLog = steps.join('. ') + `. Total change: ${total >= 0 ? '+' : ''}${total.toFixed(2)}`;
+      } else {
+        changeLog = 'No changes made to squad.';
+      }
+
+      entry = {
+        teamId:        team._id,
+        teamName:      team.name,
+        teamShortName: team.shortName,
+        newPlaying12Ids,
+        score:         round(newScore),
+        breakdown,
+        playing12:     annotateWithBattingOrder(newSquad, breakdown),
+        summary:       buildSummary({ teamName: team.name, teamShortName: team.shortName, score: newScore, breakdown }),
+        changeLog,
+        squadScore:     existing.squadScore    ?? null,
+        squadBreakdown: existing.squadBreakdown ?? null,
+        squadPlaying12: existing.squadPlaying12 ?? null,
+      };
+
+    } else {
+      const squadObjFn = (squad) => {
+        try { return scoreBreakdownSquad(squad, team.players).rawFinal; } catch { return 0; }
+      };
+      const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn, true, true);
+      const squadBreakdown = scoreBreakdownSquad(squadP12Objs, team.players);
+
+      entry = {
+        teamId:        team._id,
+        teamName:      team.name,
+        teamShortName: team.shortName,
+        newPlaying12Ids: null,
+        squadScore:     round(squadBreakdown.final),
+        squadBreakdown,
+        squadPlaying12: annotateWithBattingOrder(squadP12Objs, squadBreakdown),
+        score:         existing.score         ?? 0,
+        breakdown:     existing.breakdown     ?? null,
+        playing12:     existing.playing12     ?? null,
+        summary:       existing.summary       ?? '',
+        changeLog:     existing.changeLog     ?? '',
+      };
+    }
+    unsorted.push(entry);
+  }
+
+  const rankings = unsorted
+    .sort((a, b) => (b.score - a.score) || ((b.squadScore ?? 0) - (a.squadScore ?? 0)))
+    .map((entry, index) => ({ rank: index + 1, ...entry }));
+
+  const sanitizedRankings = rankings.map(({ teamId, newPlaying12Ids, ...entry }) => entry);
+  const verdict = buildVerdict(rankings);
+
+  const saves = [
+    AuctionSession.findOneAndUpdate(sessionQuery, { latestRankings: sanitizedRankings, latestVerdict: verdict }),
+  ];
+
+  if (mode === 'playing12') {
+    for (const entry of rankings) {
+      if (entry.newPlaying12Ids) {
+        saves.push(
+          Team.findByIdAndUpdate(entry.teamId, {
+            rating:    Math.round(entry.score),
+            playing12: entry.newPlaying12Ids,
+          })
+        );
+      }
+    }
+  }
+
+  await Promise.all(saves);
+
+  try {
+    const io = getIO();
+    if (roomCode) io.to(roomCode).emit('auction:rankings-updated');
+    else io.emit('auction:rankings-updated');
+  } catch (_) {
+    console.error('[rankingController] Socket.io not available to emit update');
+  }
+};
+
 exports.generateRankings = async (req, res) => {
   try {
     const roomCode = req.body.roomCode;
 
-    // Check host: prefer scoped room lookup (works after auction end); fall back to global scan.
     const room = roomCode ? getRawRoomByCode(roomCode) : null;
     const userIsHost = room
       ? room.hostUserId === String(req.user.id)
@@ -140,167 +285,16 @@ exports.generateRankings = async (req, res) => {
     if (!userIsHost) {
       return res.status(403).json({ message: 'Only the room host can generate rankings.' });
     }
-    // mode controls which half of the computation runs:
-    //   'playing12' → standard optimizer only (fast, updates Team.playing12)
-    //   'squad'     → squad optimizer only   (informational, no Team updates)
+
     const mode = req.body.mode === 'squad' ? 'squad' : 'playing12';
     const sessionQuery = roomCode ? { roomCode } : {};
 
-    const teams = await Team.find().populate('players').populate('playing12').lean();
-    if (!teams.length) {
-      return res.status(400).json({ message: 'No teams found to rank.' });
-    }
+    // Respond immediately — computation runs in background, result pushed via socket.
+    res.status(202).json({ message: 'Rankings generation started.' });
 
-    // Load the existing session now — we need it to merge the OTHER mode's data.
-    const existingSession = await AuctionSession.findOne(sessionQuery).select('latestRankings latestVerdict');
-    const existingByName = new Map(
-      (existingSession?.latestRankings ?? []).map((r) => [r.teamShortName, r])
-    );
-
-    // Run teams sequentially — parallel execution overwhelms Node's event loop
-    // when each team runs the hill-climbing optimizer concurrently.
-    const unsorted = [];
-    for (const team of teams) {
-      // Skip teams with no players — nothing to rank.
-      if (!team.players || team.players.length === 0) continue;
-
-      const prevPlaying12Ids = (team.playing12 || []).map((p) => String(p._id));
-      const existing = existingByName.get(team.shortName) ?? {};
-
-      let entry;
-      if (mode === 'playing12') {
-        // ── Standard (Playing 12) optimization ─────────────────────────────
-        const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
-        const oldScore = scoreBreakdown(oldSquad).final;
-
-        const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids, true, true); // fastMode for rankings
-        const newPlaying12Objs = team.players.filter((p) =>
-          newPlaying12Ids.some((id) => String(id) === String(p._id))
-        );
-        const newSquad = selectSquad({ ...team, playing12: newPlaying12Objs });
-        const breakdown = scoreBreakdown(newSquad);
-        const newScore = breakdown.final;
-
-        // Build change log
-        const addedIds   = newPlaying12Ids.map(String).filter((id) => !prevPlaying12Ids.includes(id));
-        const removedIds = prevPlaying12Ids.filter((id) => !newPlaying12Ids.map(String).includes(id));
-        let changeLog = '';
-        if (addedIds.length > 0 || removedIds.length > 0) {
-          let tempSquad = [...oldSquad];
-          let tempScore = oldScore;
-          const steps = [];
-          let toAdd = addedIds.map((id) => team.players.find((p) => String(p._id) === id)).filter(Boolean);
-          let toRem = removedIds.map((id) => oldSquad.find((p) => String(p._id) === id)).filter(Boolean);
-          while (toAdd.length && toRem.length) {
-            let ai = toAdd.findIndex((p) => p.role === toRem[0].role);
-            if (ai === -1) ai = 0;
-            const rem = toRem.splice(0, 1)[0];
-            const add = toAdd.splice(ai, 1)[0];
-            tempSquad = tempSquad.filter((p) => String(p._id) !== String(rem._id));
-            tempSquad.push(add);
-            const next = scoreBreakdown(tempSquad).final;
-            const d = next - tempScore;
-            steps.push(`Dropped ${rem.name} for ${add.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
-            tempScore = next;
-          }
-          for (const add of toAdd) {
-            tempSquad.push(add);
-            const next = scoreBreakdown(tempSquad).final;
-            const d = next - tempScore;
-            steps.push(`Added ${add.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
-            tempScore = next;
-          }
-          for (const rem of toRem) {
-            tempSquad = tempSquad.filter((p) => String(p._id) !== String(rem._id));
-            const next = scoreBreakdown(tempSquad).final;
-            const d = next - tempScore;
-            steps.push(`Dropped ${rem.name} (${d >= 0 ? '+' : ''}${d.toFixed(2)})`);
-            tempScore = next;
-          }
-          const total = newScore - oldScore;
-          changeLog = steps.join('. ') + `. Total change: ${total >= 0 ? '+' : ''}${total.toFixed(2)}`;
-        } else {
-          changeLog = 'No changes made to squad.';
-        }
-
-        entry = {
-          teamId:        team._id,
-          teamName:      team.name,
-          teamShortName: team.shortName,
-          newPlaying12Ids,
-          score:         round(newScore),
-          breakdown,
-          playing12:     annotateWithBattingOrder(newSquad, breakdown),
-          summary:       buildSummary({ teamName: team.name, teamShortName: team.shortName, score: newScore, breakdown }),
-          changeLog,
-          squadScore:     existing.squadScore    ?? null,
-          squadBreakdown: existing.squadBreakdown ?? null,
-          squadPlaying12: existing.squadPlaying12 ?? null,
-        };
-
-      } else {
-        // ── Squad optimization ──────────────────────────────────────────────
-        const squadObjFn = (squad) => {
-          try { return scoreBreakdownSquad(squad, team.players).rawFinal; } catch { return 0; }
-        };
-        const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn, true, true); // fastMode
-        const squadBreakdown = scoreBreakdownSquad(squadP12Objs, team.players);
-
-        entry = {
-          teamId:        team._id,
-          teamName:      team.name,
-          teamShortName: team.shortName,
-          newPlaying12Ids: null,
-          squadScore:     round(squadBreakdown.final),
-          squadBreakdown,
-          squadPlaying12: annotateWithBattingOrder(squadP12Objs, squadBreakdown),
-          score:         existing.score         ?? 0,
-          breakdown:     existing.breakdown     ?? null,
-          playing12:     existing.playing12     ?? null,
-          summary:       existing.summary       ?? '',
-          changeLog:     existing.changeLog     ?? '',
-        };
-      }
-      unsorted.push(entry);
-    }
-
-    // Sort by playing12 score (or squad score as tie-break when p12 is 0)
-    const rankings = unsorted
-      .sort((a, b) => (b.score - a.score) || ((b.squadScore ?? 0) - (a.squadScore ?? 0)))
-      .map((entry, index) => ({ rank: index + 1, ...entry }));
-
-    const sanitizedRankings = rankings.map(({ teamId, newPlaying12Ids, ...entry }) => entry);
-    const verdict = buildVerdict(rankings);
-
-    const saves = [
-      AuctionSession.findOneAndUpdate(sessionQuery, { latestRankings: sanitizedRankings, latestVerdict: verdict }),
-    ];
-
-    // Only update Team documents (playing12 + rating) when running playing12 mode
-    if (mode === 'playing12') {
-      for (const entry of rankings) {
-        if (entry.newPlaying12Ids) {
-          saves.push(
-            Team.findByIdAndUpdate(entry.teamId, {
-              rating:   Math.round(entry.score),
-              playing12: entry.newPlaying12Ids,
-            })
-          );
-        }
-      }
-    }
-
-    await Promise.all(saves);
-
-    try {
-      const io = getIO();
-      if (roomCode) io.to(roomCode).emit('auction:rankings-updated');
-      else io.emit('auction:rankings-updated');
-    } catch (_) {
-      console.error('[rankingController] Socket.io not available to emit update');
-    }
-
-    res.json({ rankings: sanitizedRankings, verdict });
+    setImmediate(() => _runRankings(roomCode, mode, sessionQuery).catch((err) => {
+      console.error('[rankingController _runRankings]', err.message);
+    }));
 
   } catch (err) {
     console.error('[rankingController generateRankings]', err.message);

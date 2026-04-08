@@ -1121,16 +1121,29 @@ export default function RankingPage() {
     const setLoading = genMode === 'squad' ? setLoadingSquad : setLoadingP12;
     setLoading(true);
     setError('');
+    setMode(genMode); // switch view to the mode being generated
     try {
-      const res = await api.post('/ranking', { roomCode: room?.code, mode: genMode });
-      setData(res.data);
-      setMode(genMode); // switch view to the mode just generated
+      await api.post('/ranking', { roomCode: room?.code, mode: genMode });
+      // Backend returns 202 immediately and pushes auction:rankings-updated when done.
+      // The socket listener calls fetchRankings() which updates data — spinner stays
+      // until then (setLoading(false) called in the finally below would hide it too
+      // early, so we let the socket event clear it instead).
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to generate rankings.');
-    } finally {
       setLoading(false);
     }
   };
+
+  // Clear the loading spinner when rankings arrive via socket.
+  useEffect(() => {
+    if (!socket) return;
+    const onDone = () => {
+      setLoadingP12(false);
+      setLoadingSquad(false);
+    };
+    socket.on('auction:rankings-updated', onDone);
+    return () => socket.off('auction:rankings-updated', onDone);
+  }, [socket]);
 
   // Only fetch once we have the room code — avoids the "failed to fetch" on mount
   // when room context hasn't loaded yet, which caused the 10-second retry delay.
