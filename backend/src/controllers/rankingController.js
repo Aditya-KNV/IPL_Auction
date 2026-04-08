@@ -170,7 +170,7 @@ exports.generateRankings = async (req, res) => {
         const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
         const oldScore = scoreBreakdown(oldSquad).final;
 
-        const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids);
+        const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids, true); // skip2opt for rankings
         const newPlaying12Objs = team.players.filter((p) =>
           newPlaying12Ids.some((id) => String(id) === String(p._id))
         );

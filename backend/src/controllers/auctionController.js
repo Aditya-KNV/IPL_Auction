@@ -186,10 +186,11 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
   return best.playing;
 };
 
-// DB-backed wrapper — used by live auction after every sale
-const computePlaying12 = async (teamId, previousPlaying12Ids = []) => {
+// DB-backed wrapper — used by live auction after every sale.
+// Pass skip2opt=true from ranking generation to avoid O(n²·m²) crash.
+const computePlaying12 = async (teamId, previousPlaying12Ids = [], skip2opt = false) => {
   const allPlayers = await Player.find({ team: teamId, status: 'sold' }).lean();
-  const playing    = await computeBestPlaying12(allPlayers, previousPlaying12Ids);
+  const playing    = await computeBestPlaying12(allPlayers, previousPlaying12Ids, null, skip2opt);
   return playing.map((p) => p._id);
 };
 
