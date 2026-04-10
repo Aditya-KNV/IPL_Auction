@@ -19,7 +19,15 @@ const { canTeamBuyPlayer, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules')
 //      This guarantees a 9/9/9 bowler always replaces an 8/8/8 bowler.
 //   3. Hill-climbing with rawFinal (full-precision, no rounding) to catch any
 //      remaining improvements the direct pass misses.
-const { scoreBreakdown, scoreBreakdownFast, playerOverallComposite, playerBowlingComposite, playerBattingComposite } = require('../utils/teamScoring');
+const {
+  canOccupyBattingPosition,
+  playerBattingScoreForPosition,
+  scoreBreakdown,
+  scoreBreakdownFast,
+  playerOverallComposite,
+  playerBowlingComposite,
+  playerBattingComposite,
+} = require('../utils/teamScoring');
 
 const RANKING_SEARCH_POOL_SIZE = 15;
 const RANKING_EXACT_MAX_EVALS = 1200;
@@ -128,6 +136,11 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
       const fitB = ((b.fitness?.stamina ?? 0) + (10 - (b.fitness?.injury_risk ?? 10))) / 2;
       return fitB - fitA;
     });
+    const byBattingSlot = [1, 3, 5, 7, 9].map((position) => (
+      [...allPlayers]
+        .filter((player) => canOccupyBattingPosition(player, position))
+        .sort((a, b) => playerBattingScoreForPosition(b, position) - playerBattingScoreForPosition(a, position))
+    ));
     const roleLists = [
       ['Wicket-Keeper', [...allPlayers].filter((p) => p.role === 'Wicket-Keeper').sort((a, b) => playerSearchValue(b) - playerSearchValue(a))],
       ['Batsman', [...allPlayers].filter((p) => p.role === 'Batsman').sort((a, b) => playerSearchValue(b) - playerSearchValue(a))],
@@ -145,7 +158,7 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
       }
     }
 
-    const metricLists = [bySearch, byOverall, byBatting, byBowling, byImpact, byCaptaincy, byFitness];
+    const metricLists = [bySearch, byOverall, byBatting, byBowling, byImpact, byCaptaincy, byFitness, ...byBattingSlot];
     let cursor = 0;
     while (selected.size < Math.min(RANKING_SEARCH_POOL_SIZE, allPlayers.length)) {
       let addedInRound = false;

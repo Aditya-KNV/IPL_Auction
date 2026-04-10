@@ -84,6 +84,21 @@ const playerBattingScoreForPosition = (player, position) => {
   return weightedNormalizedScore(getBattingMetrics(player), weights);
 };
 
+const canOccupyBattingPosition = (player, position) => {
+  if (!player) return false;
+  if (player.role === 'Bowler') return position >= 9 && position <= 12;
+  if (player.role === 'Batsman' || player.role === 'Wicket-Keeper') return position >= 1 && position <= 8;
+  if (player.role === 'All-Rounder') return position >= 1 && position <= 9;
+  return position >= 1 && position <= 12;
+};
+
+const battingSlotScore = (player, position) => {
+  if (!canOccupyBattingPosition(player, position)) return null;
+  const preferred = player.tactical?.positions ?? [];
+  const base = playerBattingScoreForPosition(player, position);
+  return preferred.includes(position) ? base : base - 3;
+};
+
 const optimizeBattingOrder = (players) => {
   const slots = Array.from({ length: 12 }, (_, index) => index + 1);
   const memo = new Map();
@@ -100,19 +115,13 @@ const optimizeBattingOrder = (players) => {
       if (usedMask & (1 << playerIndex)) continue;
 
       const player = players[playerIndex];
+      const slotScore = battingSlotScore(player, position);
+      if (slotScore === null) continue;
 
       // Hard position constraints:
       //   Bowlers can ONLY bat at positions 9–12 (lower order)
       //   Batsmen/Wicket-Keepers stay at 1–8 (8 allows overflow when squad has 8+ top-order players)
       //   All-Rounders can stretch to position 9
-      if (player.role === 'Bowler' && position < 9) continue;
-      if ((player.role === 'Batsman' || player.role === 'Wicket-Keeper') && position > 8) continue;
-      const preferred = player.tactical?.positions ?? [];
-      const base = preferred.includes(position)
-        ? playerBattingScoreForPosition(player, position)
-        : playerBattingScoreForPosition(player, position) - 3;
-      const slotScore = base;
-
       best = Math.max(best, slotScore + dfs(slotIndex + 1, usedMask | (1 << playerIndex)));
     }
 
@@ -137,17 +146,10 @@ const optimizeBattingOrder = (players) => {
     for (let pi = 0; pi < players.length; pi += 1) {
       if (usedMask & (1 << pi)) continue;
       const player = players[pi];
+      const slotScore = battingSlotScore(player, position);
+      if (slotScore === null) continue;
 
       // Same hard constraints in reconstruction pass
-      if (player.role === 'Bowler' && position < 9) continue;
-      if ((player.role === 'Batsman' || player.role === 'Wicket-Keeper') && position > 8) continue;
-
-      const preferred = player.tactical?.positions ?? [];
-      const base = preferred.includes(position)
-        ? playerBattingScoreForPosition(player, position)
-        : playerBattingScoreForPosition(player, position) - 3;
-      const slotScore = base;
-
       const candidate = slotScore + memoGet(slotIndex + 1, usedMask | (1 << pi));
       if (candidate > bestValue) { bestValue = candidate; bestPi = pi; bestSlotScore = slotScore; }
     }
@@ -570,26 +572,29 @@ const scoreBreakdownSquad = (playing12, fullSquad) => {
 // ── Fast greedy batting order (O(n log n), no DFS) ───────────────────────────
 // Used by scoreBreakdownFast during hill-climbing to avoid the expensive DFS.
 const battingPositionScoreFast = (players) => {
-  // Separate by role constraints (mirrors the DFS hard constraints)
-  const topOrder = players.filter((p) => p.role !== 'Bowler');
-  const tailOrder = players.filter((p) => p.role === 'Bowler');
-
-  // Sort by batting composite descending
-  topOrder.sort((a, b) => battingComposite(b) - battingComposite(a));
-  tailOrder.sort((a, b) => battingComposite(b) - battingComposite(a));
-
-  const ordered = [...topOrder, ...tailOrder].slice(0, 12);
+  const remaining = [...players];
   let positionFitScore = 0;
 
-  ordered.forEach((p, idx) => {
+  for (let idx = 0; idx < 12; idx += 1) {
     const position = idx + 1;
     const slotMax = POSITION_SLOT_MAX[position] ?? 0;
-    const preferred = p.tactical?.positions ?? [];
-    const weights = battingFormulaForPosition(position);
-    const base = weightedNormalizedScore(getBattingMetrics(p), weights);
-    const slotScore = preferred.includes(position) ? base : base - 3;
-    positionFitScore += Math.max(0, slotScore / 10) * slotMax;
-  });
+    let bestIndex = -1;
+    let bestSlotScore = -Infinity;
+
+    for (let i = 0; i < remaining.length; i += 1) {
+      const slotScore = battingSlotScore(remaining[i], position);
+      if (slotScore === null) continue;
+      if (slotScore > bestSlotScore) {
+        bestSlotScore = slotScore;
+        bestIndex = i;
+      }
+    }
+
+    if (bestIndex === -1) continue;
+
+    positionFitScore += Math.max(0, bestSlotScore / 10) * slotMax;
+    remaining.splice(bestIndex, 1);
+  }
 
   return round(positionFitScore);
 };
@@ -628,6 +633,8 @@ const playerOverallComposite = (p) => {
 };
 
 module.exports = {
+  canOccupyBattingPosition,
+  playerBattingScoreForPosition,
   scoreBreakdown,
   scoreBreakdownFast,
   scoreBreakdownSquad,
