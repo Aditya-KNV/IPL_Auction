@@ -21,6 +21,11 @@ const { canTeamBuyPlayer, MAX_OVERSEAS_PLAYING } = require('../utils/teamRules')
 //      remaining improvements the direct pass misses.
 const { scoreBreakdown, scoreBreakdownFast, playerOverallComposite, playerBowlingComposite, playerBattingComposite } = require('../utils/teamScoring');
 
+const RANKING_SEARCH_POOL_SIZE = 15;
+const RANKING_EXACT_MAX_EVALS = 1200;
+const RANKING_EXACT_YIELD_EVERY = 100;
+const RANKING_EXACT_TIME_BUDGET_MS = 150;
+
 // ── Core optimizer — pure, no DB calls ───────────────────────────────────────
 // allPlayers : player objects already in memory
 // prevIds    : previous playing-12 IDs (warm-start seed)
@@ -52,6 +57,9 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
     : fastMode
       ? (squad) => { try { return scoreBreakdownFast(squad); } catch { return 0; } }
       : (squad) => { try { return scoreBreakdown(squad).rawFinal; } catch { return 0; } };
+  const exactScoreFn = objFn
+    ? (squad) => { try { return objFn(squad); } catch { return 0; } }
+    : (squad) => { try { return scoreBreakdown(squad).rawFinal; } catch { return 0; } };
 
   const impactFactor = (p) =>
     ((p.role_impact?.match_winner ?? 0) + (p.role_impact?.clutch ?? 0) + (p.role_impact?.consistency ?? 0)) / 30;
@@ -62,6 +70,177 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
     return playerOverallComposite(p) + imp;
   };
   const overseasCount = (squad) => squad.filter(isOverseas).length;
+  const playerSearchValue = (p) => {
+    const fitness =
+      ((p.fitness?.stamina ?? 0) + (10 - (p.fitness?.injury_risk ?? 10))) / 2;
+    return (
+      playerOverallComposite(p) +
+      roleScore(p) * 0.8 +
+      (p.tactical?.captaincy ?? 0) * 3 +
+      (p.tactical?.overs ?? 0) * 1.5 +
+      (p.tactical?.flexibility ?? 0) * 1.5 +
+      fitness +
+      impactFactor(p) * 10
+    );
+  };
+
+  const addCandidateIfAllowed = (selected, player, limits) => {
+    if (!player) return false;
+    const id = String(player._id);
+    if (selected.has(id)) return false;
+
+    const overseas = isOverseas(player);
+    const currentPlayers = Array.from(selected.values());
+    const overseasInPool = currentPlayers.filter(isOverseas).length;
+    const indianInPool = currentPlayers.length - overseasInPool;
+
+    if (overseas && overseasInPool >= limits.maxOverseasPool) return false;
+    if (!overseas && indianInPool >= limits.maxIndianPool) return false;
+
+    selected.set(id, player);
+    return true;
+  };
+
+  const buildRankingSearchPool = (seedPlayers) => {
+    if (allPlayers.length <= RANKING_SEARCH_POOL_SIZE) {
+      return [...allPlayers];
+    }
+
+    const minIndianNeeded = targetSize - maxAllowedOverseas;
+    const limits = {
+      maxOverseasPool: Math.min(overseasPlayers.length, Math.max(maxAllowedOverseas + 2, maxAllowedOverseas)),
+      maxIndianPool: Math.min(indianPlayers.length, RANKING_SEARCH_POOL_SIZE),
+    };
+    limits.maxIndianPool = Math.min(
+      indianPlayers.length,
+      Math.max(minIndianNeeded + 2, RANKING_SEARCH_POOL_SIZE - limits.maxOverseasPool)
+    );
+
+    const selected = new Map();
+    const bySearch = [...allPlayers].sort((a, b) => playerSearchValue(b) - playerSearchValue(a));
+    const byOverall = [...allPlayers].sort((a, b) => playerOverallComposite(b) - playerOverallComposite(a));
+    const byBatting = [...allPlayers].sort((a, b) => playerBattingComposite(b) - playerBattingComposite(a));
+    const byBowling = [...allPlayers].sort((a, b) => playerBowlingComposite(b) - playerBowlingComposite(a));
+    const byImpact = [...allPlayers].sort((a, b) => impactFactor(b) - impactFactor(a));
+    const byCaptaincy = [...allPlayers].sort((a, b) => (b.tactical?.captaincy ?? 0) - (a.tactical?.captaincy ?? 0));
+    const byFitness = [...allPlayers].sort((a, b) => {
+      const fitA = ((a.fitness?.stamina ?? 0) + (10 - (a.fitness?.injury_risk ?? 10))) / 2;
+      const fitB = ((b.fitness?.stamina ?? 0) + (10 - (b.fitness?.injury_risk ?? 10))) / 2;
+      return fitB - fitA;
+    });
+    const roleLists = [
+      ['Wicket-Keeper', [...allPlayers].filter((p) => p.role === 'Wicket-Keeper').sort((a, b) => playerSearchValue(b) - playerSearchValue(a))],
+      ['Batsman', [...allPlayers].filter((p) => p.role === 'Batsman').sort((a, b) => playerSearchValue(b) - playerSearchValue(a))],
+      ['All-Rounder', [...allPlayers].filter((p) => p.role === 'All-Rounder').sort((a, b) => playerSearchValue(b) - playerSearchValue(a))],
+      ['Bowler', [...allPlayers].filter((p) => p.role === 'Bowler').sort((a, b) => playerSearchValue(b) - playerSearchValue(a))],
+    ];
+
+    [...seedPlayers, ...prevPlaying, ...bySearch.slice(0, 6)].forEach((player) => {
+      addCandidateIfAllowed(selected, player, limits);
+    });
+
+    for (const [, list] of roleLists) {
+      for (let i = 0; i < Math.min(3, list.length); i += 1) {
+        addCandidateIfAllowed(selected, list[i], limits);
+      }
+    }
+
+    const metricLists = [bySearch, byOverall, byBatting, byBowling, byImpact, byCaptaincy, byFitness];
+    let cursor = 0;
+    while (selected.size < Math.min(RANKING_SEARCH_POOL_SIZE, allPlayers.length)) {
+      let addedInRound = false;
+      for (const list of metricLists) {
+        if (cursor < list.length) {
+          addedInRound = addCandidateIfAllowed(selected, list[cursor], limits) || addedInRound;
+        }
+      }
+      cursor += 1;
+      if (!addedInRound && cursor >= allPlayers.length) break;
+    }
+
+    if (selected.size < Math.min(RANKING_SEARCH_POOL_SIZE, allPlayers.length)) {
+      for (const player of bySearch) {
+        if (selected.size >= Math.min(RANKING_SEARCH_POOL_SIZE, allPlayers.length)) break;
+        addCandidateIfAllowed(selected, player, {
+          maxOverseasPool: overseasPlayers.length,
+          maxIndianPool: indianPlayers.length,
+        });
+      }
+    }
+
+    return [...selected.values()].sort((a, b) => playerSearchValue(b) - playerSearchValue(a));
+  };
+
+  const exhaustiveSearchOnPool = async (pool, initialBest) => {
+    const orderedPool = [...pool].sort((a, b) => playerSearchValue(b) - playerSearchValue(a));
+    const suffixIndian = new Array(orderedPool.length + 1).fill(0);
+    for (let i = orderedPool.length - 1; i >= 0; i -= 1) {
+      suffixIndian[i] = suffixIndian[i + 1] + (isOverseas(orderedPool[i]) ? 0 : 1);
+    }
+
+    let bestPlayers = [...initialBest];
+    let bestScore = exactScoreFn(bestPlayers);
+    const chosen = [];
+    const minIndianNeeded = targetSize - maxAllowedOverseas;
+    let evalCount = 0;
+    let nodeCount = 0;
+    const startedAt = Date.now();
+    let budgetExceeded = false;
+
+    const overBudget = () =>
+      evalCount >= RANKING_EXACT_MAX_EVALS ||
+      (Date.now() - startedAt) >= RANKING_EXACT_TIME_BUDGET_MS;
+
+    const dfs = async (index, overseasPicked) => {
+      if (budgetExceeded) return;
+      nodeCount += 1;
+      if (nodeCount % RANKING_EXACT_YIELD_EVERY === 0) {
+        await new Promise((resolve) => setImmediate(resolve));
+        if (overBudget()) {
+          budgetExceeded = true;
+          return;
+        }
+      }
+
+      const chosenCount = chosen.length;
+      if (chosenCount === targetSize) {
+        evalCount += 1;
+        if (overBudget()) {
+          budgetExceeded = true;
+          return;
+        }
+        const score = exactScoreFn(chosen);
+        if (score > bestScore) {
+          bestScore = score;
+          bestPlayers = [...chosen];
+        }
+        return;
+      }
+
+      if (index >= orderedPool.length) return;
+      const remainingSlots = targetSize - chosenCount;
+      const remainingPlayers = orderedPool.length - index;
+      if (remainingPlayers < remainingSlots) return;
+
+      const indiansPicked = chosenCount - overseasPicked;
+      if (indiansPicked + suffixIndian[index] < minIndianNeeded) return;
+
+      const player = orderedPool[index];
+
+      if (!isOverseas(player) || overseasPicked < MAX_OVERSEAS_PLAYING) {
+        chosen.push(player);
+        await dfs(index + 1, overseasPicked + (isOverseas(player) ? 1 : 0));
+        chosen.pop();
+      }
+
+      if (!budgetExceeded && remainingPlayers - 1 >= remainingSlots) {
+        await dfs(index + 1, overseasPicked);
+      }
+    };
+
+    await dfs(0, overseasCount(chosen));
+    return bestPlayers;
+  };
 
   const buildGreedySeed = () => {
     const sorted = [...allPlayers].sort((a, b) => playerOverallComposite(b) - playerOverallComposite(a));
@@ -100,8 +279,8 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
       }
     }
 
-    // fastMode: run Phase B1 synchronously (no setImmediate yields) with a 3-pass cap.
-    // Much faster than async B1 while giving near-optimal results (vs Phase A only).
+    // fastMode: keep the local-improvement pass lightweight because ranking generation
+    // will follow it with an exact DFS over a bounded shortlist.
     if (fastMode) {
       let bestScore = scoreFn(playing);
       for (let pass = 0; pass < 3; pass++) {
@@ -202,16 +381,25 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
     if (!best || result.score > best.score) best = result;
   }
 
+  if (fastMode) {
+    const searchPool = buildRankingSearchPool(best?.playing ?? []);
+    const bestFromSearch = await exhaustiveSearchOnPool(searchPool, best?.playing ?? seeds[0].playing);
+    const searchedScore = exactScoreFn(bestFromSearch);
+    if (!best || searchedScore > best.score) {
+      best = { playing: bestFromSearch, score: searchedScore };
+    }
+  }
+
   // Final safety: raw previous 12 always wins if it scores higher
   if (prevPlaying.length === targetSize && overseasCount(prevPlaying) <= MAX_OVERSEAS_PLAYING) {
-    if (scoreFn(prevPlaying) > best.score) return prevPlaying;
+    if (exactScoreFn(prevPlaying) > best.score) return prevPlaying;
   }
 
   return best.playing;
 };
 
 // DB-backed wrapper — used by live auction after every sale.
-// fastMode=true from ranking generation: Phase A only, no hill-climbing (avoids crash).
+// fastMode=true from ranking generation: lightweight local search + bounded exact DFS.
 const computePlaying12 = async (teamId, previousPlaying12Ids = [], skip2opt = false, fastMode = false) => {
   const allPlayers = await Player.find({ team: teamId, status: 'sold' }).lean();
   const playing    = await computeBestPlaying12(allPlayers, previousPlaying12Ids, null, skip2opt, fastMode);

@@ -534,11 +534,11 @@ const TeamCard = ({ entry, mode }) => {
   const medal = MEDAL[entry.rank - 1] ?? `#${entry.rank}`;
 
   const isSquad = mode === 'squad';
-  // b can be null if this mode hasn't been generated yet — guard all access below
-  const b = isSquad ? (entry.squadBreakdown ?? entry.breakdown) : entry.breakdown;
+  const playing12Breakdown = entry.breakdown ?? null;
+  const squadBreakdown = entry.squadBreakdown ?? null;
+  // Only render the breakdown that belongs to the active mode.
+  const b = isSquad ? squadBreakdown : playing12Breakdown;
   const displayScore = isSquad ? (entry.squadScore ?? entry.score ?? '—') : (entry.score ?? '—');
-  const fitnessMax = isSquad ? 2 : 5;
-  const impactMax  = isSquad ? 3 : 7;
   const hasData = b != null;
 
   return (
@@ -607,9 +607,21 @@ const TeamCard = ({ entry, mode }) => {
                 <div className="grid grid-cols-2 gap-2 mt-4">
                   <BreakdownRow label="Batting" value={b.batting.total} max={40} />
                   <BreakdownRow label="Bowling" value={b.bowling.total} max={40} />
-                  <BreakdownRow label="Fitness" value={b.fitness} max={fitnessMax} explanation={explainFitness(b.fitness, fitnessMax)} />
-                  <BreakdownRow label="Impact" value={b.impact} max={impactMax} explanation={explainImpact(b.impact, impactMax)} />
-                  {!isSquad && <BreakdownRow label="Tactical" value={b.tactical} max={3} explanation={explainTactical(b.tactical)} />}
+                  <BreakdownRow
+                    label="Fitness"
+                    value={b.fitness}
+                    max={isSquad ? 2 : 5}
+                    explanation={explainFitness(b.fitness, isSquad ? 2 : 5)}
+                  />
+                  <BreakdownRow
+                    label="Impact"
+                    value={b.impact}
+                    max={isSquad ? 3 : 7}
+                    explanation={explainImpact(b.impact, isSquad ? 3 : 7)}
+                  />
+                  {!isSquad ? (
+                    <BreakdownRow label="Tactical" value={b.tactical} max={3} explanation={explainTactical(b.tactical)} />
+                  ) : null}
                   <BreakdownRow label="Age" value={b.age} max={1} explanation={explainAge(b.age)} />
                   <BreakdownRow label="Captaincy" value={b.captaincy} max={4} explanation={explainCaptaincy(b.captaincy)} />
                 </div>
@@ -1375,7 +1387,7 @@ export default function RankingPage() {
                 rank: idx + 1,
               }))
               .map((entry) => (
-                <TeamCard key={entry.teamShortName} entry={entry} mode={mode} />
+                <TeamCard key={`${entry.teamShortName}-${mode}`} entry={entry} mode={mode} />
               ))}
           </div>
         </>
