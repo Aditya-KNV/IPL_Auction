@@ -86,9 +86,12 @@ const playerBattingScoreForPosition = (player, position) => {
 
 const canOccupyBattingPosition = (player, position) => {
   if (!player) return false;
+  // Batsmen and Wicket-Keepers can bat up to position 9 (e.g. power-hitting specialist at 9).
+  if (player.role === 'Batsman' || player.role === 'Wicket-Keeper') return position >= 1 && position <= 9;
+  // All-Rounders naturally bat anywhere from 1 to 10.
+  if (player.role === 'All-Rounder') return position >= 1 && position <= 10;
+  // Pure Bowlers bat in the tail.
   if (player.role === 'Bowler') return position >= 9 && position <= 12;
-  if (player.role === 'Batsman' || player.role === 'Wicket-Keeper') return position >= 1 && position <= 8;
-  if (player.role === 'All-Rounder') return position >= 1 && position <= 9;
   return position >= 1 && position <= 12;
 };
 
@@ -96,73 +99,83 @@ const battingSlotScore = (player, position) => {
   if (!canOccupyBattingPosition(player, position)) return null;
   const preferred = player.tactical?.positions ?? [];
   const base = playerBattingScoreForPosition(player, position);
-  return preferred.includes(position) ? base : base - 3;
+  // Only penalise if the player has explicit preferred positions AND this isn't one of them.
+  // Empty preferred list means no preference — place them anywhere without penalty.
+  if (preferred.length > 0 && !preferred.includes(position)) return base - 3;
+  return base;
 };
 
 const optimizeBattingOrder = (players) => {
-  const slots = Array.from({ length: 12 }, (_, index) => index + 1);
+  const n = players.length;
+  // Use a numeric key: (slotIndex << n) | usedMask — avoids string concatenation overhead.
   const memo = new Map();
 
   const dfs = (slotIndex, usedMask) => {
-    if (slotIndex >= slots.length) return 0;
-    const key = `${slotIndex}:${usedMask}`;
+    if (slotIndex >= 12) return 0;
+    const key = (slotIndex << n) | usedMask;
     if (memo.has(key)) return memo.get(key);
 
-    const position = slots[slotIndex];
-    let best = -8 + dfs(slotIndex + 1, usedMask); // heavy penalty for unfilled slot
+    const position = slotIndex + 1;
+    let best = -Infinity;
+    let hasCandidate = false;
 
-    for (let playerIndex = 0; playerIndex < players.length; playerIndex += 1) {
-      if (usedMask & (1 << playerIndex)) continue;
-
-      const player = players[playerIndex];
-      const slotScore = battingSlotScore(player, position);
+    for (let pi = 0; pi < n; pi += 1) {
+      if (usedMask & (1 << pi)) continue;
+      const slotScore = battingSlotScore(players[pi], position);
       if (slotScore === null) continue;
-
-      // Hard position constraints:
-      //   Bowlers can ONLY bat at positions 9–12 (lower order)
-      //   Batsmen/Wicket-Keepers stay at 1–8 (8 allows overflow when squad has 8+ top-order players)
-      //   All-Rounders can stretch to position 9
-      best = Math.max(best, slotScore + dfs(slotIndex + 1, usedMask | (1 << playerIndex)));
+      hasCandidate = true;
+      const candidate = slotScore + dfs(slotIndex + 1, usedMask | (1 << pi));
+      if (candidate > best) best = candidate;
     }
+
+    // Only allow skipping when no valid candidate exists for this position.
+    // A skip is never preferred over a valid assignment — it only fires as a
+    // forced fallback (e.g. fewer than 12 players, or role/range mismatch).
+    if (!hasCandidate) best = -8 + dfs(slotIndex + 1, usedMask);
 
     memo.set(key, best);
     return best;
   };
 
-  const totalScore = dfs(0, 0);
+  dfs(0, 0);
 
-  // Reconstruct the optimal assignment from the memoised values
-  const memoGet = (slotIndex, mask) => (slotIndex >= slots.length ? 0 : (memo.get(`${slotIndex}:${mask}`) ?? 0));
-
+  // Reconstruct the optimal assignment from the memoised values.
   const assignments = [];
   let usedMask = 0;
 
-  for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
-    const position = slots[slotIndex];
-    let bestValue = -8 + memoGet(slotIndex + 1, usedMask); // skip value
+  for (let slotIndex = 0; slotIndex < 12; slotIndex += 1) {
+    const position = slotIndex + 1;
+    // Use -Infinity fallback so missing memo states never falsely inflate candidate values.
+    const nextKey = (slotIdx, mask) => memo.get((slotIdx << n) | mask) ?? -Infinity;
+
+    // Start at -Infinity so any valid assignment beats "no assignment".
+    let bestValue = -Infinity;
     let bestPi = -1;
     let bestSlotScore = 0;
 
-    for (let pi = 0; pi < players.length; pi += 1) {
+    for (let pi = 0; pi < n; pi += 1) {
       if (usedMask & (1 << pi)) continue;
-      const player = players[pi];
-      const slotScore = battingSlotScore(player, position);
+      const slotScore = battingSlotScore(players[pi], position);
       if (slotScore === null) continue;
-
-      // Same hard constraints in reconstruction pass
-      const candidate = slotScore + memoGet(slotIndex + 1, usedMask | (1 << pi));
+      const rest = slotIndex + 1 < 12 ? nextKey(slotIndex + 1, usedMask | (1 << pi)) : 0;
+      const candidate = slotScore + rest;
       if (candidate > bestValue) { bestValue = candidate; bestPi = pi; bestSlotScore = slotScore; }
     }
 
     if (bestPi >= 0) {
-      const player = players[bestPi];
-      const preferred = player.tactical?.positions ?? [];
-      assignments.push({ position, playerIndex: bestPi, isPreferred: preferred.includes(position), slotScore: round(bestSlotScore) });
+      const preferred = players[bestPi].tactical?.positions ?? [];
+      assignments.push({
+        position,
+        playerIndex: bestPi,
+        isPreferred: preferred.length > 0 && preferred.includes(position),
+        slotScore: round(bestSlotScore),
+      });
       usedMask |= (1 << bestPi);
     }
+    // If bestPi is still -1, no valid candidate exists for this slot — leave it unassigned.
   }
 
-  return { totalScore, assignments };
+  return { assignments };
 };
 
 const wicketKeeperScore = (players) => {
@@ -177,10 +190,17 @@ const wicketKeeperScore = (players) => {
 const battingBalanceScore = (players) => {
   // Bowlers are excluded — only batters and all-rounders face the opposition's bowling line
   const batters = players.filter((p) => p.role !== 'Bowler');
+  const n = batters.length;
   const left = batters.filter((player) => player.batting_style === 'left-handed').length;
-  const right = batters.filter((player) => player.batting_style !== 'left-handed').length;
+  const right = n - left;
   if (!left || !right) return 0;
-  return 3 * (Math.min(left, right) / Math.max(left, right));
+  // Normalise against the best achievable ratio for n players: floor(n/2) : ceil(n/2).
+  // This means 4:5 with 9 batters and 3:4 with 7 batters both earn full marks,
+  // because you cannot get closer to 50/50 with an odd group.
+  const perfectRatio = Math.floor(n / 2) / Math.ceil(n / 2);
+  if (perfectRatio === 0) return 0;
+  const actualRatio = Math.min(left, right) / Math.max(left, right);
+  return clamp(3 * (actualRatio / perfectRatio), 0, 3);
 };
 
 const battingComposite = (player) => {
@@ -189,15 +209,14 @@ const battingComposite = (player) => {
 };
 
 const battingPositionScore = (players) => {
-  const candidates = [...players]
-    .sort((a, b) => battingComposite(b) - battingComposite(a))
-    .slice(0, 15);
-  const { assignments } = optimizeBattingOrder(candidates);
+  // Pass all players directly — the playing 12 is always ≤ 12 players.
+  // No pre-sort or slice needed; the DFS explores every valid assignment.
+  const { assignments } = optimizeBattingOrder(players);
 
   let positionFitScore = 0;
 
   const battingOrder = assignments.map(({ position, playerIndex, isPreferred, slotScore }) => {
-    const p = candidates[playerIndex];
+    const p = players[playerIndex];
     const slotMax = POSITION_SLOT_MAX[position] ?? 0;
     const contribution = round(Math.max(0, slotScore / 10) * slotMax, 2);
     positionFitScore += contribution;
@@ -207,7 +226,6 @@ const battingPositionScore = (players) => {
   return { score: round(positionFitScore), battingOrder };
 };
 
-const normalizeBowlingStyle = (style = '') => style.toLowerCase().trim();
 const isPacer = (style = '') => /(fast|medium)/i.test(style);
 const isSpinner = (style = '') => /(spin|orthodox|break|googly|chinaman)/i.test(style);
 const bowlingArm = (style = '') => {
@@ -392,10 +410,14 @@ const phaseBowlingScoreWithAssignment = (players, phaseKey, positionIndex, multi
   const bowlers = eligibleBowlers(players);
   if (bowlers.length < 2) return { score: 0, assigned: [] };
 
-  // Build per-bowler entries with effective rating
+  // Build per-bowler entries with effective rating.
+  // The -2 penalty only applies if the bowler has explicit phase designations set
+  // AND this phase isn't one of them. Bowlers with no designations at all use their
+  // raw rating — "no designation" means general-purpose, not "wrong phase".
   const entries = bowlers.map((p) => {
     const base = p.bowling?.phases?.[phaseKey] ?? 0;
-    const designated = (p.bowling?.positions?.[positionIndex] ?? 0) === 1;
+    const hasAnyDesignation = p.bowling?.positions?.some((v) => v === 1) ?? false;
+    const designated = !hasAnyDesignation || (p.bowling?.positions?.[positionIndex] ?? 0) === 1;
     return { name: p.name, base, designated, effective: designated ? base : base - 2 };
   });
 
@@ -569,52 +591,6 @@ const scoreBreakdownSquad = (playing12, fullSquad) => {
   };
 };
 
-// ── Fast greedy batting order (O(n log n), no DFS) ───────────────────────────
-// Used by scoreBreakdownFast during hill-climbing to avoid the expensive DFS.
-const battingPositionScoreFast = (players) => {
-  const remaining = [...players];
-  let positionFitScore = 0;
-
-  for (let idx = 0; idx < 12; idx += 1) {
-    const position = idx + 1;
-    const slotMax = POSITION_SLOT_MAX[position] ?? 0;
-    let bestIndex = -1;
-    let bestSlotScore = -Infinity;
-
-    for (let i = 0; i < remaining.length; i += 1) {
-      const slotScore = battingSlotScore(remaining[i], position);
-      if (slotScore === null) continue;
-      if (slotScore > bestSlotScore) {
-        bestSlotScore = slotScore;
-        bestIndex = i;
-      }
-    }
-
-    if (bestIndex === -1) continue;
-
-    positionFitScore += Math.max(0, bestSlotScore / 10) * slotMax;
-    remaining.splice(bestIndex, 1);
-  }
-
-  return round(positionFitScore);
-};
-
-// Fast scoring for use during hill-climbing — same formula but greedy batting order.
-// Only called as the optimizer's objective function; the final breakdown always uses the full DFS.
-const scoreBreakdownFast = (players) => {
-  const wk = wicketKeeperScore(players);
-  const balance = battingBalanceScore(players);
-  const positions = battingPositionScoreFast(players);
-  const battingTotal = wk + balance + positions;
-  const bowling = bowlingScore(players);
-  const fitness = fitnessScore(players);
-  const impact = impactScore(players);
-  const tactical = tacticalScore(players);
-  const age = ageScore(players);
-  const cap = captaincy(players);
-  return battingTotal + bowling.total + fitness + impact + tactical + age + cap;
-};
-
 // ── Per-player composite helpers (for direct player-vs-player comparison) ─────
 const playerBowlingComposite = (p) => {
   const pp = p.bowling?.phases?.powerplay ?? 0;
@@ -636,7 +612,7 @@ module.exports = {
   canOccupyBattingPosition,
   playerBattingScoreForPosition,
   scoreBreakdown,
-  scoreBreakdownFast,
+
   scoreBreakdownSquad,
   playerBowlingComposite,
   playerBattingComposite: playerBattingCompositeFn,

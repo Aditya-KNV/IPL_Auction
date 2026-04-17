@@ -150,7 +150,8 @@ const _runRankings = async (roomCode, mode, sessionQuery) => {
       const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
       const oldScore = scoreBreakdown(oldSquad).final;
 
-      const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids, true, true);
+      // skip2opt=true — 2-opt is too expensive for background ranking generation.
+      const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids, true);
       const newPlaying12Objs = team.players.filter((p) =>
         newPlaying12Ids.some((id) => String(id) === String(p._id))
       );
@@ -218,7 +219,7 @@ const _runRankings = async (roomCode, mode, sessionQuery) => {
       const squadObjFn = (squad) => {
         try { return scoreBreakdownSquad(squad, team.players).rawFinal; } catch { return 0; }
       };
-      const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn, true, true);
+      const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn, true);
       const squadBreakdown = scoreBreakdownSquad(squadP12Objs, team.players);
 
       entry = {

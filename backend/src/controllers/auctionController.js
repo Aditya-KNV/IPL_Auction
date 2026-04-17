@@ -23,23 +23,22 @@ const {
   canOccupyBattingPosition,
   playerBattingScoreForPosition,
   scoreBreakdown,
-  scoreBreakdownFast,
   playerOverallComposite,
   playerBowlingComposite,
   playerBattingComposite,
 } = require('../utils/teamScoring');
 
-const RANKING_SEARCH_POOL_SIZE = 15;
-const RANKING_EXACT_MAX_EVALS = 1200;
-const RANKING_EXACT_YIELD_EVERY = 100;
-const RANKING_EXACT_TIME_BUDGET_MS = 150;
+const RANKING_SEARCH_POOL_SIZE = 16;
+const RANKING_EXACT_MAX_EVALS = 2000;
+const RANKING_EXACT_YIELD_EVERY = 50;
+const RANKING_EXACT_TIME_BUDGET_MS = 5000;
 
 // ── Core optimizer — pure, no DB calls ───────────────────────────────────────
 // allPlayers : player objects already in memory
 // prevIds    : previous playing-12 IDs (warm-start seed)
 // objFn      : optional objective (squad => number). Defaults to scoreBreakdown rawFinal.
 // Returns    : array of player objects (the optimal playing 12)
-const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn = null, skip2opt = false, fastMode = false) => {
+const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn = null, skip2opt = false) => {
   const isOverseas = (p) => {
     const nat = String(p.nationality || '').trim().toLowerCase();
     return nat.length > 0 && nat !== 'indian';
@@ -60,14 +59,13 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
 
   const playerById = new Map(allPlayers.map((p) => [String(p._id), p]));
 
+  // Always use the exact scorer — scoreBreakdownFast (greedy batting order) was
+  // previously used during hill-climbing but produced an inaccurate objective,
+  // causing the optimizer to converge to the wrong local optimum.
   const scoreFn = objFn
     ? (squad) => { try { return objFn(squad); } catch { return 0; } }
-    : fastMode
-      ? (squad) => { try { return scoreBreakdownFast(squad); } catch { return 0; } }
-      : (squad) => { try { return scoreBreakdown(squad).rawFinal; } catch { return 0; } };
-  const exactScoreFn = objFn
-    ? (squad) => { try { return objFn(squad); } catch { return 0; } }
     : (squad) => { try { return scoreBreakdown(squad).rawFinal; } catch { return 0; } };
+  const exactScoreFn = scoreFn; // same function — no separate "exact" path needed
 
   const impactFactor = (p) =>
     ((p.role_impact?.match_winner ?? 0) + (p.role_impact?.clutch ?? 0) + (p.role_impact?.consistency ?? 0)) / 30;
@@ -292,35 +290,16 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
       }
     }
 
-    // fastMode: keep the local-improvement pass lightweight because ranking generation
-    // will follow it with an exact DFS over a bounded shortlist.
-    if (fastMode) {
-      let bestScore = scoreFn(playing);
-      for (let pass = 0; pass < 3; pass++) {
-        let best1Score = bestScore; let bestI = -1; let bestJ = -1;
-        for (let i = 0; i < playing.length; i++) {
-          for (let j = 0; j < bench.length; j++) {
-            const cand = [...playing]; cand[i] = bench[j];
-            if (overseasCount(cand) > MAX_OVERSEAS_PLAYING) continue;
-            if (playing[i].role === bench[j].role && roleScore(bench[j]) < roleScore(playing[i])) continue;
-            const s = scoreFn(cand);
-            if (s > best1Score) { best1Score = s; bestI = i; bestJ = j; }
-          }
-        }
-        if (bestI === -1) break; // converged early
-        const ev = playing[bestI]; playing[bestI] = bench[bestJ]; bench[bestJ] = ev;
-        bestScore = best1Score;
-      }
-      return { playing, score: bestScore };
-    }
-
     let bestScore = scoreFn(playing);
     let outerImproved = true;
 
     while (outerImproved) {
       outerImproved = false;
 
-      // Phase B1: 1-opt single swaps to convergence
+      // Phase B1: 1-opt single swaps to convergence.
+      // Evaluates every (playing[i], bench[j]) pair — no role-based early-exit
+      // since a lower-composite player at their preferred batting position can
+      // still improve team score (position-fit bonus outweighs raw stat gap).
       let singleImproved = true;
       while (singleImproved) {
         singleImproved = false;
@@ -330,7 +309,6 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
           for (let j = 0; j < bench.length; j++) {
             const cand = [...playing]; cand[i] = bench[j];
             if (overseasCount(cand) > MAX_OVERSEAS_PLAYING) continue;
-            if (playing[i].role === bench[j].role && roleScore(bench[j]) < roleScore(playing[i])) continue;
             const s = scoreFn(cand);
             if (s > best1Score) { best1Score = s; bestI = i; bestJ = j; }
           }
@@ -371,6 +349,24 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
     return { playing, score: bestScore };
   };
 
+  // Random-restart seed: shuffles all players then greedily fills 12 while
+  // respecting the overseas cap. Helps escape local optima that every
+  // greedy/previous seed converges to.
+  const buildRandomSeed = () => {
+    const shuffled = [...allPlayers].sort(() => Math.random() - 0.5);
+    const playing = []; const bench = []; let overseas = 0;
+    for (const p of shuffled) {
+      if (playing.length >= targetSize || (isOverseas(p) && overseas >= MAX_OVERSEAS_PLAYING)) bench.push(p);
+      else { playing.push(p); if (isOverseas(p)) overseas += 1; }
+    }
+    while (playing.length < targetSize && bench.length > 0) {
+      const idx = bench.findIndex((p) => !isOverseas(p));
+      if (idx === -1) break;
+      playing.push(bench.splice(idx, 1)[0]);
+    }
+    return { playing, bench };
+  };
+
   const seeds = [];
   const prevIds     = new Set((previousPlaying12Ids || []).map(String));
   const prevPlaying = (previousPlaying12Ids || []).map((id) => playerById.get(String(id))).filter(Boolean);
@@ -387,6 +383,9 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
     if (padPlaying.length === targetSize) seeds.push({ playing: padPlaying, bench: padBench });
   }
   seeds.push(buildGreedySeed());
+  // Two random restarts — independent starting points reduce local-optima risk.
+  seeds.push(buildRandomSeed());
+  seeds.push(buildRandomSeed());
 
   let best = null;
   for (const seed of seeds) {
@@ -394,13 +393,14 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
     if (!best || result.score > best.score) best = result;
   }
 
-  if (fastMode) {
-    const searchPool = buildRankingSearchPool(best?.playing ?? []);
-    const bestFromSearch = await exhaustiveSearchOnPool(searchPool, best?.playing ?? seeds[0].playing);
-    const searchedScore = exactScoreFn(bestFromSearch);
-    if (!best || searchedScore > best.score) {
-      best = { playing: bestFromSearch, score: searchedScore };
-    }
+  // Exhaustive DFS over the best 16-player search pool — always run, not just in
+  // fastMode. The 1-opt finds a good local optimum; the DFS guarantees we haven't
+  // missed the true best subset within the top candidate pool.
+  const searchPool = buildRankingSearchPool(best?.playing ?? []);
+  const bestFromSearch = await exhaustiveSearchOnPool(searchPool, best?.playing ?? seeds[0].playing);
+  const searchedScore = exactScoreFn(bestFromSearch);
+  if (!best || searchedScore > best.score) {
+    best = { playing: bestFromSearch, score: searchedScore };
   }
 
   // Final safety: raw previous 12 always wins if it scores higher
@@ -411,11 +411,10 @@ const computeBestPlaying12 = async (allPlayers, previousPlaying12Ids = [], objFn
   return best.playing;
 };
 
-// DB-backed wrapper — used by live auction after every sale.
-// fastMode=true from ranking generation: lightweight local search + bounded exact DFS.
-const computePlaying12 = async (teamId, previousPlaying12Ids = [], skip2opt = false, fastMode = false) => {
+// DB-backed wrapper — used by ranking generation and live auction.
+const computePlaying12 = async (teamId, previousPlaying12Ids = [], skip2opt = false) => {
   const allPlayers = await Player.find({ team: teamId, status: 'sold' }).lean();
-  const playing    = await computeBestPlaying12(allPlayers, previousPlaying12Ids, null, skip2opt, fastMode);
+  const playing    = await computeBestPlaying12(allPlayers, previousPlaying12Ids, null, skip2opt);
   return playing.map((p) => p._id);
 };
 
