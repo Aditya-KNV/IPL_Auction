@@ -12,7 +12,7 @@ const InjuryTag = ({ risk }) => {
   if (risk === undefined || risk === null) return null;
   if (risk < 4) return null; // only show if notable
   const cfg = risk >= 8
-    ? { text: 'High Risk', color: '#FF3355', bg: 'rgba(255,51,85,0.08)',  border: 'rgba(255,51,85,0.22)'  }
+    ? { text: 'High Risk', color: 'rgb(var(--bid-red))', bg: 'rgb(var(--bid-red) / 0.08)',  border: 'rgb(var(--bid-red) / 0.22)'  }
     : risk >= 6
     ? { text: 'Med Risk',  color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.22)' }
     : { text: 'Low Risk',  color: '#eab308', bg: 'rgba(234,179,8,0.08)',  border: 'rgba(234,179,8,0.22)'  };
@@ -38,28 +38,28 @@ export default function PlayerCard({ player, currentBid, highlighted, compact, o
         ${onViewStats ? 'cursor-pointer' : ''}`}
       style={{
         border: highlighted
-          ? `1px solid rgba(255,255,255,0.10)`
-          : '1px solid rgba(255,255,255,0.06)',
-        background: '#0D0F18',
-        backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.022) 0%, transparent 55%)',
+          ? `1px solid rgb(var(--fg) / 0.10)`
+          : '1px solid rgb(var(--fg) / 0.06)',
+        background: 'rgb(var(--surface))',
+        backgroundImage: 'linear-gradient(to bottom, rgb(var(--fg) / 0.022) 0%, transparent 55%)',
         boxShadow: highlighted
-          ? `inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px ${role.color}15, 0 2px 8px rgba(0,0,0,0.3)`
-          : 'inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 8px rgba(0,0,0,0.25)',
+          ? `inset 0 1px 0 rgb(var(--fg) / 0.06), 0 4px 20px ${role.color}15, 0 2px 8px rgb(var(--shadow) / 0.3)`
+          : 'inset 0 1px 0 rgb(var(--fg) / 0.04), 0 2px 8px rgb(var(--shadow) / 0.25)',
         ...(onViewStats ? {
           transition: 'border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease',
         } : {}),
       }}
       onMouseEnter={onViewStats ? (e) => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+        e.currentTarget.style.borderColor = 'rgb(var(--fg) / 0.12)';
         e.currentTarget.style.transform   = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow   = `inset 0 1px 0 rgba(255,255,255,0.07), 0 8px 24px rgba(0,0,0,0.4)`;
+        e.currentTarget.style.boxShadow   = `inset 0 1px 0 rgb(var(--fg) / 0.07), 0 8px 24px rgb(var(--shadow) / 0.4)`;
       } : undefined}
       onMouseLeave={onViewStats ? (e) => {
-        e.currentTarget.style.borderColor = highlighted ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)';
+        e.currentTarget.style.borderColor = highlighted ? 'rgb(var(--fg) / 0.10)' : 'rgb(var(--fg) / 0.06)';
         e.currentTarget.style.transform   = 'translateY(0)';
         e.currentTarget.style.boxShadow   = highlighted
-          ? `inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px ${role.color}15, 0 2px 8px rgba(0,0,0,0.3)`
-          : 'inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 8px rgba(0,0,0,0.25)';
+          ? `inset 0 1px 0 rgb(var(--fg) / 0.06), 0 4px 20px ${role.color}15, 0 2px 8px rgb(var(--shadow) / 0.3)`
+          : 'inset 0 1px 0 rgb(var(--fg) / 0.04), 0 2px 8px rgb(var(--shadow) / 0.25)';
       } : undefined}
     >
       {/* Role-colored top stripe */}
@@ -140,10 +140,10 @@ export default function PlayerCard({ player, currentBid, highlighted, compact, o
       {/* Footer — only render if there's something meaningful to show */}
       {(auctionSet || captaincy > 0 || onViewStats) && (
         <div className="flex items-center gap-2 px-4 pb-3 pt-0"
-             style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+             style={{ borderTop: '1px solid rgb(var(--fg) / 0.04)' }}>
           {auctionSet && (
             <span className="text-[10px] font-medium rounded-full px-2 py-0.5"
-                  style={{ color: 'rgba(255,208,96,0.7)', background: 'rgba(255,208,96,0.06)', border: '1px solid rgba(255,208,96,0.15)' }}>
+                  style={{ color: 'rgb(var(--gold-bright) / 0.85)', background: 'rgb(var(--gold-bright) / 0.06)', border: '1px solid rgb(var(--gold-bright) / 0.15)' }}>
               {auctionSet}
             </span>
           )}

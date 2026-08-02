@@ -51,7 +51,7 @@ export default function BidFeed({ bids, currentPlayer }) {
             {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold leading-tight truncate"
-                style={{ color: isTop ? (team?.color || '#fff') : 'rgba(255,255,255,0.55)' }}>
+                style={{ color: isTop ? (team?.color || 'rgb(var(--fg))') : 'rgb(var(--fg) / 0.55)' }}>
                 {team?.shortName || team?.name || '—'}
               </p>
               <p className="text-[9px] text-white/25 mt-0.5 tabular-nums">{time}</p>

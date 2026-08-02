@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider }  from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { RoomProvider }  from './context/RoomContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { useSocket }     from './context/SocketContext';
 import Navbar        from './components/common/Navbar';
 import LoginPage     from './pages/LoginPage';
@@ -107,8 +108,8 @@ function AppShell() {
   return (
     <>
       <GlobalAuctionSounds />
-      <Navbar />
-      <div className={isRoomRoute ? 'pt-[73px] h-screen overflow-hidden' : 'pt-[73px] min-h-screen'}>
+      {!isRoomRoute && <Navbar />}
+      <div className={isRoomRoute ? 'h-screen overflow-hidden' : 'pt-[73px] min-h-screen'}>
         <Routes>
           <Route path="/login"    element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -127,14 +128,16 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <SocketProvider>
-        <RoomProvider>
-          <BrowserRouter>
-            <AppShell />
-          </BrowserRouter>
-        </RoomProvider>
-      </SocketProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <SocketProvider>
+          <RoomProvider>
+            <BrowserRouter>
+              <AppShell />
+            </BrowserRouter>
+          </RoomProvider>
+        </SocketProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

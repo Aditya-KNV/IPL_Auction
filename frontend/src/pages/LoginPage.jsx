@@ -58,11 +58,11 @@ export default function LoginPage() {
 
         {/* Form card */}
         <div className="card p-6 space-y-4"
-             style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 60px rgba(0,0,0,0.5)' }}>
+             style={{ boxShadow: 'inset 0 1px 0 rgb(var(--fg) / 0.04), 0 0 60px rgb(var(--shadow) / 0.5)' }}>
 
           {error && (
             <div className="flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[13px]"
-                 style={{ background: 'rgba(255,51,85,0.07)', border: '1px solid rgba(255,51,85,0.18)', color: '#FF3355' }}>
+                 style={{ background: 'rgb(var(--bid-red) / 0.07)', border: '1px solid rgb(var(--bid-red) / 0.18)', color: 'rgb(var(--bid-red))' }}>
               <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
               </svg>

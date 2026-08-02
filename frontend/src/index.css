@@ -2,19 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ────────────────────────────────────────────────────────── */
+/* RGB triplets (space-separated, no commas) so Tailwind's rgb(var(--x) / <alpha-value>)
+   pattern and CSS's rgb(var(--x) / N) syntax can both apply opacity. */
+:root,
+:root[data-theme="dark"] {
+  --obsidian:     7 8 14;
+  --surface:      13 15 24;
+  --surface-2:    17 20 32;
+  --surface-3:    22 27 46;
+  --neon:         0 255 102;
+  --neon-dim:     0 204 82;
+  --bid-red:      255 51 85;
+  --gold-bright:  255 208 96;
+  --text-primary: 240 244 255;
+  --text-muted:   139 146 165;
+  --text-subtle:  69 78 102;
+  --fg:           255 255 255; /* replaces literal "white" throughout the app */
+  --shadow:       0 0 0;
+  --body-bg-dot:  255 255 255;
+}
+
+:root[data-theme="light"] {
+  --obsidian:     245 247 250;
+  --surface:      255 255 255;
+  --surface-2:    240 242 246;
+  --surface-3:    228 231 238;
+  --neon:         4 148 79;    /* deepened green — legible on white, still reads "neon" */
+  --neon-dim:     3 121 63;
+  --bid-red:      216 27 70;   /* deepened red */
+  --gold-bright:  166 106 0;   /* deepened gold */
+  --text-primary: 16 19 28;
+  --text-muted:   86 93 112;
+  --text-subtle:  144 152 172;
+  --fg:           16 19 28;    /* dark foreground — "white/NN" utilities become correct greys */
+  --shadow:       15 23 42;
+  --body-bg-dot:  15 23 42;
+}
+
 /* ── Base ────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background-color: #07080E;
-  color: #C8CEDF;
+  background-color: rgb(var(--obsidian));
+  color: rgb(var(--text-muted));
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  transition: background-color 200ms ease, color 200ms ease;
   /* Subtle dot grid on page bg */
-  background-image: radial-gradient(rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(var(--body-bg-dot) / 0.018) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -37,25 +76,25 @@ body::after {
   /* Card ------------------------------------------------------------------ */
   .card {
     border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.06);
-    background-color: #0D0F18;
-    background-image: linear-gradient(to bottom, rgba(255,255,255,0.025) 0%, transparent 55%);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 2px 12px rgba(0,0,0,0.28);
+    border: 1px solid rgb(var(--fg) / 0.06);
+    background-color: rgb(var(--surface));
+    background-image: linear-gradient(to bottom, rgb(var(--fg) / 0.025) 0%, transparent 55%);
+    box-shadow: inset 0 1px 0 rgb(var(--fg) / 0.045), 0 2px 12px rgb(var(--shadow) / 0.28);
   }
 
   /* Card with hover lift -------------------------------------------------- */
   .card-lift {
     border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.06);
-    background-color: #0D0F18;
-    background-image: linear-gradient(to bottom, rgba(255,255,255,0.025) 0%, transparent 55%);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 2px 12px rgba(0,0,0,0.28);
+    border: 1px solid rgb(var(--fg) / 0.06);
+    background-color: rgb(var(--surface));
+    background-image: linear-gradient(to bottom, rgb(var(--fg) / 0.025) 0%, transparent 55%);
+    box-shadow: inset 0 1px 0 rgb(var(--fg) / 0.045), 0 2px 12px rgb(var(--shadow) / 0.28);
     transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
     cursor: pointer;
   }
   .card-lift:hover {
-    border-color: rgba(255,255,255,0.11);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 8px 28px rgba(0,0,0,0.5);
+    border-color: rgb(var(--fg) / 0.11);
+    box-shadow: inset 0 1px 0 rgb(var(--fg) / 0.07), 0 8px 28px rgb(var(--shadow) / 0.5);
     transform: translateY(-2px);
   }
   .card-lift:active {
@@ -66,27 +105,27 @@ body::after {
   /* Input field ----------------------------------------------------------- */
   .field {
     width: 100%;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
+    background: rgb(var(--fg) / 0.03);
+    border: 1px solid rgb(var(--fg) / 0.07);
     border-radius: 12px;
     padding: 10px 14px;
-    color: #F0F4FF;
+    color: rgb(var(--text-primary));
     font-size: 14px;
     line-height: 1.5;
     transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
   }
-  .field::placeholder { color: rgba(255,255,255,0.2); }
+  .field::placeholder { color: rgb(var(--fg) / 0.32); }
   .field:focus {
     outline: none;
-    border-color: rgba(0,255,102,0.38);
-    background: rgba(0,255,102,0.02);
-    box-shadow: 0 0 0 3px rgba(0,255,102,0.07);
+    border-color: rgb(var(--neon) / 0.38);
+    background: rgb(var(--neon) / 0.04);
+    box-shadow: 0 0 0 3px rgb(var(--neon) / 0.1);
   }
-  .field.error { border-color: rgba(255,51,85,0.45); }
+  .field.error { border-color: rgb(var(--bid-red) / 0.45); }
   .field.error:focus {
-    border-color: rgba(255,51,85,0.6);
-    background: rgba(255,51,85,0.02);
-    box-shadow: 0 0 0 3px rgba(255,51,85,0.07);
+    border-color: rgb(var(--bid-red) / 0.6);
+    background: rgb(var(--bid-red) / 0.04);
+    box-shadow: 0 0 0 3px rgb(var(--bid-red) / 0.1);
   }
 
   /* Primary CTA button ---------------------------------------------------- */
@@ -96,7 +135,7 @@ body::after {
     justify-content: center;
     gap: 8px;
     width: 100%;
-    background: #00FF66;
+    background: rgb(var(--neon));
     color: #000;
     font-weight: 600;
     font-size: 14px;
@@ -109,7 +148,7 @@ body::after {
   }
   .btn-cta:hover {
     filter: brightness(1.06);
-    box-shadow: 0 0 22px rgba(0,255,102,0.22), 0 0 0 1px rgba(0,255,102,0.2);
+    box-shadow: 0 0 22px rgb(var(--neon) / 0.22), 0 0 0 1px rgb(var(--neon) / 0.2);
   }
   .btn-cta:active { transform: scale(0.982); }
   .btn-cta:disabled {
@@ -126,8 +165,8 @@ body::after {
     justify-content: center;
     gap: 8px;
     background: transparent;
-    border: 1px solid rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.5);
+    border: 1px solid rgb(var(--fg) / 0.08);
+    color: rgb(var(--fg) / 0.5);
     font-size: 13px;
     font-weight: 500;
     border-radius: 10px;
@@ -136,9 +175,9 @@ body::after {
     cursor: pointer;
   }
   .btn-ghost:hover {
-    background: rgba(255,255,255,0.04);
-    border-color: rgba(255,255,255,0.13);
-    color: rgba(255,255,255,0.8);
+    background: rgb(var(--fg) / 0.04);
+    border-color: rgb(var(--fg) / 0.13);
+    color: rgb(var(--fg) / 0.8);
   }
   .btn-ghost:active { transform: scale(0.98); }
 
@@ -148,13 +187,13 @@ body::after {
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.3);
+    color: rgb(var(--fg) / 0.3);
   }
 
   /* Gradient divider ------------------------------------------------------ */
   .hr {
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07) 25%, rgba(255,255,255,0.07) 75%, transparent);
+    background: linear-gradient(90deg, transparent, rgb(var(--fg) / 0.07) 25%, rgb(var(--fg) / 0.07) 75%, transparent);
     border: none;
   }
 }
@@ -162,9 +201,9 @@ body::after {
 /* ── Ambient background glows ────────────────────────────────────────────── */
 .ambient-glows {
   background-image:
-    radial-gradient(ellipse 55% 45% at 15% 55%, rgba(0,79,199,.08) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 35% at 82% 20%, rgba(0,255,102,.05) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 50% at 55% 90%, rgba(236,28,36,.05) 0%, transparent 60%);
+    radial-gradient(ellipse 55% 45% at 15% 55%, rgb(0 79 199 / 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 35% at 82% 20%, rgb(var(--neon) / 0.05) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 55% 90%, rgb(236 28 36 / 0.05) 0%, transparent 60%);
 }
 
 /* ── Scrollbars ──────────────────────────────────────────────────────────── */
@@ -174,24 +213,24 @@ body::after {
 .custom-scrollbar::-webkit-scrollbar { width: 3px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.07);
+  background: rgb(var(--fg) / 0.12);
   border-radius: 10px;
 }
-.custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.07) transparent; }
+.custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgb(var(--fg) / 0.12) transparent; }
 
 /* ── Typography ──────────────────────────────────────────────────────────── */
 .bebas { font-family: 'Bebas Neue', sans-serif; }
 
-.neon-glow { text-shadow: 0 0 16px rgba(0,255,102,.5),  0 0 38px rgba(0,255,102,.18); }
-.gold-glow { text-shadow: 0 0 16px rgba(255,208,96,.5), 0 0 38px rgba(255,208,96,.18); }
-.red-bloom { text-shadow: 0 0 16px rgba(255,51,85,.55), 0 0 38px rgba(255,51,85,.2);  }
+.neon-glow { text-shadow: 0 0 16px rgb(var(--neon) / .5),  0 0 38px rgb(var(--neon) / .18); }
+.gold-glow { text-shadow: 0 0 16px rgb(var(--gold-bright) / .5), 0 0 38px rgb(var(--gold-bright) / .18); }
+.red-bloom { text-shadow: 0 0 16px rgb(var(--bid-red) / .55), 0 0 38px rgb(var(--bid-red) / .2);  }
 
 /* ── Scanlines ───────────────────────────────────────────────────────────── */
 .scanlines::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,.09) 3px, rgba(0,0,0,.09) 4px);
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgb(var(--shadow) / .09) 3px, rgb(var(--shadow) / .09) 4px);
   pointer-events: none;
   border-radius: inherit;
 }
@@ -202,19 +241,19 @@ body::after {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(circle, rgba(255,255,255,.028) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgb(var(--fg) / .04) 1px, transparent 1px);
   background-size: 22px 22px;
   z-index: 0;
 }
 
 /* ── Border dim ──────────────────────────────────────────────────────────── */
-.border-dim { border-color: rgba(255,255,255,0.06); }
+.border-dim { border-color: rgb(var(--fg) / 0.06); }
 
 /* ── Selection ───────────────────────────────────────────────────────────── */
-::selection { background: rgba(0,255,102,0.18); color: #fff; }
+::selection { background: rgb(var(--neon) / 0.18); color: rgb(var(--text-primary)); }
 
 /* ── Focus ring ──────────────────────────────────────────────────────────── */
-:focus-visible { outline: 2px solid rgba(0,255,102,0.5); outline-offset: 2px; }
+:focus-visible { outline: 2px solid rgb(var(--neon) / 0.5); outline-offset: 2px; }
 
 /* ── Animations ──────────────────────────────────────────────────────────── */
 /* (keyframes remain the same, referenced by tailwind.config.js) */

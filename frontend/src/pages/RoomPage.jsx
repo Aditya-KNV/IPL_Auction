@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useRoom } from "../context/RoomContext";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
@@ -6,11 +7,11 @@ import CreateRoomForm from "../components/room/CreateRoomForm";
 import JoinRoomForm from "../components/room/JoinRoomForm";
 import RoomLobby from "../components/room/RoomLobby";
 import AuctionBoard from "../components/auction/AuctionBoard";
+import ThemeToggle from "../components/common/ThemeToggle";
 import { useMyTeam } from "../hooks/useMyTeam";
 import OtherTeamsPanel from "../components/auction/OtherTeamsPanel";
 import MyTeamPanel from "../components/auction/MyTeamPanel";
 import PlayerStatsModal from "../components/players/PlayerStatsModal";
-import DashboardPage from "./DashboardPage";
 import RankingPage from "./RankingPage";
 import api from "../services/api";
 import { STATUS_COLOR, getDisplayStatus } from "../utils/playerDisplay";
@@ -498,7 +499,6 @@ const TABS = [
   "Auction",
   "Teams",
   "Players",
-  "Dashboard",
   "Rankings",
   "Rules",
   "Settings",
@@ -1077,7 +1077,8 @@ function RulesTab() {
 
 function InRoomLayout() {
   const { room, teamAssignments } = useRoom();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Lobby");
 
   useEffect(() => {
@@ -1090,8 +1091,8 @@ function InRoomLayout() {
 
   return (
     <div className="h-full bg-obsidian overflow-hidden">
-      <div className="fixed top-[57px] inset-x-0 z-40 bg-obsidian/95 border-b border-white/[0.06] backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 flex items-center gap-1 overflow-x-auto scrollbar-none">
+      <div className="fixed top-0 inset-x-0 z-40 h-[52px] bg-obsidian/95 border-b border-white/[0.06] backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto h-full px-2 sm:px-6 flex items-center gap-1 overflow-x-auto scrollbar-none">
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -1115,11 +1116,22 @@ function InRoomLayout() {
               {room?.code}
             </span>
           </div>
+
+          <div className="flex-shrink-0 ml-auto pl-2 flex items-center gap-2">
+            <ThemeToggle />
+            <button onClick={() => { logout(); navigate('/login'); }}
+              className="text-[11px] font-medium text-white/35 hover:text-white/70
+                         border border-white/[0.07] hover:border-white/[0.12]
+                         px-2.5 py-1.5 rounded-lg transition-all duration-150
+                         hover:bg-white/[0.03] whitespace-nowrap">
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
 
       {/* All tabs are always mounted — hidden via CSS to preserve state across tab switches */}
-      <div className="h-full pt-[57px] overflow-hidden">
+      <div className="h-full pt-[52px] overflow-hidden">
         <div className={`h-full overflow-y-auto ${activeTab === "Lobby" ? "" : "hidden"}`}>
           <div className="max-w-2xl mx-auto px-4 py-8">
             <RoomLobby />
@@ -1160,10 +1172,6 @@ function InRoomLayout() {
           <PlayersTab />
         </div>
 
-        <div className={`h-full overflow-y-auto ${activeTab === "Dashboard" ? "" : "hidden"}`}>
-          <DashboardPage />
-        </div>
-
         <div className={`h-full overflow-y-auto ${activeTab === "Rankings" ? "" : "hidden"}`}>
           <RankingPage />
         </div>
@@ -1182,26 +1190,41 @@ function InRoomLayout() {
 
 export default function RoomPage() {
   const { status, error } = useRoom();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   if (status === "in-room") return <InRoomLayout />;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      <div className="text-center mb-10">
-        <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-2">Lobby</p>
-        <h1 className="font-bebas text-5xl tracking-wider text-white">Auction Rooms</h1>
-        <p className="text-white/40 mt-2 text-sm">Create a private room or join one with a code</p>
+    <div className="h-full overflow-y-auto">
+      <div className="flex items-center justify-end gap-2 px-4 pt-4">
+        <ThemeToggle />
+        <button onClick={() => { logout(); navigate('/login'); }}
+          className="text-[12px] font-medium text-white/35 hover:text-white/70
+                     border border-white/[0.07] hover:border-white/[0.12]
+                     px-3 py-1.5 rounded-lg transition-all duration-150
+                     hover:bg-white/[0.03]">
+          Sign out
+        </button>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 bg-bid-red/10 border border-bid-red/25 text-bid-red text-sm px-4 py-3 rounded-xl mb-6">
-          <span>⚠</span> {error}
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <div className="text-center mb-10">
+          <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-2">Lobby</p>
+          <h1 className="font-bebas text-5xl tracking-wider text-white">Auction Rooms</h1>
+          <p className="text-white/40 mt-2 text-sm">Create a private room or join one with a code</p>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <CreateRoomForm />
-        <JoinRoomForm />
+        {error && (
+          <div className="flex items-center gap-2 bg-bid-red/10 border border-bid-red/25 text-bid-red text-sm px-4 py-3 rounded-xl mb-6">
+            <span>⚠</span> {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <CreateRoomForm />
+          <JoinRoomForm />
+        </div>
       </div>
     </div>
   );

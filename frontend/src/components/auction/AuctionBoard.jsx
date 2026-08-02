@@ -4,6 +4,7 @@ import { useMyTeam }   from '../../hooks/useMyTeam';
 import { useAuth }     from '../../context/AuthContext';
 import { useRoom }     from '../../context/RoomContext';
 import { formatCroreAmount } from '../../utils/currency';
+import { hasBattingStats, hasBowlingStats } from '../../utils/playerDisplay';
 import { setAudioMuted, isAudioMuted } from '../../utils/auctionAudio';
 
 import PlayerStatsModal  from '../players/PlayerStatsModal';
@@ -12,7 +13,6 @@ import BidFeed           from './BidFeed';
 import AuctionTimer      from './AuctionTimer';
 import AuctionControls   from './AuctionControls';
 import AcceleratedModal  from './AcceleratedModal';
-import OtherTeamsPanel   from './OtherTeamsPanel';
 import SoldTicker        from './SoldTicker';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -24,28 +24,100 @@ const ROLE_COLOR = {
   'All-Rounder':  '#a855f7',
   'Wicket-Keeper':'#f59e0b',
 };
+const ROLE_LABEL = {
+  Batsman:'BAT', Bowler:'BWL', 'All-Rounder':'AR', 'Wicket-Keeper':'WK',
+};
+
+// ── Player stats sections (right panel) ─────────────────────────────────────
+const buildSections = (player) => {
+  if (!player) return [];
+  const sections = [];
+  if (hasBattingStats(player.role)) {
+    sections.push({
+      title:'Batting Phases', color:'text-blue-400', border:'border-blue-500/20', bg:'bg-blue-500/10',
+      items:[
+        { label:'Powerplay', rating: player.batting?.phases?.powerplay?.rating ?? 0 },
+        { label:'Middle',    rating: player.batting?.phases?.middle?.rating    ?? 0 },
+        { label:'Death',     rating: player.batting?.phases?.death?.rating     ?? 0 },
+      ],
+    });
+    sections.push({
+      title:'Batting Skills', color:'text-sky-400', border:'border-sky-500/20', bg:'bg-sky-500/10',
+      items:[
+        { label:'Finishing',  rating: player.batting?.skills?.finishing     ?? 0 },
+        { label:'Power Hit',  rating: player.batting?.skills?.power_hitting ?? 0 },
+        { label:'Anchor',     rating: player.batting?.skills?.anchor        ?? 0 },
+        { label:'Spin Play',  rating: player.batting?.skills?.spin_play     ?? 0 },
+        { label:'Pace Play',  rating: player.batting?.skills?.pace_play     ?? 0 },
+      ],
+    });
+  }
+  if (hasBowlingStats(player.role)) {
+    sections.push({
+      title:'Bowling Phases', color:'text-red-400', border:'border-red-500/20', bg:'bg-red-500/10',
+      items:[
+        { label:'Powerplay', rating: player.bowling?.phases?.powerplay ?? 0 },
+        { label:'Middle',    rating: player.bowling?.phases?.middle    ?? 0 },
+        { label:'Death',     rating: player.bowling?.phases?.death     ?? 0 },
+      ],
+    });
+    sections.push({
+      title:'Bowling Skills', color:'text-rose-400', border:'border-rose-500/20', bg:'bg-rose-500/10',
+      items:[
+        { label:'Variations', rating: player.bowling?.skills?.variations ?? 0 },
+        { label:'Yorker',     rating: player.bowling?.skills?.yorker     ?? 0 },
+        { label:'Bouncer',    rating: player.bowling?.skills?.bouncer    ?? 0 },
+      ],
+    });
+  }
+  return sections;
+};
+
+const RatingChip = ({ label, rating, color, border, bg }) => (
+  <div className={`rounded-lg border ${border} ${bg} px-3 py-2`}>
+    <p className="text-[9px] uppercase tracking-[0.1em] text-white/40">{label}</p>
+    <p className={`mt-0.5 text-lg font-black leading-none ${color}`}>
+      {rating ?? 0}<span className="text-[10px] ml-0.5 font-semibold opacity-50">/10</span>
+    </p>
+  </div>
+);
+
 // Smooth odometer counter hook
 function useOdometer(target) {
   const [display, setDisplay] = useState(target);
-  const rafRef  = useRef(null);
-  const fromRef = useRef(target);
+  const rafRef   = useRef(null);
+  // Tracks the true live (possibly mid-animation) value, so a target change that
+  // interrupts an in-flight animation continues smoothly from wherever the
+  // display actually is, rather than from a stale "last fully-settled" value.
+  const valueRef = useRef(target);
 
   useEffect(() => {
-    const from     = fromRef.current;
-    const to       = target;
+    const from = valueRef.current;
+    const to   = target;
+
+    cancelAnimationFrame(rafRef.current);
+
     if (from === to) return;
+
     const duration = 600;
     const start    = performance.now();
 
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(function tick(now) {
-      const p = Math.min((now - start) / duration, 1);
+    const tick = (now) => {
+      // Clamp to [0, 1] on both ends — without the lower clamp, a `now` that lands
+      // before `start` (e.g. from React StrictMode's dev-only double-invocation of
+      // this effect scheduling a second rAF in the same frame) makes p negative,
+      // which sends the ease-out curve negative and the displayed value crashes
+      // toward/below zero for a frame or two.
+      const p = Math.max(0, Math.min((now - start) / duration, 1));
       const e = 1 - Math.pow(1 - p, 3); // ease-out cubic
       const v = from + (to - from) * e;
+      valueRef.current = v;
       setDisplay(v);
       if (p < 1) rafRef.current = requestAnimationFrame(tick);
-      else { setDisplay(to); fromRef.current = to; }
-    });
+      else { valueRef.current = to; setDisplay(to); }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
     return () => cancelAnimationFrame(rafRef.current);
   }, [target]);
 
@@ -154,7 +226,7 @@ export default function AuctionBoard() {
     beginAcceleratedAuction, cancelAcceleratedMode,
   } = useAuction();
 
-  const { myTeam, allTeams, loading: teamLoading } = useMyTeam();
+  const { allTeams, loading: teamLoading } = useMyTeam();
 
   // Accumulate sold history for the ticker
   useEffect(() => {
@@ -177,6 +249,7 @@ export default function AuctionBoard() {
   const roleColor  = currentPlayer ? (ROLE_COLOR[currentPlayer.role] || '#6b7280') : '#004FC7';
   const leadColor  = highestBidder?.color || (amLeading ? '#FFD060' : '#374151');
   const battingPositions = currentPlayer?.tactical?.positions ?? [];
+  const sections   = buildSections(currentPlayer);
 
   return (
     <>
@@ -205,20 +278,20 @@ export default function AuctionBoard() {
                       relative ambient-glows">
 
         {/* ── Status strip ── */}
-        <div className="flex-shrink-0 h-[46px] flex items-center justify-between px-5
+        <div className="flex-shrink-0 h-[54px] flex items-center justify-between px-5
                         border-b border-white/[0.05] bg-obsidian/80 backdrop-blur-sm z-10">
           <div className="flex items-center gap-4">
-            <span className="text-white/30 text-[11px] font-semibold">
+            <span className="text-white/40 text-sm font-semibold">
               {soldCount} sold · {unsoldCount} unsold
             </span>
 
             <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}
-              className="flex items-center justify-center w-6 h-6 rounded-full
+              className="flex items-center justify-center w-10 h-10 rounded-full
                          border border-white/[0.08] bg-white/[0.04]
-                         text-white/30 hover:text-white/60 transition">
+                         text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition">
               {muted
-                ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>
-                : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M12 6v12m-6.586-3H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.414l4.293-4.293A1 1 0 0112 5v14a1 1 0 01-1.293.95L5.414 15z" /></svg>
+                ? <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>
+                : <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M12 6v12m-6.586-3H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.414l4.293-4.293A1 1 0 0112 5v14a1 1 0 01-1.293.95L5.414 15z" /></svg>
               }
             </button>
           </div>
@@ -228,12 +301,12 @@ export default function AuctionBoard() {
               <AuctionControls session={session} onRefetch={refetch} onAccelerated={initAcceleratedMode} />
             )}
             {isActive && (
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-bid-red animate-live-blink" />
-                <span className="text-bid-red text-[10px] font-black tracking-[2px]">LIVE</span>
+              <div className="flex items-center gap-1.5 px-1">
+                <span className="w-2 h-2 rounded-full bg-bid-red animate-live-blink" />
+                <span className="text-bid-red text-[11px] font-black tracking-[1.5px]">LIVE</span>
               </div>
             )}
-            <span className={`px-3 py-1 rounded-full text-[10px] font-black border tracking-[1.5px] uppercase
+            <span className={`px-3.5 py-1.5 rounded-full text-[11px] font-black border tracking-[1.2px] uppercase
                               ${STATUS_STYLE[statusKey] ?? STATUS_STYLE.waiting}`}>
               {statusKey}
             </span>
@@ -272,7 +345,7 @@ export default function AuctionBoard() {
                 {/* ── Top: player card (name, age, batting position, full stats) ── */}
                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar
                                 flex items-center justify-center px-8 py-4"
-                     style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                     style={{ borderBottom: '1px solid rgb(var(--fg) / 0.05)' }}>
                   <div className="w-full max-w-4xl flex items-center justify-center gap-8 lg:gap-14
                                   rounded-3xl border border-white/[0.06] bg-white/[0.015] px-10 py-8">
 
@@ -425,23 +498,58 @@ export default function AuctionBoard() {
             )}
           </main>
 
-          {/* RIGHT — Purse tracker ───────────────────────── */}
+          {/* RIGHT — Player stats ───────────────────────── */}
           <aside className="hidden lg:flex flex-col min-h-0 border-l border-white/[0.05]
                             bg-surface overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between
                             px-4 py-3 border-b border-white/[0.05]">
-              <span className="text-[9px] font-black tracking-[2.5px] text-white/30 uppercase">Team Purse</span>
-              <span className="text-[9px] text-white/20 bg-white/[0.04] border border-white/[0.06]
-                               px-2 py-0.5 rounded-full font-bold tracking-wider">
-                {allTeams.length} TEAMS
-              </span>
+              <span className="text-[9px] font-black tracking-[2.5px] text-white/30 uppercase">Player Stats</span>
+              {currentPlayer && (
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border tracking-wider"
+                      style={{ color: roleColor, background: roleColor + '15', borderColor: roleColor + '35' }}>
+                  {ROLE_LABEL[currentPlayer.role] ?? currentPlayer.role}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-              <OtherTeamsPanel
-                teams={allTeams}
-                myTeamId={myTeam?._id}
-                teamAssignments={teamAssignments}
-              />
+              {!currentPlayer ? (
+                <div className="flex items-center justify-center h-full px-6 text-center">
+                  <p className="text-white/20 text-xs">No player currently up for auction</p>
+                </div>
+              ) : sections.length === 0 ? (
+                <div className="flex items-center justify-center h-full px-6 text-center">
+                  <p className="text-white/20 text-xs">No rated stats for this player</p>
+                </div>
+              ) : (
+                <div className="px-4 py-4 space-y-5">
+                  <div>
+                    <p className="text-white font-bold text-sm truncate">{currentPlayer.name}</p>
+                    <p className="text-white/30 text-[11px] mt-0.5">
+                      {currentPlayer.role}
+                      {currentPlayer.nationality && ` · ${currentPlayer.nationality}`}
+                    </p>
+                  </div>
+                  {sections.map(sec => (
+                    <div key={sec.title}>
+                      <p className={`text-[10px] font-black uppercase tracking-[2px] mb-2 ${sec.color}`}>
+                        {sec.title}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {sec.items.map(item => (
+                          <RatingChip key={item.label} {...item}
+                            color={sec.color} border={sec.border} bg={sec.bg} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => setModalPlayer(currentPlayer)}
+                    className="w-full text-[11px] font-bold tracking-wider text-white/40
+                               border border-white/[0.1] hover:border-white/25
+                               hover:text-white/70 px-4 py-2.5 rounded-lg transition">
+                    FULL STATS
+                  </button>
+                </div>
+              )}
             </div>
           </aside>
         </div>
