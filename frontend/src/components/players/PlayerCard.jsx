@@ -1,149 +1,166 @@
 import React from 'react';
 import { formatCroreAmount } from '../../utils/currency';
 
-const ROLE_BADGE = {
-  Batsman: { label: 'BAT', color: '#3b82f6' },
-  Bowler: { label: 'BWL', color: '#ef4444' },
-  'All-Rounder': { label: 'AR', color: '#a855f7' },
-  'Wicket-Keeper': { label: 'WK', color: '#f59e0b' },
+const ROLE_CONFIG = {
+  Batsman:         { label: 'BAT', color: '#3b82f6' },
+  Bowler:          { label: 'BWL', color: '#ef4444' },
+  'All-Rounder':   { label: 'AR',  color: '#a855f7' },
+  'Wicket-Keeper': { label: 'WK',  color: '#f59e0b' },
 };
 
-const PlayerSummary = ({ player, role, compact, highlighted, currentBid, isLive, injuryRisk }) => (
-  <div className={`flex items-center gap-4 ${compact ? 'p-4' : 'p-5'}`}>
-    <div
-      className={`${compact ? 'w-14 h-14 text-xl' : 'w-16 h-16 text-2xl'} rounded-full bg-gray-800 border-2 flex-shrink-0 flex items-center justify-center font-bold text-white uppercase`}
-      style={{ borderColor: `${role.color}66` }}
-    >
-      {player.imageUrl ? (
-        <img src={player.imageUrl} alt={player.name} className="h-full w-full rounded-full object-cover" />
-      ) : (
-        player.name?.[0] ?? '?'
-      )}
-    </div>
-
-    <div className="flex-1 min-w-0">
-      {highlighted && (
-        <div className="mb-0.5 flex items-center gap-2">
-          <span className="flex items-center gap-1 text-[10px] font-bold text-red-400 tracking-widest">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-            LIVE
-          </span>
-        </div>
-      )}
-      <h2 className={`truncate font-bold leading-tight text-white ${compact ? 'text-lg' : 'text-xl'}`}>
-        {player.name}
-      </h2>
-      <p className="mt-0.5 truncate text-xs text-gray-500">
-        {[player.nationality, player.age ? `${player.age} yrs` : null].filter(Boolean).join(" · ")}
-      </p>
-      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-        <span
-          className="inline-block rounded border px-2 py-0.5 text-[10px] font-bold"
-          style={{ color: role.color, borderColor: `${role.color}44`, backgroundColor: `${role.color}18` }}
-        >
-          {role.label} · {player.role}
-        </span>
-        {highlighted && (
-          <span className={`inline-flex items-center gap-0.5 rounded border px-2 py-0.5 text-[10px] font-bold ${
-            injuryRisk >= 8 ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-            injuryRisk >= 6 ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-            injuryRisk >= 4 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                              'bg-green-500/20 text-green-400 border-green-500/30'
-          }`}>
-            {injuryRisk >= 8 ? '🔴' : injuryRisk >= 6 ? '🟠' : injuryRisk >= 4 ? '🟡' : '🟢'} Risk {injuryRisk}/10
-          </span>
-        )}
-      </div>
-    </div>
-
-    {highlighted && (
-      <div className="flex-shrink-0 text-right">
-        <p className="text-[10px] uppercase tracking-wider text-gray-500">Base</p>
-        <p className="text-sm font-semibold tabular-nums text-gray-300">
-          Rs {formatCroreAmount(player.basePrice)} Cr
-        </p>
-        {isLive && (
-          <div className="mt-2">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">Bid</p>
-            <p className="text-xl font-black leading-tight tabular-nums text-ipl-gold">
-              Rs {formatCroreAmount(currentBid)}
-              <span className="ml-0.5 text-xs font-normal text-gray-400">Cr</span>
-            </p>
-          </div>
-        )}
-      </div>
-    )}
-  </div>
-);
+const InjuryTag = ({ risk }) => {
+  if (risk === undefined || risk === null) return null;
+  if (risk < 4) return null; // only show if notable
+  const cfg = risk >= 8
+    ? { text: 'High Risk', color: '#FF3355', bg: 'rgba(255,51,85,0.08)',  border: 'rgba(255,51,85,0.22)'  }
+    : risk >= 6
+    ? { text: 'Med Risk',  color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.22)' }
+    : { text: 'Low Risk',  color: '#eab308', bg: 'rgba(234,179,8,0.08)',  border: 'rgba(234,179,8,0.22)'  };
+  return (
+    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold"
+          style={{ color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+      {cfg.text}
+    </span>
+  );
+};
 
 export default function PlayerCard({ player, currentBid, highlighted, compact, onViewStats }) {
-  const role = ROLE_BADGE[player.role] ?? { label: '?', color: '#6b7280' };
-  const isLive = highlighted && currentBid > 0;
-  const positions = Array.isArray(player.tactical?.positions) && player.tactical.positions.length
-    ? player.tactical.positions.join(', ')
-    : null;
-  const bowlingPhases = Array.isArray(player.bowling?.positions)
-    ? [['PP', 0], ['MID', 1], ['DEATH', 2]].filter(([, i]) => player.bowling.positions[i] === 1).map(([l]) => l)
-    : [];
-
-  const captaincy = player.tactical?.captaincy ?? 0;
+  const role       = ROLE_CONFIG[player.role] ?? { label: '?', color: '#6b7280' };
+  const isLive     = highlighted && currentBid > 0;
   const injuryRisk = player.fitness?.injury_risk ?? 0;
-  const hasFooter = player.auctionSetName || positions || bowlingPhases.length > 0 || captaincy > 0 || onViewStats;
+  const captaincy  = player.tactical?.captaincy ?? 0;
+  const auctionSet = player.auctionSetName;
 
   return (
     <div
-      className={`overflow-hidden rounded-xl border bg-gray-900 transition-all ${
-        highlighted ? 'border-ipl-gold/50 shadow-lg shadow-ipl-gold/10' : 'border-gray-800'
-      } ${onViewStats ? 'cursor-pointer hover:border-ipl-gold/30 hover:bg-gray-900/80' : ''}`}
       onClick={onViewStats ?? undefined}
+      className={`relative overflow-hidden rounded-2xl transition-all duration-200
+        ${onViewStats ? 'cursor-pointer' : ''}`}
+      style={{
+        border: highlighted
+          ? `1px solid rgba(255,255,255,0.10)`
+          : '1px solid rgba(255,255,255,0.06)',
+        background: '#0D0F18',
+        backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.022) 0%, transparent 55%)',
+        boxShadow: highlighted
+          ? `inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px ${role.color}15, 0 2px 8px rgba(0,0,0,0.3)`
+          : 'inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 8px rgba(0,0,0,0.25)',
+        ...(onViewStats ? {
+          transition: 'border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease',
+        } : {}),
+      }}
+      onMouseEnter={onViewStats ? (e) => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+        e.currentTarget.style.transform   = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow   = `inset 0 1px 0 rgba(255,255,255,0.07), 0 8px 24px rgba(0,0,0,0.4)`;
+      } : undefined}
+      onMouseLeave={onViewStats ? (e) => {
+        e.currentTarget.style.borderColor = highlighted ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)';
+        e.currentTarget.style.transform   = 'translateY(0)';
+        e.currentTarget.style.boxShadow   = highlighted
+          ? `inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 20px ${role.color}15, 0 2px 8px rgba(0,0,0,0.3)`
+          : 'inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 8px rgba(0,0,0,0.25)';
+      } : undefined}
     >
-      {highlighted && (
-        <div className="h-0.5 bg-gradient-to-r from-transparent via-ipl-gold to-transparent" />
-      )}
+      {/* Role-colored top stripe */}
+      <div className="absolute top-0 inset-x-0 h-px"
+           style={{ background: `linear-gradient(90deg, transparent, ${role.color}60, transparent)`, opacity: highlighted ? 1 : 0.5 }} />
 
-      <PlayerSummary
-        player={player}
-        role={role}
-        compact={compact}
-        highlighted={highlighted}
-        currentBid={currentBid}
-        isLive={isLive}
-        injuryRisk={injuryRisk}
-      />
+      {/* Main content */}
+      <div className={`flex items-center gap-3.5 ${compact ? 'p-3.5' : 'p-4'}`}>
 
-      {hasFooter && (
-        <div className="flex items-center gap-2 flex-wrap px-4 pb-3 border-t border-gray-800/60 pt-2.5">
-          {player.auctionSetName && (
-            <span className="inline-flex items-center rounded-full border border-ipl-gold/30 bg-ipl-gold/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-ipl-gold">
-              {player.auctionSetName}
-            </span>
+        {/* Avatar — role gradient bg + initial or image */}
+        <div
+          className={`${compact ? 'w-11 h-11' : 'w-12 h-12'} rounded-xl flex-shrink-0 overflow-hidden relative`}
+          style={{ background: `linear-gradient(135deg, ${role.color}28 0%, ${role.color}0C 100%)`, border: `1px solid ${role.color}25` }}
+        >
+          {player.imageUrl ? (
+            <img src={player.imageUrl} alt={player.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center font-bold text-base"
+                 style={{ color: role.color }}>
+              {player.name?.[0] ?? '?'}
+            </div>
           )}
-          {positions && (
-            <span className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/60 px-2.5 py-0.5 text-[10px] font-medium text-gray-400">
-              Bat: {positions}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          {/* Live indicator */}
+          {highlighted && (
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-bid-red animate-pulse flex-shrink-0" />
+              <span className="text-[10px] font-semibold text-bid-red/80 tracking-wide">Live</span>
+            </div>
+          )}
+
+          {/* Name */}
+          <h2 className={`font-semibold text-white leading-tight truncate ${compact ? 'text-[14px]' : 'text-[15px]'}`}>
+            {player.name}
+          </h2>
+
+          {/* Meta row */}
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {/* Role badge */}
+            <span className="text-[11px] font-semibold rounded-md px-1.5 py-0.5 leading-none"
+                  style={{ color: role.color, background: role.color + '15' }}>
+              {role.label}
+            </span>
+            {player.nationality && (
+              <span className="text-[11px] text-white/30">{player.nationality}</span>
+            )}
+            {player.age && (
+              <span className="text-[11px] text-white/20">{player.age}y</span>
+            )}
+            {highlighted && injuryRisk >= 4 && <InjuryTag risk={injuryRisk} />}
+          </div>
+        </div>
+
+        {/* Price block */}
+        <div className="flex-shrink-0 text-right min-w-[52px]">
+          {isLive ? (
+            <>
+              <p className="text-[9px] font-medium uppercase tracking-wider text-white/25 mb-0.5">Bid</p>
+              <p className="font-bebas text-[28px] leading-none tabular-nums text-neon neon-glow">
+                {formatCroreAmount(currentBid)}
+                <span className="text-[11px] font-sans font-normal text-neon/40 ml-0.5">Cr</span>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-[9px] font-medium uppercase tracking-wider text-white/25 mb-0.5">Base</p>
+              <p className="text-[13px] font-semibold text-white/45 tabular-nums">
+                ₹{formatCroreAmount(player.basePrice)} Cr
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Footer — only render if there's something meaningful to show */}
+      {(auctionSet || captaincy > 0 || onViewStats) && (
+        <div className="flex items-center gap-2 px-4 pb-3 pt-0"
+             style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          {auctionSet && (
+            <span className="text-[10px] font-medium rounded-full px-2 py-0.5"
+                  style={{ color: 'rgba(255,208,96,0.7)', background: 'rgba(255,208,96,0.06)', border: '1px solid rgba(255,208,96,0.15)' }}>
+              {auctionSet}
             </span>
           )}
           {captaincy > 0 && (
-            <span className="inline-flex items-center rounded-full border border-teal-400/30 bg-teal-400/10 px-2 py-0.5 text-[10px] font-bold text-teal-400">
+            <span className="text-[10px] font-medium rounded-full px-2 py-0.5"
+                  style={{ color: 'rgba(45,212,191,0.7)', background: 'rgba(45,212,191,0.06)', border: '1px solid rgba(45,212,191,0.15)' }}>
               C {captaincy}
             </span>
           )}
-          {bowlingPhases.map((phase) => (
-            <span
-              key={phase}
-              className="inline-flex items-center rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[10px] font-bold text-red-400"
-            >
-              {phase}
-            </span>
-          ))}
           {onViewStats && (
-            <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-gray-600">
+            <div className="ml-auto flex items-center gap-1 text-[10px] text-white/20">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
               </svg>
-              tap to view stats
-            </span>
+              Stats
+            </div>
           )}
         </div>
       )}

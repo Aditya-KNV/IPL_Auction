@@ -4,7 +4,10 @@ import { useAuth }   from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 
 const NAV_LINKS = [
-  { to: '/room', label: 'Rooms' },
+  { to: '/',        label: 'Overview' },
+  { to: '/room',    label: 'Rooms'    },
+  { to: '/ranking', label: 'Rankings' },
+  { to: '/players', label: 'Players'  },
 ];
 
 export default function Navbar() {
@@ -12,54 +15,88 @@ export default function Navbar() {
   const { connected }    = useSocket();
   const navigate         = useNavigate();
   const { pathname }     = useLocation();
-  const showBottomBorder = pathname !== '/room';
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
   return (
-    <nav className={`fixed top-0 inset-x-0 z-50 bg-gray-950 px-6 py-4 ${showBottomBorder ? 'border-b border-gray-800' : ''}`}>
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link to="/room" className="text-ipl-gold font-bold text-2xl tracking-wide">
-          IPL Auction
-        </Link>
+    <nav className="fixed top-0 inset-x-0 z-50 h-[57px] flex items-center px-5 justify-between"
+         style={{
+           background: 'rgba(7,8,14,0.92)',
+           backdropFilter: 'blur(12px)',
+           WebkitBackdropFilter: 'blur(12px)',
+           borderBottom: '1px solid rgba(255,255,255,0.055)',
+           boxShadow: '0 1px 0 rgba(255,255,255,0.025)',
+         }}>
 
-        {user && (
-          <>
-            <div className="flex items-center gap-1">
-              {NAV_LINKS.map(({ to, label }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                    pathname === to
-                      ? 'text-white bg-gray-800'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                  }`}
-                >
+      {/* Top accent line */}
+      <div className="absolute top-0 inset-x-0 h-px pointer-events-none"
+           style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(0,255,102,0.22) 40%, rgba(0,255,102,0.22) 60%, transparent 100%)' }} />
+
+      {/* Brand */}
+      <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-neon flex items-center justify-center flex-shrink-0"
+             style={{ boxShadow: '0 0 12px rgba(0,255,102,0.28)' }}>
+          <svg className="w-4 h-4 text-black" viewBox="0 0 16 16" fill="none">
+            <path d="M10 2L2 10l1.5 1.5 2-2 3 3 1.5-1.5-3-3 2-2L10 2z" fill="currentColor"/>
+            <circle cx="13" cy="13" r="1.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="font-semibold text-[15px] text-white leading-none">IPL</span>
+          <span className="text-[15px] text-white/30 font-light leading-none ml-1">Auction</span>
+        </div>
+      </Link>
+
+      {user && (
+        <>
+          {/* Page nav */}
+          <div className="hidden md:flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2">
+            {NAV_LINKS.map(({ to, label }) => {
+              const active = pathname === to || (to !== '/' && pathname.startsWith(to));
+              return (
+                <Link key={to} to={to}
+                  className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150
+                    ${active
+                      ? 'text-white bg-white/[0.07]'
+                      : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
+                    }`}>
                   {label}
                 </Link>
-              ))}
+              );
+            })}
+          </div>
+
+          {/* Right side */}
+          <div className="flex items-center gap-3">
+            {/* Socket indicator */}
+            <div className="flex items-center gap-1.5" title={connected ? 'Connected' : 'Disconnected'}>
+              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${connected ? 'bg-neon animate-live-blink' : 'bg-bid-red'}`} />
+              <span className={`text-[11px] font-medium hidden sm:block ${connected ? 'text-white/35' : 'text-bid-red/60'}`}>
+                {connected ? 'Live' : 'Offline'}
+              </span>
             </div>
 
-            <div className="flex items-center gap-4">
-              <span
-                className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}
-                title={connected ? 'Connected' : 'Disconnected'}
-              />
-              <span className="text-gray-400 text-sm">{user.username}</span>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-red-400 hover:text-red-300 transition"
-              >
-                Logout
-              </button>
+            <div className="w-px h-3.5 bg-white/[0.08]" />
+
+            {/* User avatar + name */}
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-white/[0.07] border border-white/[0.09]
+                              flex items-center justify-center text-[10px] font-bold text-white/55">
+                {user.username?.[0]?.toUpperCase() ?? '?'}
+              </div>
+              <span className="text-[13px] text-white/45 hidden sm:block">{user.username}</span>
             </div>
-          </>
-        )}
-      </div>
+
+            <button onClick={handleLogout}
+              className="text-[12px] font-medium text-white/35 hover:text-white/70
+                         border border-white/[0.07] hover:border-white/[0.12]
+                         px-3 py-1.5 rounded-lg transition-all duration-150
+                         hover:bg-white/[0.03]">
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
     </nav>
   );
 }

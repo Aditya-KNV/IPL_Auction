@@ -1,62 +1,69 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { formatCroreAmount } from '../../utils/currency';
 
+// Show at most 20 bids in the scrollable feed.
 export default function BidFeed({ bids, currentPlayer }) {
-  const top3 = bids.slice(0, 3);
+  const containerRef = useRef(null);
 
-  if (!top3.length) {
+  // Auto-scroll to top (newest bid) when bids update
+  useEffect(() => {
+    if (containerRef.current) containerRef.current.scrollTop = 0;
+  }, [bids.length]);
+
+  if (!bids.length) {
     return (
-      <div className="text-center py-4 text-gray-600 text-sm">
-        No bids yet - be the first
+      <div className="flex flex-col items-center justify-center h-full gap-2 px-4 text-center">
+        <svg className="w-7 h-7 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <p className="text-white/20 text-xs">No bids yet</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      {top3.map((bid, i) => {
-        const isTop = i === 0;
-        const team = bid.team;
-        const time = new Date(bid.timestamp).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
+    <div ref={containerRef}
+      className="flex flex-col gap-0 overflow-y-auto h-full custom-scrollbar">
+      {bids.map((bid, i) => {
+        const isTop  = i === 0;
+        const team   = bid.team;
+        const time   = new Date(bid.timestamp).toLocaleTimeString([], {
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
         });
 
         return (
-          <div
-            key={i}
-            className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-              isTop ? 'bg-ipl-gold/8 border border-ipl-gold/20' : 'border border-transparent'
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: team?.color || '#6b7280' }}
-              />
-              <div className="min-w-0">
-                <span className={`font-semibold ${isTop ? 'text-white' : 'text-gray-400'}`}>
-                  {team?.shortName || team?.name || '-'}
-                </span>
-                {currentPlayer?.name && (
-                  <span className="ml-1.5 text-[10px] text-gray-600 truncate">
-                    {currentPlayer.name}
-                  </span>
-                )}
-              </div>
-              {isTop && (
-                <span className="flex-shrink-0 text-[9px] font-bold text-ipl-gold border border-ipl-gold/30 px-1.5 py-0.5 rounded-full tracking-widest">
-                  TOP
-                </span>
-              )}
+          <div key={i}
+            className={`flex items-center gap-2.5 px-3.5 py-2.5
+                        border-b border-white/[0.025] last:border-b-0
+                        transition-colors
+                        ${isTop ? 'animate-slide-left border-l-2 bg-neon/[0.04]' : 'hover:bg-white/[0.02]'}
+                        ${isTop && i === 0 ? 'animate-bid-flash' : ''}`}
+            style={isTop ? { borderLeftColor: team?.color || '#00FF66' } : { borderLeftColor: 'transparent', borderLeftWidth: '2px' }}>
+
+            {/* Team orb */}
+            <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center
+                            text-[8px] font-black border border-white/[0.08]"
+              style={{ background: (team?.color || '#6b7280') + '28', color: team?.color || '#9ca3af' }}>
+              {team?.shortName?.slice(0, 3) ?? '?'}
             </div>
 
-            <div className="text-right flex-shrink-0 ml-2">
-              <span className={`font-bold tabular-nums ${isTop ? 'text-ipl-gold' : 'text-gray-300'}`}>
-                Rs {formatCroreAmount(bid.amount)} Cr
-              </span>
-              <span className="block text-gray-600 text-[10px] tabular-nums">{time}</span>
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold leading-tight truncate"
+                style={{ color: isTop ? (team?.color || '#fff') : 'rgba(255,255,255,0.55)' }}>
+                {team?.shortName || team?.name || '—'}
+              </p>
+              <p className="text-[9px] text-white/25 mt-0.5 tabular-nums">{time}</p>
+            </div>
+
+            {/* Amount */}
+            <div className="text-right flex-shrink-0">
+              <p className={`font-bebas text-lg leading-none tabular-nums
+                             ${isTop ? 'text-neon neon-glow' : 'text-white/40'}`}>
+                {formatCroreAmount(bid.amount)}
+              </p>
+              <p className="text-[8px] text-white/20 tracking-wider">CR</p>
             </div>
           </div>
         );

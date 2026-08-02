@@ -47,7 +47,7 @@ const isOverseas = (p) => {
 /* ── Sub-components ──────────────────────────────────────────────────────── */
 
 const TeamRow = ({ team, teamId, submitted }) => (
-  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-800 bg-gray-800/30">
+  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-white/[0.08] bg-surface-2/40">
     {team ? (
       <div
         className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black text-white flex-shrink-0"
@@ -56,18 +56,18 @@ const TeamRow = ({ team, teamId, submitted }) => (
         {team.shortName?.slice(0, 2) ?? '??'}
       </div>
     ) : (
-      <div className="w-7 h-7 rounded-lg bg-gray-700 flex-shrink-0" />
+      <div className="w-7 h-7 rounded-lg bg-surface-2 flex-shrink-0" />
     )}
-    <span className="flex-1 text-sm text-gray-200 truncate">{team?.name ?? teamId}</span>
+    <span className="flex-1 text-sm text-white/80 truncate">{team?.name ?? teamId}</span>
     {submitted ? (
-      <span className="text-xs font-bold text-green-400 flex items-center gap-1">
+      <span className="text-xs font-bold text-neon flex items-center gap-1">
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
         </svg>
         Done
       </span>
     ) : (
-      <span className="text-xs text-gray-600 flex items-center gap-1">
+      <span className="text-xs text-white/30 flex items-center gap-1">
         <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
@@ -157,10 +157,8 @@ export default function AcceleratedModal({
     }
   };
 
-  // Phase options based on role filter
   const phaseOptions = roleFilter !== 'All' ? (ROLE_PHASES[roleFilter] || []) : [];
 
-  // Reset phase/minRating when role changes
   const handleRoleChange = (r) => {
     setRoleFilter(r);
     setPhase('');
@@ -174,7 +172,6 @@ export default function AcceleratedModal({
       return true;
     });
 
-    // Phase + minRating client-side filter
     if (phase && minRating !== '') {
       const min = Number(minRating);
       if (Number.isFinite(min)) {
@@ -207,15 +204,15 @@ export default function AcceleratedModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+        <div className="bg-surface border border-white/[0.08] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
 
           {/* ── Header ── */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 flex-shrink-0">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] flex-shrink-0">
             <div>
               <p className="text-white font-bold text-base tracking-wide flex items-center gap-2">
-                <span className="text-yellow-400">⚡</span> Accelerated Auction
+                <span className="text-gold-bright">⚡</span> Accelerated Auction
               </p>
-              <p className="text-gray-500 text-xs mt-0.5">
+              <p className="text-white/30 text-xs mt-0.5">
                 {showSelection
                   ? maxPicks === 0
                     ? 'No picks allowed — submit to confirm'
@@ -226,7 +223,7 @@ export default function AcceleratedModal({
             {isHost && (
               <button
                 onClick={onCancel}
-                className="text-gray-500 hover:text-red-400 transition text-xs border border-gray-700 hover:border-red-500/40 px-3 py-1.5 rounded-lg"
+                className="text-white/30 hover:text-bid-red transition text-xs border border-white/[0.08] hover:border-bid-red/40 px-3 py-1.5 rounded-lg"
               >
                 Cancel
               </button>
@@ -236,14 +233,14 @@ export default function AcceleratedModal({
           {showSelection ? (
             /* ── SELECTION VIEW ── */
             <>
-              <div className="px-5 py-3 border-b border-gray-800/60 flex-shrink-0 space-y-2">
+              <div className="px-5 py-3 border-b border-white/[0.06] flex-shrink-0 space-y-2">
                 {/* Search */}
                 <input
                   type="text"
                   placeholder="Search player…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gray-500"
+                  className="w-full bg-surface-2 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-neon/50 transition"
                 />
 
                 {/* Role pills */}
@@ -254,8 +251,8 @@ export default function AcceleratedModal({
                       onClick={() => handleRoleChange(r)}
                       className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition ${
                         roleFilter === r
-                          ? 'border-yellow-500 text-yellow-400 bg-yellow-500/10'
-                          : 'border-gray-700 text-gray-500 hover:border-gray-500'
+                          ? 'border-neon/50 text-neon bg-neon/10'
+                          : 'border-white/[0.08] text-white/30 hover:border-white/20'
                       }`}
                     >
                       {r === 'All' ? 'All' : `${r}s`}
@@ -269,7 +266,7 @@ export default function AcceleratedModal({
                     <select
                       value={phase}
                       onChange={(e) => { setPhase(e.target.value); setMinRating(''); }}
-                      className="bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-gray-500"
+                      className="bg-surface-2 border border-white/[0.08] text-white text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-neon/50 transition"
                     >
                       <option value="">All Phases</option>
                       {phaseOptions.map((po) => (
@@ -278,8 +275,8 @@ export default function AcceleratedModal({
                     </select>
 
                     {phase && (
-                      <div className="flex items-center gap-1.5 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5">
-                        <span className="text-gray-400 text-xs whitespace-nowrap">Min</span>
+                      <div className="flex items-center gap-1.5 bg-surface-2 border border-white/[0.08] rounded-lg px-3 py-1.5">
+                        <span className="text-white/40 text-xs whitespace-nowrap">Min</span>
                         <input
                           type="number"
                           min={1}
@@ -290,14 +287,14 @@ export default function AcceleratedModal({
                           placeholder="e.g. 7"
                           className="bg-transparent text-white w-12 text-xs outline-none"
                         />
-                        <span className="text-gray-500 text-xs">/10</span>
+                        <span className="text-white/25 text-xs">/10</span>
                       </div>
                     )}
 
                     {hasFilters && (
                       <button
                         onClick={() => { handleRoleChange('All'); setSearch(''); }}
-                        className="text-[11px] text-gray-500 border border-gray-700 rounded-lg px-2.5 py-1.5 hover:border-gray-500 hover:text-white transition"
+                        className="text-[11px] text-white/30 border border-white/[0.08] rounded-lg px-2.5 py-1.5 hover:border-white/20 hover:text-white transition"
                       >
                         Clear
                       </button>
@@ -307,7 +304,7 @@ export default function AcceleratedModal({
 
                 {/* Result count */}
                 {(phase && minRating !== '') && (
-                  <p className="text-gray-600 text-[11px]">
+                  <p className="text-white/20 text-[11px]">
                     {filteredPlayers.length} player{filteredPlayers.length !== 1 ? 's' : ''} match
                     {' · '}
                     {phaseOptions.find((po) => po.key === phase)?.label} ≥ {minRating}/10
@@ -315,9 +312,9 @@ export default function AcceleratedModal({
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 py-3">
+              <div className="flex-1 overflow-y-auto px-5 py-3 custom-scrollbar">
                 {orderedRoles.length === 0 && (
-                  <p className="text-gray-600 text-sm text-center py-8">No players found</p>
+                  <p className="text-white/20 text-sm text-center py-8">No players found</p>
                 )}
                 {orderedRoles.map((role) => (
                   <div key={role} className="mb-4">
@@ -340,15 +337,15 @@ export default function AcceleratedModal({
                             disabled={maxed}
                             className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl border transition text-left ${
                               isSelected
-                                ? 'border-yellow-500/60 bg-yellow-500/10'
+                                ? 'border-neon/50 bg-neon/[0.08]'
                                 : maxed
-                                  ? 'border-gray-800 bg-gray-800/30 opacity-40 cursor-not-allowed'
-                                  : 'border-gray-800 bg-gray-800/40 hover:border-gray-600 cursor-pointer'
+                                  ? 'border-white/[0.06] bg-surface-2/20 opacity-40 cursor-not-allowed'
+                                  : 'border-white/[0.08] bg-surface-2/40 hover:border-white/20 cursor-pointer'
                             }`}
                           >
                             {/* Checkbox */}
                             <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition ${
-                              isSelected ? 'border-yellow-400 bg-yellow-400' : 'border-gray-600'
+                              isSelected ? 'border-neon bg-neon' : 'border-white/25'
                             }`}>
                               {isSelected && (
                                 <svg className="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,7 +359,7 @@ export default function AcceleratedModal({
                               style={{ backgroundColor: ROLE_COLOR[p.role] || '#6b7280' }}
                             />
 
-                            <span className="flex-1 text-sm text-gray-200 truncate">
+                            <span className="flex-1 text-sm text-white/80 truncate">
                               {p.name}
                               {isOverseas(p) && <span className="ml-1 text-sky-400 text-xs">✈</span>}
                             </span>
@@ -380,14 +377,14 @@ export default function AcceleratedModal({
                               </span>
                             )}
 
-                            <span className="text-xs text-gray-500 flex-shrink-0">
+                            <span className="text-xs text-white/30 flex-shrink-0">
                               Rs {p.basePrice} Cr
                             </span>
 
                             {/* Info button — shows full stats */}
                             <button
                               onClick={(e) => openStats(e, id)}
-                              className="flex-shrink-0 text-gray-600 hover:text-blue-400 transition p-0.5 rounded"
+                              className="flex-shrink-0 text-white/20 hover:text-neon transition p-0.5 rounded"
                               title="View full stats"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -402,10 +399,10 @@ export default function AcceleratedModal({
                 ))}
               </div>
 
-              <div className="px-5 py-4 border-t border-gray-800 flex-shrink-0">
+              <div className="px-5 py-4 border-t border-white/[0.06] flex-shrink-0">
                 <button
                   onClick={handleSubmit}
-                  className="w-full py-2.5 rounded-xl font-bold text-sm bg-yellow-400 text-black hover:bg-yellow-300 transition"
+                  className="w-full py-2.5 rounded-xl font-bold text-sm bg-neon text-black hover:brightness-110 transition"
                 >
                   {selected.size === 0
                     ? 'Submit — No Picks'
@@ -416,9 +413,9 @@ export default function AcceleratedModal({
           ) : (
             /* ── PROGRESS VIEW ── */
             <>
-              <div className="flex-1 overflow-y-auto px-5 py-4">
+              <div className="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar">
                 {myDone && !isHost && !allSubmitted && (
-                  <p className="text-gray-500 text-sm text-center pb-4">
+                  <p className="text-white/30 text-sm text-center pb-4">
                     Your picks are in — waiting for other teams…
                   </p>
                 )}
@@ -433,7 +430,7 @@ export default function AcceleratedModal({
                     />
                   ))}
                   {expectedTeamIds.length === 0 && (
-                    <p className="text-gray-600 text-sm text-center py-6">
+                    <p className="text-white/20 text-sm text-center py-6">
                       No teams are assigned to this room yet.
                     </p>
                   )}
@@ -441,9 +438,9 @@ export default function AcceleratedModal({
               </div>
 
               {isHost && (
-                <div className="px-5 py-4 border-t border-gray-800 flex-shrink-0 space-y-2">
+                <div className="px-5 py-4 border-t border-white/[0.06] flex-shrink-0 space-y-2">
                   {!allSubmitted && (
-                    <p className="text-gray-600 text-xs text-center">
+                    <p className="text-white/20 text-xs text-center">
                       You can begin now or wait for all teams to submit.
                     </p>
                   )}
@@ -451,8 +448,8 @@ export default function AcceleratedModal({
                     onClick={onBegin}
                     className={`w-full py-2.5 rounded-xl font-bold text-sm transition ${
                       allSubmitted
-                        ? 'bg-green-500 text-white hover:bg-green-400'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        ? 'bg-neon text-black hover:brightness-110'
+                        : 'bg-surface-2 text-white/40 border border-white/[0.08] hover:bg-white/[0.06]'
                     }`}
                   >
                     {allSubmitted
@@ -472,7 +469,7 @@ export default function AcceleratedModal({
       )}
       {loadingStats && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 pointer-events-none">
-          <svg className="h-8 w-8 animate-spin text-yellow-400" viewBox="0 0 24 24" fill="none">
+          <svg className="h-8 w-8 animate-spin text-neon" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>

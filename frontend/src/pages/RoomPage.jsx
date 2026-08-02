@@ -211,241 +211,127 @@ function PlayersTab() {
         <PlayerStatsModal player={selected} onClose={() => setSelected(null)} />
       )}
       {loadingPlayer && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50">
-          <svg
-            className="h-8 w-8 animate-spin text-ipl-gold"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v8H4z"
-            />
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
+          <svg className="h-8 w-8 animate-spin text-neon" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
         </div>
       )}
 
-      <h2 className="text-2xl font-bold text-ipl-gold mb-6">Players</h2>
+      <div className="mb-6">
+        <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Roster</p>
+        <h2 className="font-bebas text-3xl tracking-wider text-white">Players</h2>
+      </div>
 
-      <div className="flex flex-wrap gap-3 mb-4">
-        {/* Search by name */}
-        <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2">
-          <svg
-            className="h-4 w-4 text-gray-400 flex-shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-            />
+      <div className="flex flex-wrap gap-2 mb-4">
+        {/* Search */}
+        <div className="flex items-center gap-2 bg-surface-2 border border-white/[0.08] rounded-lg px-3 py-2">
+          <svg className="h-4 w-4 text-white/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
           </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search player…"
-            className="bg-transparent text-white text-sm outline-none w-36 placeholder-gray-500"
-          />
+            className="bg-transparent text-white text-sm outline-none w-36 placeholder-white/20" />
           {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="text-gray-500 hover:text-white ml-1"
-            >
-              <svg
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
+            <button onClick={() => setSearch("")} className="text-white/30 hover:text-white ml-1">
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           )}
         </div>
 
-        {/* Role */}
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
-        >
+        <select value={role} onChange={(e) => setRole(e.target.value)}
+          className="bg-surface-2 border border-white/[0.08] text-white/70 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neon/40">
           <option value="">All Roles</option>
-          {["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"].map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
+          {["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"].map(r => <option key={r} value={r}>{r}</option>)}
         </select>
 
-        {/* Status */}
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
-        >
+        <select value={status} onChange={(e) => setStatus(e.target.value)}
+          className="bg-surface-2 border border-white/[0.08] text-white/70 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neon/40">
           <option value="">All Status</option>
-          {["available", "sold", "unsold", "in-auction"].map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
+          {["available", "sold", "unsold", "in-auction"].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
-        {/* Set */}
-        <select
-          value={auctionSetName}
-          onChange={(e) => setAuctionSetName(e.target.value)}
-          className="bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
-        >
+        <select value={auctionSetName} onChange={(e) => setAuctionSetName(e.target.value)}
+          className="bg-surface-2 border border-white/[0.08] text-white/70 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neon/40">
           <option value="">All Sets</option>
-          {SET_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
+          {SET_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
-        {/* Phase/Skill — only when role is selected */}
         {filterGroups.length > 0 && (
-          <select
-            value={phase}
-            onChange={(e) => {
-              setPhase(e.target.value);
-              setMinRating("");
-            }}
-            className="bg-gray-800 border border-blue-500/40 text-white rounded-lg px-4 py-2 text-sm"
-          >
+          <select value={phase} onChange={(e) => { setPhase(e.target.value); setMinRating(""); }}
+            className="bg-surface-2 border border-neon/20 text-white/70 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neon/50">
             <option value="">Phase / Skill</option>
-            {filterGroups.map((g) => (
+            {filterGroups.map(g => (
               <optgroup key={g.group} label={g.group}>
-                {g.options.map((o) => (
-                  <option key={o.key} value={o.key}>
-                    {o.label}
-                  </option>
-                ))}
+                {g.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
               </optgroup>
             ))}
           </select>
         )}
 
-        {/* Min rating — only when phase is selected */}
         {phase && (
-          <div className="flex items-center gap-2 bg-gray-800 border border-blue-500/40 rounded-lg px-3 py-2">
-            <span className="text-gray-400 text-sm whitespace-nowrap">
-              Min rating
-            </span>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              step={1}
-              value={minRating}
-              onChange={(e) => setMinRating(e.target.value)}
-              placeholder="e.g. 8"
-              className="bg-transparent text-white w-12 text-sm outline-none"
-            />
-            <span className="text-gray-500 text-sm">/10</span>
+          <div className="flex items-center gap-2 bg-surface-2 border border-neon/20 rounded-lg px-3 py-2">
+            <span className="text-white/30 text-sm whitespace-nowrap">Min rating</span>
+            <input type="number" min={1} max={10} step={1} value={minRating}
+              onChange={(e) => setMinRating(e.target.value)} placeholder="e.g. 8"
+              className="bg-transparent text-white w-12 text-sm outline-none" />
+            <span className="text-white/20 text-sm">/10</span>
           </div>
         )}
 
-        {/* Clear */}
         {(role || status || auctionSetName || phase || search) && (
-          <button
-            onClick={() => {
-              setRole("");
-              setStatus("");
-              setAuctionSetName("");
-              setPhase("");
-              setMinRating("");
-              setSearch("");
-            }}
-            className="text-xs text-gray-400 border border-gray-700 rounded-lg px-3 py-2 hover:border-gray-500 hover:text-white transition"
-          >
+          <button onClick={() => { setRole(""); setStatus(""); setAuctionSetName(""); setPhase(""); setMinRating(""); setSearch(""); }}
+            className="text-xs text-white/30 border border-white/[0.06] rounded-lg px-3 py-2 hover:border-white/15 hover:text-white transition">
             Clear filters
           </button>
         )}
       </div>
 
-      {/* Result summary */}
-      <p className="text-gray-500 text-xs mb-3">
+      <p className="text-white/25 text-xs mb-3">
         {filtered.length} player{filtered.length !== 1 ? "s" : ""}
         {activeFilterLabel && minRating !== "" && (
-          <span className="ml-1 text-blue-400">
-            · {activeFilterLabel} ≥ {minRating}/10
-          </span>
+          <span className="ml-1 text-neon">· {activeFilterLabel} ≥ {minRating}/10</span>
         )}
       </p>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-800">
+      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-700 text-gray-400 bg-gray-900/60">
-              <th className="text-left py-3 px-4">Player</th>
-              <th className="text-left py-3 px-4">Set</th>
-              <th className="text-left py-3 px-4">Role</th>
-              <th className="text-left py-3 px-4">Nationality</th>
-              <th className="text-right py-3 px-4">Base (Cr)</th>
-              <th className="text-right py-3 px-4">Sold (Cr)</th>
-              {phase && (
-                <th className="text-right py-3 px-4">{activeFilterLabel}</th>
-              )}
-              <th className="text-left py-3 px-4">Team</th>
-              <th className="text-left py-3 px-4">Status</th>
+            <tr className="border-b border-white/[0.06] text-white/30 bg-surface/60">
+              <th className="text-left py-3 px-4 font-semibold">Player</th>
+              <th className="text-left py-3 px-4 font-semibold">Set</th>
+              <th className="text-left py-3 px-4 font-semibold">Role</th>
+              <th className="text-left py-3 px-4 font-semibold">Nationality</th>
+              <th className="text-right py-3 px-4 font-semibold">Base (Cr)</th>
+              <th className="text-right py-3 px-4 font-semibold">Sold (Cr)</th>
+              {phase && <th className="text-right py-3 px-4 font-semibold">{activeFilterLabel}</th>}
+              <th className="text-left py-3 px-4 font-semibold">Team</th>
+              <th className="text-left py-3 px-4 font-semibold">Status</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((p) => {
+            {filtered.map(p => {
               const displayStatus = getDisplayStatus(p);
               const phaseVal = phase ? resolvePath(p, phase) : null;
               return (
-                <tr
-                  key={p._id}
-                  onClick={() => openPlayer(p._id)}
-                  className="border-b border-gray-800 hover:bg-gray:900/60 transition cursor-pointer"
-                >
-                  <td className="py-3 px-4 font-semibold text-white">
-                    {p.name}
-                  </td>
-                  <td className="py-3 px-4 text-gray-400">
-                    {p.auctionSetName || "—"}
-                  </td>
-                  <td className="py-3 px-4 text-gray-300">{p.role}</td>
-                  <td className="py-3 px-4 text-gray-400">{p.nationality}</td>
-                  <td className="py-3 px-4 text-right text-gray-300">
-                    ₹{p.basePrice}
-                  </td>
-                  <td className="py-3 px-4 text-right text-ipl-gold font-semibold">
-                    {p.soldPrice ? `₹${p.soldPrice}` : "—"}
-                  </td>
+                <tr key={p._id} onClick={() => openPlayer(p._id)}
+                  className="border-b border-white/[0.04] hover:bg-white/[0.03] transition cursor-pointer">
+                  <td className="py-3 px-4 font-semibold text-white">{p.name}</td>
+                  <td className="py-3 px-4 text-white/40">{p.auctionSetName || "—"}</td>
+                  <td className="py-3 px-4 text-white/60">{p.role}</td>
+                  <td className="py-3 px-4 text-white/40">{p.nationality}</td>
+                  <td className="py-3 px-4 text-right text-white/50">₹{p.basePrice}</td>
+                  <td className="py-3 px-4 text-right text-neon font-semibold">{p.soldPrice ? `₹${p.soldPrice}` : "—"}</td>
                   {phase && (
                     <td className="py-3 px-4 text-right font-semibold text-blue-300">
                       {typeof phaseVal === "number" ? `${phaseVal}/10` : "—"}
                     </td>
                   )}
-                  <td className="py-3 px-4 text-gray-300">
-                    {p.team?.shortName || "—"}
-                  </td>
-                  <td
-                    className={`py-3 px-4 font-semibold capitalize ${STATUS_COLOR[displayStatus] || "text-gray-400"}`}
-                  >
+                  <td className="py-3 px-4 text-white/50">{p.team?.shortName || "—"}</td>
+                  <td className={`py-3 px-4 font-semibold capitalize ${STATUS_COLOR[displayStatus] || "text-white/30"}`}>
                     {displayStatus}
                   </td>
                 </tr>
@@ -453,12 +339,7 @@ function PlayersTab() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td
-                  colSpan={phase ? 9 : 8}
-                  className="py-10 text-center text-gray-600"
-                >
-                  No players found
-                </td>
+                <td colSpan={phase ? 9 : 8} className="py-10 text-center text-white/20">No players found</td>
               </tr>
             )}
           </tbody>
@@ -478,18 +359,21 @@ function TeamsTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-gray-500">Loading teams...</p>
+        <p className="text-white/30">Loading teams…</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <h2 className="text-2xl font-bold text-ipl-gold">Teams</h2>
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Squads</p>
+        <h2 className="font-bebas text-3xl tracking-wider text-white">Teams</h2>
+      </div>
 
       {myTeam && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">
+          <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-2">
             My Team
           </p>
           <MyTeamPanel team={myTeam} squadByRole={squadByRole} />
@@ -548,90 +432,58 @@ function SettingsTab() {
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <h2 className="text-2xl font-bold text-ipl-gold">Settings</h2>
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Configuration</p>
+        <h2 className="font-bebas text-3xl tracking-wider text-white">Settings</h2>
+      </div>
 
       {!amHost && (
-        <div className="rounded-xl border border-gray-700 bg-gray-900 p-4 text-center text-gray-500 text-sm">
+        <div className="rounded-xl border border-white/[0.06] bg-surface p-4 text-center text-white/30 text-sm">
           Only the host can change room settings.
         </div>
       )}
 
       {/* Timer */}
-      <div
-        className={`bg-gray-900 border rounded-2xl p-6 ${amHost ? "border-gray-700" : "border-gray-800 opacity-50 pointer-events-none"}`}
-      >
-        <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider mb-1">
-          Auction Timer
-        </h3>
-        <p className="text-gray-500 text-xs mb-4">
-          Initial bidding window duration when a player enters auction. Each bid
-          extends the clock by 10 s regardless.
+      <div className={`bg-surface border rounded-2xl p-6 ${amHost ? "border-white/[0.08]" : "border-white/[0.04] opacity-40 pointer-events-none"}`}>
+        <h3 className="text-white/60 text-xs font-black uppercase tracking-widest mb-1">Auction Timer</h3>
+        <p className="text-white/25 text-xs mb-4">
+          Initial bidding window duration when a player enters auction. Each bid extends the clock by 10 s regardless.
         </p>
         <div className="flex items-center gap-4">
-          <input
-            type="range"
-            min={5}
-            max={120}
-            step={5}
-            value={timerDuration}
+          <input type="range" min={5} max={120} step={5} value={timerDuration}
             onChange={(e) => setTimerDuration(Number(e.target.value))}
-            className="flex-1 accent-ipl-gold"
-          />
-          <div className="flex items-center gap-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
-            <input
-              type="number"
-              min={5}
-              max={120}
-              step={1}
-              value={timerDuration}
+            className="flex-1 accent-neon" />
+          <div className="flex items-center gap-1 bg-surface-2 border border-white/[0.08] rounded-lg px-3 py-2">
+            <input type="number" min={5} max={120} step={1} value={timerDuration}
               onChange={(e) => setTimerDuration(Number(e.target.value))}
-              className="bg-transparent text-white text-sm w-10 outline-none text-center tabular-nums"
-            />
-            <span className="text-gray-500 text-sm">s</span>
+              className="bg-transparent text-white text-sm w-10 outline-none text-center tabular-nums" />
+            <span className="text-white/30 text-sm">s</span>
           </div>
-          <button
-            onClick={saveTimer}
-            className="bg-ipl-gold text-black font-bold px-4 py-2 rounded-xl text-sm hover:brightness-110 transition"
-          >
+          <button onClick={saveTimer}
+            className="bg-neon text-black font-bold px-4 py-2 rounded-xl text-sm hover:brightness-110 transition">
             {timerSaved ? "Saved!" : "Save"}
           </button>
         </div>
       </div>
 
       {/* Transfer Host */}
-      <div
-        className={`bg-gray-900 border rounded-2xl p-6 ${amHost ? "border-gray-700" : "border-gray-800 opacity-50 pointer-events-none"}`}
-      >
-        <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider mb-1">
-          Transfer Host
-        </h3>
-        <p className="text-gray-500 text-xs mb-4">
-          Hand off host controls to another user in the room. You will become a
-          regular participant.
+      <div className={`bg-surface border rounded-2xl p-6 ${amHost ? "border-white/[0.08]" : "border-white/[0.04] opacity-40 pointer-events-none"}`}>
+        <h3 className="text-white/60 text-xs font-black uppercase tracking-widest mb-1">Transfer Host</h3>
+        <p className="text-white/25 text-xs mb-4">
+          Hand off host controls to another user in the room. You will become a regular participant.
         </p>
         {otherUsers.length === 0 ? (
-          <p className="text-gray-600 text-sm text-center py-2">
-            No other users in the room.
-          </p>
+          <p className="text-white/20 text-sm text-center py-2">No other users in the room.</p>
         ) : (
           <div className="flex items-center gap-3">
-            <select
-              value={selectedSocketId}
-              onChange={(e) => setSelectedSocketId(e.target.value)}
-              className="flex-1 bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm"
-            >
+            <select value={selectedSocketId} onChange={(e) => setSelectedSocketId(e.target.value)}
+              className="flex-1 bg-surface-2 border border-white/[0.08] text-white/70 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neon/40">
               <option value="">Select user…</option>
-              {otherUsers.map((u) => (
-                <option key={u.socketId} value={u.socketId}>
-                  {u.username}
-                </option>
-              ))}
+              {otherUsers.map(u => <option key={u.socketId} value={u.socketId}>{u.username}</option>)}
             </select>
-            <button
-              onClick={handleTransferHost}
-              disabled={!selectedSocketId}
-              className="bg-ipl-blue text-white font-bold px-4 py-2 rounded-xl text-sm hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            <button onClick={handleTransferHost} disabled={!selectedSocketId}
+              className="border border-white/[0.1] bg-surface-2 text-white/60 font-bold px-4 py-2 rounded-xl text-sm
+                         hover:border-neon/40 hover:text-neon transition disabled:opacity-40 disabled:cursor-not-allowed">
               Transfer
             </button>
           </div>
@@ -654,8 +506,8 @@ const TABS = [
 
 function RulesTab() {
   const Section = ({ title, children }) => (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
-      <h2 className="text-ipl-gold font-bold text-lg mb-4 border-b border-gray-800 pb-2">
+    <div className="bg-surface border border-white/[0.06] rounded-2xl p-6 mb-6">
+      <h2 className="text-neon font-bold text-sm uppercase tracking-wider mb-4 border-b border-white/[0.06] pb-3">
         {title}
       </h2>
       {children}
@@ -666,24 +518,17 @@ function RulesTab() {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-700">
-            {headers.map((h) => (
-              <th
-                key={h}
-                className="text-left text-gray-400 font-semibold py-2 pr-4"
-              >
-                {h}
-              </th>
+          <tr className="border-b border-white/[0.08]">
+            {headers.map(h => (
+              <th key={h} className="text-left text-white/30 font-semibold py-2 pr-4 text-xs uppercase tracking-wider">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="border-b border-gray-800/50">
+            <tr key={i} className="border-b border-white/[0.04]">
               {row.map((cell, j) => (
-                <td key={j} className="py-2 pr-4 text-gray-300">
-                  {cell}
-                </td>
+                <td key={j} className="py-2 pr-4 text-white/60 text-sm">{cell}</td>
               ))}
             </tr>
           ))}
@@ -694,12 +539,10 @@ function RulesTab() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-ipl-gold mb-2">
-        Rules & Rating Schema
-      </h1>
-      <p className="text-gray-400 text-sm mb-8">
-        Complete reference for how bidding, budgets, squads, and player scores
-        are calculated.
+      <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Reference</p>
+      <h1 className="font-bebas text-4xl tracking-wider text-white mb-2">Rules & Rating Schema</h1>
+      <p className="text-white/40 text-sm mb-8">
+        Complete reference for how bidding, budgets, squads, and player scores are calculated.
       </p>
 
       {/* ── BIDDING RULES ── */}
@@ -772,9 +615,9 @@ function RulesTab() {
             ["Wicket-Keeper", "1–8", "No"],
           ]}
         />
-        <p className="text-gray-500 text-xs mt-3">
+        <p className="text-white/25 text-xs mt-3">
           Any player with{" "}
-          <span className="font-mono text-gray-400">tactical.overs &gt; 0</span>{" "}
+          <span className="font-mono text-white/50">tactical.overs &gt; 0</span>{" "}
           is included in bowling calculations regardless of role. All individual
           ratings are on a 0–10 scale.
         </p>
@@ -782,10 +625,10 @@ function RulesTab() {
 
       {/* ── TEAM SCORE OVERVIEW ── */}
       <Section title="Team Score Overview (0–100)">
-        <p className="text-gray-300 text-sm mb-4">
+        <p className="text-white/60 text-sm mb-4">
           Final team score is the sum of 7 components:
         </p>
-        <div className="bg-gray-800/60 rounded-xl p-4 font-mono text-sm text-ipl-gold mb-4">
+        <div className="bg-surface-2/60 rounded-xl p-4 font-mono text-sm text-neon mb-4">
           Final Score = Batting + Bowling + Fitness + Impact + Tactical + Age +
           Captaincy
         </div>
@@ -837,10 +680,10 @@ function RulesTab() {
         <h3 className="text-white font-semibold text-sm mt-5 mb-2">
           2. Left-Right Balance (Max 3 pts)
         </h3>
-        <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-1">
+        <div className="bg-surface-2/60 rounded-xl px-4 py-3 font-mono text-sm text-neon mb-1">
           Score = 3 × (min(left, right) / max(left, right))
         </div>
-        <p className="text-gray-500 text-xs">
+        <p className="text-white/25 text-xs">
           Counts batters and all-rounders only. Zero if only one handedness
           exists.
         </p>
@@ -848,16 +691,17 @@ function RulesTab() {
         <h3 className="text-white font-semibold text-sm mt-5 mb-2">
           3. Position Fit Score (Max 34 pts)
         </h3>
-        <p className="text-gray-400 text-xs mb-3">
+        <p className="text-white/40 text-xs mb-3">
           Dynamic programming assigns players to optimal batting slots. Each
           slot score is a{" "}
-          <strong className="text-gray-300">weighted average</strong> of the
+          <strong className="text-white/70">weighted average</strong> of the
           listed ratings — weights are divided by their sum, giving a value 0–10
           — then scaled to the slot max:
         </p>
-        <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-5">
+        <div className="bg-surface-2/60 rounded-xl px-4 py-3 font-mono text-sm text-neon mb-5">
           slot contribution = max(0, slotScore / 10) × slotMax
         </div>
+
 
         {/* Per-position weight breakdowns */}
         {[
@@ -923,41 +767,41 @@ function RulesTab() {
         ].map(({ label, slotMax, totalW, rows }) => (
           <div
             key={label}
-            className="mb-4 bg-gray-800/40 rounded-xl overflow-hidden"
+            className="mb-4 bg-surface-2/40 rounded-xl overflow-hidden"
           >
-            <div className="flex items-center justify-between px-4 py-2 bg-gray-800/80 border-b border-gray-700">
+            <div className="flex items-center justify-between px-4 py-2 bg-surface-2/80 border-b border-white/[0.08]">
               <span className="text-white text-xs font-semibold">{label}</span>
-              <span className="text-gray-400 text-xs">
+              <span className="text-white/30 text-xs">
                 Slot max:{" "}
-                <span className="text-ipl-gold font-mono">{slotMax}</span>{" "}
+                <span className="text-neon font-mono">{slotMax}</span>{" "}
                 &nbsp;·&nbsp; Σ weights:{" "}
                 <span className="font-mono">{totalW.toFixed(2)}</span>
               </span>
             </div>
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="text-left text-gray-400 font-semibold py-1.5 px-4">
+                <tr className="border-b border-white/[0.08]">
+                  <th className="text-left text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
                     Rating
                   </th>
-                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">
+                  <th className="text-right text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
                     Raw weight
                   </th>
-                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">
+                  <th className="text-right text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
                     Effective %
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(([attr, raw, pct]) => (
-                  <tr key={attr} className="border-b border-gray-800/50">
-                    <td className="py-1.5 px-4 text-gray-300 font-mono">
+                  <tr key={attr} className="border-b border-white/[0.04]">
+                    <td className="py-1.5 px-4 text-white/60 font-mono">
                       {attr}
                     </td>
-                    <td className="py-1.5 px-4 text-gray-400 text-right font-mono">
+                    <td className="py-1.5 px-4 text-white/30 text-right font-mono">
                       {raw.toFixed(2)}
                     </td>
-                    <td className="py-1.5 px-4 text-ipl-gold text-right font-mono">
+                    <td className="py-1.5 px-4 text-neon text-right font-mono">
                       {pct}
                     </td>
                   </tr>
@@ -967,7 +811,7 @@ function RulesTab() {
           </div>
         ))}
 
-        <div className="mt-1 space-y-1 text-xs text-gray-400">
+        <div className="mt-1 space-y-1 text-xs text-white/40">
           <p>• Bowlers can only occupy positions 9–12.</p>
           <p>• Batsmen &amp; Wicket-Keepers can only occupy positions 1–8.</p>
           <p>• All-Rounders can occupy positions 1–9.</p>
@@ -1010,7 +854,7 @@ function RulesTab() {
             ["< 10", "0"],
           ]}
         />
-        <p className="text-gray-500 text-xs mt-1">
+        <p className="text-white/25 text-xs mt-1">
           +0.5 bonus if squad has both left-arm and right-arm pacers (cap 3.0
           total).
         </p>
@@ -1029,7 +873,7 @@ function RulesTab() {
             ["< 6", "0"],
           ]}
         />
-        <p className="text-gray-500 text-xs mt-1">
+        <p className="text-white/25 text-xs mt-1">
           +0.5 bonus for complementary spin archetypes (off-spin + leg-spin
           combo).
         </p>
@@ -1037,13 +881,13 @@ function RulesTab() {
         <h3 className="text-white font-semibold text-sm mt-5 mb-2">
           4. Phase Bowling Scores
         </h3>
-        <p className="text-gray-400 text-xs mb-3">
+        <p className="text-white/40 text-xs mb-3">
           Requires ≥ 2 eligible bowlers. Takes top 4 bowlers per phase.
           <br />
           Effective rating = base rating if designated for that phase, else{" "}
           <span className="text-red-400">base − 2.</span>
         </p>
-        <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-3">
+        <div className="bg-surface-2/60 rounded-xl px-4 py-3 font-mono text-sm text-neon mb-3">
           Phase Score = avg(top 4 effective ratings) × multiplier [clamped to
           max]
         </div>
@@ -1082,28 +926,28 @@ function RulesTab() {
               attrs: "Player age — optimal team average = 30 years",
             },
           ].map(({ label, formula, attrs }) => (
-            <div key={label} className="bg-gray-800/40 rounded-xl p-4">
+            <div key={label} className="bg-surface-2/40 rounded-xl p-4">
               <p className="text-white text-sm font-semibold mb-1">{label}</p>
-              <pre className="font-mono text-xs text-ipl-gold whitespace-pre-wrap mb-1">
+              <pre className="font-mono text-xs text-neon whitespace-pre-wrap mb-1">
                 {formula}
               </pre>
-              <p className="text-gray-500 text-xs">Source fields: {attrs}</p>
+              <p className="text-white/30 text-xs">Source fields: {attrs}</p>
             </div>
           ))}
 
           {/* Captaincy — full step table */}
-          <div className="bg-gray-800/40 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-700">
+          <div className="bg-surface-2/40 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/[0.08]">
               <p className="text-white text-sm font-semibold">
                 Captaincy (Max 4)
               </p>
-              <p className="text-gray-500 text-xs mt-0.5">
+              <p className="text-white/25 text-xs mt-0.5">
                 Source: <span className="font-mono">tactical.captaincy</span>{" "}
                 summed across all squad players
               </p>
             </div>
-            <div className="px-4 py-3 border-b border-gray-700">
-              <pre className="font-mono text-xs text-ipl-gold whitespace-pre-wrap">
+            <div className="px-4 py-3 border-b border-white/[0.08]">
+              <pre className="font-mono text-xs text-neon whitespace-pre-wrap">
                 {
                   "steps = floor(max(0,  1.75 − total)  /  0.25)\nscore = max(0,  4  −  steps × 0.5)"
                 }
@@ -1111,14 +955,14 @@ function RulesTab() {
             </div>
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="text-left text-gray-400 font-semibold py-1.5 px-4">
+                <tr className="border-b border-white/[0.08]">
+                  <th className="text-left text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
                     Total captaincy (squad sum)
                   </th>
-                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">
+                  <th className="text-right text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
                     Steps
                   </th>
-                  <th className="text-right text-gray-400 font-semibold py-1.5 px-4">
+                  <th className="text-right text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
                     Score
                   </th>
                 </tr>
@@ -1134,15 +978,15 @@ function RulesTab() {
                   ["0.01 – 0.25", "6", "1.0"],
                   ["≤ 0", "—", "0.0"],
                 ].map(([range, steps, score], i) => (
-                  <tr key={i} className="border-b border-gray-800/50">
-                    <td className="py-1.5 px-4 text-gray-300 font-mono">
+                  <tr key={i} className="border-b border-white/[0.04]">
+                    <td className="py-1.5 px-4 text-white/60 font-mono">
                       {range}
                     </td>
-                    <td className="py-1.5 px-4 text-gray-400 text-right font-mono">
+                    <td className="py-1.5 px-4 text-white/30 text-right font-mono">
                       {steps}
                     </td>
                     <td
-                      className={`py-1.5 px-4 text-right font-mono font-semibold ${score === "4.0" ? "text-ipl-gold" : score === "0.0" ? "text-gray-500" : "text-gray-300"}`}
+                      className={`py-1.5 px-4 text-right font-mono font-semibold ${score === "4.0" ? "text-neon" : score === "0.0" ? "text-white/20" : "text-white/60"}`}
                     >
                       {score}
                     </td>
@@ -1156,8 +1000,8 @@ function RulesTab() {
 
       {/* ── SQUAD RATING MODE ── */}
       <Section title="Squad Rating Mode">
-        <p className="text-gray-300 text-sm mb-4">
-          When you click <strong className="text-ipl-gold">🛡️ Rate by Squad</strong>, the scoring formula changes to
+        <p className="text-white/60 text-sm mb-4">
+          When you click <strong className="text-neon">🛡️ Rate by Squad</strong>, the scoring formula changes to
           reward bench depth over tactical flexibility. The Playing 12 is still selected optimally, but the{" "}
           <em>Other</em> metrics are re-weighted and a Bench Strength score is added.
         </p>
@@ -1176,17 +1020,17 @@ function RulesTab() {
         />
 
         <h3 className="text-white font-semibold text-sm mt-5 mb-2">Bench Strength (Max 10 pts)</h3>
-        <div className="bg-gray-800/60 rounded-xl px-4 py-3 font-mono text-sm text-ipl-gold mb-3">
+        <div className="bg-surface-2/60 rounded-xl px-4 py-3 font-mono text-sm text-neon mb-3">
           Score = (backed_up / at_risk) × 10
         </div>
-        <p className="text-gray-400 text-xs mb-3">
+        <p className="text-white/40 text-xs mb-3">
           <em>at_risk</em> = players in the Playing 12 with injury_risk &gt; 4.{" "}
           If no at-risk players exist, full 10 pts are awarded automatically.{" "}
           If the Playing 12 is empty, score is 0.
         </p>
 
         <h3 className="text-white font-semibold text-sm mb-2">Backup Validity Rules</h3>
-        <p className="text-gray-400 text-xs mb-3">
+        <p className="text-white/40 text-xs mb-3">
           A bench player is a valid backup for an at-risk Playing 12 player if:
         </p>
         <Table
@@ -1201,7 +1045,7 @@ function RulesTab() {
             ["All-Rounder (spin)", "—", "Spin All-Rounder only (pure Bowlers cannot back up ARs)"],
           ]}
         />
-        <p className="text-gray-500 text-xs mt-3">
+        <p className="text-white/25 text-xs mt-3">
           Nationality constraint: an Indian at-risk player must be backed by an Indian bench player;
           overseas players can be backed by any nationality.
         </p>
@@ -1245,31 +1089,29 @@ function InRoomLayout() {
   const myAssignment = user ? teamAssignments?.[user.id] : null;
 
   return (
-    <div className="h-full bg-ipl-dark overflow-hidden">
-      <div className="fixed top-[72px] inset-x-0 z-40 bg-gray-950 border-b border-gray-800">
+    <div className="h-full bg-obsidian overflow-hidden">
+      <div className="fixed top-[57px] inset-x-0 z-40 bg-obsidian/95 border-b border-white/[0.06] backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 flex items-center gap-1 overflow-x-auto scrollbar-none">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative flex-shrink-0 px-4 py-3 text-sm font-semibold transition border-b-2 ${
+              className={`relative flex-shrink-0 px-4 py-3 text-xs font-bold uppercase tracking-wider transition border-b-2 ${
                 activeTab === tab
-                  ? "text-ipl-gold border-ipl-gold"
-                  : "text-gray-400 border-transparent hover:text-white hover:border-gray-600"
+                  ? "text-neon border-neon"
+                  : "text-white/30 border-transparent hover:text-white hover:border-white/20"
               }`}
             >
               {tab}
               {tab === "Auction" && room && (
-                <span className="absolute top-2 right-1 w-1.5 h-1.5 rounded-full bg-green-500" />
+                <span className="absolute top-2 right-1 w-1.5 h-1.5 rounded-full bg-neon animate-live-blink" />
               )}
             </button>
           ))}
 
           <div className="flex-shrink-0 ml-2 flex items-center gap-2 pb-1">
-            <span className="text-xs text-gray-500 hidden sm:inline">
-              Room:
-            </span>
-            <span className="font-mono font-bold text-ipl-gold text-sm bg-gray-900 px-2 py-0.5 rounded-lg border border-gray-700">
+            <span className="text-[10px] text-white/25 hidden sm:inline uppercase tracking-wider">Room:</span>
+            <span className="font-mono font-black text-neon text-sm bg-neon/[0.07] px-2 py-0.5 rounded-lg border border-neon/25 neon-glow">
               {room?.code}
             </span>
           </div>
@@ -1292,18 +1134,15 @@ function InRoomLayout() {
           ) : (
             <div className="h-full overflow-y-auto">
               <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-10 text-center max-w-sm">
-                  <p className="text-4xl mb-4">🏏</p>
-                  <h2 className="text-white font-bold text-xl mb-2">
-                    Pick a Team First
-                  </h2>
-                  <p className="text-gray-400 text-sm mb-6">
-                    Go to the Lobby tab and select your team before joining the
-                    auction.
+                <div className="border border-white/[0.08] bg-surface rounded-2xl p-10 text-center max-w-sm shadow-2xl">
+                  <div className="w-14 h-14 rounded-full border border-neon/25 bg-neon/[0.08] flex items-center justify-center mx-auto mb-5 text-2xl">🏏</div>
+                  <h2 className="text-white font-black text-xl mb-2">Pick a Team First</h2>
+                  <p className="text-white/40 text-sm mb-6">
+                    Go to the Lobby tab and select your team before joining the auction.
                   </p>
                   <button
                     onClick={() => setActiveTab("Lobby")}
-                    className="bg-ipl-gold text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
+                    className="bg-neon text-black font-bold px-6 py-2.5 rounded-xl hover:brightness-110 transition"
                   >
                     Go to Lobby
                   </button>
@@ -1349,14 +1188,13 @@ export default function RoomPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold text-ipl-gold">Auction Rooms</h1>
-        <p className="text-gray-400 mt-2 text-sm">
-          Create a private room or join one with a code
-        </p>
+        <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-2">Lobby</p>
+        <h1 className="font-bebas text-5xl tracking-wider text-white">Auction Rooms</h1>
+        <p className="text-white/40 mt-2 text-sm">Create a private room or join one with a code</p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl mb-6">
+        <div className="flex items-center gap-2 bg-bid-red/10 border border-bid-red/25 text-bid-red text-sm px-4 py-3 rounded-xl mb-6">
           <span>⚠</span> {error}
         </div>
       )}

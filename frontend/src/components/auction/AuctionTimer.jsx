@@ -1,76 +1,57 @@
 import { useMemo } from 'react';
 
-const SIZE           = 120;
-const STROKE         = 8;
-const RADIUS         = (SIZE - STROKE) / 2;
-const CIRCUMFERENCE  = 2 * Math.PI * RADIUS;
-
 /**
- * SVG circular countdown ring.
- * @param {number}  timeLeft      - seconds remaining
- * @param {number}  totalDuration - full timer duration (for % calculation)
- * @param {boolean} active        - whether to show pulsing ring
+ * Large digit countdown timer with red-bloom critical state.
+ * Replaces the old SVG ring — matches the new bento-grid controls bar.
  */
 export default function AuctionTimer({ timeLeft, totalDuration = 30, active }) {
-  const pct    = totalDuration > 0 ? Math.min(1, Math.max(0, timeLeft / totalDuration)) : 0;
-  const offset = CIRCUMFERENCE * (1 - pct);
-  const display = Math.min(timeLeft, 99);
+  const pct     = totalDuration > 0 ? Math.min(1, Math.max(0, timeLeft / totalDuration)) : 0;
+  const display = String(Math.min(timeLeft, 99)).padStart(2, '0');
 
-  const ringColor = useMemo(() => {
-    if (!active || timeLeft === 0) return '#4B5563';
-    if (pct > 0.5) return '#22c55e';
-    if (pct > 0.25) return '#f59e0b';
-    return '#ef4444';
+  const state = useMemo(() => {
+    if (!active || timeLeft === 0) return 'idle';
+    if (pct <= 0.17) return 'critical';   // ≤ 5 s of 30 s  (red bloom)
+    if (pct <= 0.33) return 'warning';    // ≤ 10 s (orange)
+    return 'ok';
   }, [active, pct, timeLeft]);
 
-  const textColor = useMemo(() => {
-    if (!active || timeLeft === 0) return 'text-gray-500';
-    if (pct > 0.5) return 'text-green-400';
-    if (pct > 0.25) return 'text-amber-400';
-    return 'text-red-400';
-  }, [active, pct, timeLeft]);
+  const barPct = Math.max(0, pct * 100);
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative" style={{ width: SIZE, height: SIZE }}>
-        {/* Background track */}
-        <svg width={SIZE} height={SIZE} className="rotate-[-90deg]">
-          <circle
-            cx={SIZE / 2} cy={SIZE / 2} r={RADIUS}
-            fill="none" stroke="#1f2937" strokeWidth={STROKE}
-          />
-          {/* Progress arc */}
-          <circle
-            cx={SIZE / 2} cy={SIZE / 2} r={RADIUS}
-            fill="none"
-            stroke={ringColor}
-            strokeWidth={STROKE}
-            strokeLinecap="round"
-            strokeDasharray={CIRCUMFERENCE}
-            strokeDashoffset={offset}
-            style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.3s ease' }}
-          />
-        </svg>
+    <div className="flex flex-col items-center gap-1">
+      <p className="text-[8px] font-black tracking-[2px] text-white/25 uppercase">Time Left</p>
 
-        {/* Centre text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-3xl font-bold tabular-nums ${textColor} ${active && timeLeft <= 10 && timeLeft > 0 ? 'animate-pulse' : ''}`}>
-            {display}
-          </span>
-          <span className="text-xs text-gray-500 mt-0.5">sec</span>
-        </div>
+      <div className={`font-bebas leading-none tabular-nums transition-all select-none
+        ${state === 'critical' ? 'text-bid-red text-5xl animate-crit-pulse red-bloom'
+          : state === 'warning' ? 'text-orange-400 text-5xl'
+          : state === 'ok'     ? 'text-white text-5xl'
+          : 'text-white/25 text-5xl'}`}>
+        {display}
       </div>
 
-      <span className={`text-xs font-semibold mt-1 ${
-        !active || timeLeft === 0 ? 'text-gray-600'
-        : timeLeft <= 10 ? 'text-red-400 animate-pulse'
-        : 'text-gray-400'
-      }`}>
-        {!active ? 'WAITING'
-         : timeLeft === 0 ? 'TIME UP'
-         : timeLeft <= 10 ? 'CLOSING!'
+      {/* thin bar under the digits */}
+      <div className="w-14 h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
+        <div
+          className="h-full rounded-full transition-[width] duration-1000 linear"
+          style={{
+            width: `${barPct}%`,
+            background: state === 'critical' ? '#FF3355'
+                      : state === 'warning'  ? '#FF8C00'
+                      : '#00FF66',
+          }}
+        />
+      </div>
+
+      <p className={`text-[9px] font-bold tracking-[1.5px] uppercase transition-colors
+        ${state === 'critical' ? 'text-bid-red animate-pulse'
+          : state === 'warning'  ? 'text-orange-400'
+          : state === 'ok'       ? 'text-white/40'
+          : 'text-white/20'}`}>
+        {state === 'idle'     ? 'WAITING'
+         : timeLeft === 0     ? 'TIME UP'
+         : state === 'critical' ? 'CLOSING!'
          : 'LIVE'}
-      </span>
+      </p>
     </div>
   );
 }

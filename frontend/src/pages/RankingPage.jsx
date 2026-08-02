@@ -219,19 +219,19 @@ const SCHEMA_SECTIONS_SQUAD = [
 const InfoModal = ({ onClose, mode }) => {
   const sections = mode === 'squad' ? SCHEMA_SECTIONS_SQUAD : SCHEMA_SECTIONS;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
       <div
-        className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl"
+        className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/[0.08] bg-obsidian p-6 shadow-2xl custom-scrollbar"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-black text-ipl-gold">Rating Schema</h2>
-            <p className="mt-0.5 text-xs text-gray-500">
+            <h2 className="text-xl font-black text-neon">Rating Schema</h2>
+            <p className="mt-0.5 text-xs text-white/30">
               {mode === 'squad' ? 'Squad mode — bench strength replaces tactical' : 'Playing 12 mode — how each team\'s score out of 100 is calculated'}
             </p>
           </div>
-          <button onClick={onClose} className="ml-4 text-gray-500 hover:text-white">
+          <button onClick={onClose} className="ml-4 text-white/30 hover:text-white transition">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -244,12 +244,12 @@ const InfoModal = ({ onClose, mode }) => {
               <p className={`mb-2 text-sm font-bold ${section.color}`}>{section.title}</p>
               <div className="space-y-2">
                 {section.rows.map((row) => (
-                  <div key={row.label} className="rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2.5">
+                  <div key={row.label} className="rounded-lg border border-white/[0.06] bg-surface-2/60 px-3 py-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-white">{row.label}</span>
-                      <span className="text-xs text-gray-500">max {row.max}</span>
+                      <span className="text-xs text-white/30">max {row.max}</span>
                     </div>
-                    <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-gray-400">{row.desc}</p>
+                    <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-white/40">{row.desc}</p>
                   </div>
                 ))}
               </div>
@@ -264,26 +264,26 @@ const InfoModal = ({ onClose, mode }) => {
 // ── Breakdown row with explanation ────────────────────────────────────────────
 
 const BreakdownRow = ({ label, value, max, explanation }) => (
-  <div className="rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2.5 text-sm">
+  <div className="rounded-lg border border-white/[0.06] bg-obsidian/60 px-3 py-2.5 text-sm">
     <div className="flex items-center justify-between">
-      <span className="text-gray-400">{label}</span>
+      <span className="text-white/40">{label}</span>
       <span className="font-semibold tabular-nums text-white">
-        {value}{max != null ? <span className="text-gray-600">/{max}</span> : ''}
+        {value}{max != null ? <span className="text-white/20">/{max}</span> : ''}
       </span>
     </div>
-    {explanation && <p className="mt-1 text-xs leading-relaxed text-gray-500">{explanation}</p>}
+    {explanation && <p className="mt-1 text-xs leading-relaxed text-white/30">{explanation}</p>}
   </div>
 );
 
 const ScoreBar = ({ score }) => (
   <div className="mt-2 flex items-center gap-2">
-    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-700">
+    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
       <div
-        className="h-full rounded-full bg-gradient-to-r from-ipl-blue to-ipl-gold transition-all duration-700"
-        style={{ width: `${score}%` }}
+        className="h-full rounded-full transition-all duration-700"
+        style={{ width: `${score}%`, background: 'linear-gradient(90deg, #00CC55, #00FF66)' }}
       />
     </div>
-    <span className="w-12 text-right text-xs tabular-nums text-gray-400">{score}/100</span>
+    <span className="w-12 text-right text-xs tabular-nums text-white/30">{score}/100</span>
   </div>
 );
 
@@ -301,113 +301,99 @@ const BenchStrengthPanel = ({ benchStrength }) => {
 
   if (total === 0) {
     return (
-      <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2.5">
+      <div className="rounded-lg border border-neon/20 bg-neon/[0.06] px-3 py-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300 font-semibold">Bench Strength</span>
-            <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-400">
+            <span className="text-sm text-white/70 font-semibold">Bench Strength</span>
+            <span className="rounded-full bg-neon/10 border border-neon/20 px-2 py-0.5 text-[10px] font-bold text-neon">
               All clear
             </span>
           </div>
           <span className="font-bold tabular-nums text-white">
-            {score}<span className="text-gray-600 font-normal">/10</span>
+            {score}<span className="text-white/20 font-normal">/10</span>
           </span>
         </div>
-        <p className="mt-1.5 text-xs text-green-400">No at-risk players need bench cover — full 10 pts awarded. (Keepers with 2+ keepers in XI are self-covered.)</p>
+        <p className="mt-1.5 text-xs text-neon/70">No at-risk players need bench cover — full 10 pts awarded. (Keepers with 2+ keepers in XI are self-covered.)</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-gray-700 bg-gray-950/80 overflow-hidden">
+    <div className="rounded-lg border border-white/[0.08] bg-obsidian/80 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 bg-gray-900/60 border-b border-gray-800">
+      <div className="flex items-center justify-between px-3 py-2.5 bg-surface/60 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-200">Bench Strength</span>
+          <span className="text-sm font-semibold text-white/70">Bench Strength</span>
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-            backed === total ? 'bg-green-500/15 text-green-400' :
-            backed > 0     ? 'bg-amber-500/15 text-amber-400' :
-                             'bg-red-500/15 text-red-400'
+            backed === total ? 'bg-neon/10 border border-neon/20 text-neon' :
+            backed > 0      ? 'bg-amber-500/15 text-amber-400' :
+                              'bg-bid-red/15 text-bid-red'
           }`}>
             {backed}/{total} backed
           </span>
         </div>
         <span className="font-bold tabular-nums text-white text-sm">
-          {score}<span className="text-gray-600 font-normal">/10</span>
+          {score}<span className="text-white/20 font-normal">/10</span>
         </span>
       </div>
 
       {/* Subheading */}
       <div className="px-3 pt-2.5 pb-1">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-white/25">
           Injury-risk players in playing 12 (risk &gt; 4)
         </p>
       </div>
 
-      {/* Player list — always visible */}
+      {/* Player list */}
       <div className="px-3 pb-3 space-y-2">
         {details.map((d) => (
-          <div
-            key={d.playerId}
+          <div key={d.playerId}
             className={`rounded-lg border px-3 py-2 ${
-              d.hasBackup
-                ? 'border-green-500/25 bg-green-500/5'
-                : 'border-red-500/25 bg-red-500/5'
+              d.hasBackup ? 'border-neon/15 bg-neon/[0.04]' : 'border-bid-red/20 bg-bid-red/[0.04]'
             }`}
           >
-            {/* Player row */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className={`flex-shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold ${
-                  ROLE_BADGE[d.role] ?? 'text-gray-400 bg-gray-400/10 border-gray-400/30'
+                  ROLE_BADGE[d.role] ?? 'text-white/40 bg-white/[0.05] border-white/10'
                 }`}>
-                  {d.role === 'Wicket-Keeper' ? 'WK'
-                    : d.role === 'All-Rounder'  ? 'AR'
-                    : d.role === 'Batsman'       ? 'BAT'
-                    : 'BWL'}
+                  {d.role === 'Wicket-Keeper' ? 'WK' : d.role === 'All-Rounder' ? 'AR'
+                    : d.role === 'Batsman' ? 'BAT' : 'BWL'}
                 </span>
                 <span className="text-xs font-semibold text-white truncate">{d.name}</span>
-                <span className="flex-shrink-0 text-[10px] text-gray-500">
+                <span className="flex-shrink-0 text-[10px] text-white/30">
                   {d.nationality}{d.bowling_style ? ` · ${d.bowling_style}` : ''}
                 </span>
               </div>
               <span className={`flex-shrink-0 text-[10px] font-bold rounded px-1.5 py-0.5 ${
-                d.hasBackup
-                  ? 'bg-green-500/15 text-green-400'
-                  : 'bg-red-500/15 text-red-400'
+                d.hasBackup ? 'bg-neon/10 text-neon' : 'bg-bid-red/15 text-bid-red'
               }`}>
                 Risk {d.injuryRisk}/10
               </span>
             </div>
 
-            {/* Backup info */}
             <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">Backup:</span>
+              <span className="text-[10px] text-white/30 font-semibold uppercase tracking-wide">Backup:</span>
               {d.hasBackup ? (
                 <span className="flex items-center gap-1 text-[10px]">
                   <span className={`rounded border px-1 py-0.5 font-bold ${
-                    ROLE_BADGE[d.backupRole] ?? 'text-gray-400 bg-gray-400/10 border-gray-400/30'
+                    ROLE_BADGE[d.backupRole] ?? 'text-white/40 bg-white/[0.05] border-white/10'
                   }`}>
-                    {d.backupRole === 'Wicket-Keeper' ? 'WK'
-                      : d.backupRole === 'All-Rounder'  ? 'AR'
-                      : d.backupRole === 'Batsman'       ? 'BAT'
-                      : d.backupRole === 'Bowler'        ? 'BWL'
+                    {d.backupRole === 'Wicket-Keeper' ? 'WK' : d.backupRole === 'All-Rounder' ? 'AR'
+                      : d.backupRole === 'Batsman' ? 'BAT' : d.backupRole === 'Bowler' ? 'BWL'
                       : d.backupRole ?? '—'}
                   </span>
-                  <span className="font-semibold text-green-400">{d.backupName}</span>
-                  <span className="text-gray-600">(on bench)</span>
+                  <span className="font-semibold text-neon">{d.backupName}</span>
+                  <span className="text-white/20">(on bench)</span>
                 </span>
               ) : (
-                <span className="text-[10px] font-bold text-red-400">No Backup — not covered</span>
+                <span className="text-[10px] font-bold text-bid-red">No Backup — not covered</span>
               )}
             </div>
           </div>
         ))}
 
-        {/* Summary line */}
-        <p className="text-[10px] text-gray-600 pt-0.5">
-          {explainBenchStrength(score)}
-        </p>
+        <p className="text-[10px] text-white/20 pt-0.5">{explainBenchStrength(score)}</p>
       </div>
     </div>
   );
@@ -446,9 +432,8 @@ const Playing12 = ({ players }) => {
     }
   };
 
-  if (!players?.length) return <p className="text-xs text-gray-500">No squad data available.</p>;
+  if (!players?.length) return <p className="text-xs text-white/30">No squad data available.</p>;
 
-  // Build a map of battingPosition -> player for quick lookup
   const byPosition = {};
   players.forEach((p) => { if (p.battingPosition) byPosition[p.battingPosition] = p; });
 
@@ -464,56 +449,42 @@ const Playing12 = ({ players }) => {
 
           if (!p) {
             return (
-              <div
-                key={pos}
-                className="flex items-center gap-2 rounded-lg border border-dashed border-gray-700/40 px-2.5 py-2 opacity-40"
-              >
-                <div className="w-6 flex-shrink-0 text-center text-xs font-black tabular-nums text-ipl-gold">
-                  {pos}
-                </div>
+              <div key={pos}
+                className="flex items-center gap-2 rounded-lg border border-dashed border-white/[0.06] px-2.5 py-2 opacity-30">
+                <div className="w-6 flex-shrink-0 text-center text-xs font-black tabular-nums text-neon">{pos}</div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-gray-600">— Empty —</p>
-                  {posLabel && <p className="truncate text-[10px] text-gray-700">{posLabel}</p>}
+                  <p className="truncate text-xs font-semibold text-white/20">— Empty —</p>
+                  {posLabel && <p className="truncate text-[10px] text-white/15">{posLabel}</p>}
                 </div>
-                <span className="flex-shrink-0 rounded border border-gray-800 bg-gray-900 px-1.5 py-0.5 text-[9px] font-bold text-gray-700">
-                  —
-                </span>
+                <span className="flex-shrink-0 rounded border border-white/[0.06] bg-surface px-1.5 py-0.5 text-[9px] font-bold text-white/15">—</span>
               </div>
             );
           }
 
           const isLoading = loadingId === String(p._id);
           return (
-            <div
-              key={pos}
+            <div key={pos}
               onClick={() => openStats(String(p._id))}
-              className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 cursor-pointer transition hover:bg-gray-800/60 ${
+              className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 cursor-pointer transition hover:bg-white/[0.04] ${
                 p.isPreferred === false
-                  ? 'border-gray-700 bg-gray-900/60'
-                  : 'border-gray-800 bg-gray-950/60'
+                  ? 'border-amber-500/20 bg-amber-500/[0.03]'
+                  : 'border-white/[0.06] bg-obsidian/60'
               } ${isLoading ? 'opacity-60' : ''}`}
             >
-              {/* Position badge */}
-              <div className="w-6 flex-shrink-0 text-center text-xs font-black tabular-nums text-ipl-gold">
-                {pos}
-              </div>
-
+              <div className="w-6 flex-shrink-0 text-center text-xs font-black tabular-nums text-neon">{pos}</div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold text-white">{p.name}</p>
-                <p className="truncate text-[10px] text-gray-500">
+                <p className="truncate text-[10px] text-white/30">
                   {p.nationality} · {p.batting_style === 'left-handed' ? 'LHB' : 'RHB'}
-                  {posLabel && <span className="ml-1 text-gray-600">· {posLabel}</span>}
+                  {posLabel && <span className="ml-1 text-white/20">· {posLabel}</span>}
                   {p.isPreferred === false && <span className="ml-1 text-amber-400">· out of pos</span>}
                 </p>
               </div>
-
-              {/* Role badge */}
-              <span className="flex-shrink-0 rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-[9px] font-bold text-gray-300">
+              <span className="flex-shrink-0 rounded border border-white/[0.08] bg-surface-2 px-1.5 py-0.5 text-[9px] font-bold text-white/50">
                 {p.role === 'Wicket-Keeper' ? 'WK' : p.role === 'All-Rounder' ? 'AR' : p.role === 'Batsman' ? 'BAT' : 'BWL'}
               </span>
-
               {isLoading && (
-                <svg className="w-3 h-3 animate-spin text-ipl-gold flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                <svg className="w-3 h-3 animate-spin text-neon flex-shrink-0" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
@@ -542,22 +513,20 @@ const TeamCard = ({ entry, mode }) => {
   const hasData = b != null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/70">
+    <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-surface/70">
       <button className="w-full p-5 text-left" onClick={() => setExpanded((v) => !v)}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="text-2xl leading-none">{medal}</span>
             <div>
               <p className="text-lg font-black text-white">{entry.teamName}</p>
-              <p className="font-mono text-xs text-gray-500">{entry.teamShortName}</p>
+              <p className="font-mono text-xs text-white/30">{entry.teamShortName}</p>
             </div>
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
-            <span className="text-2xl font-black tabular-nums text-ipl-gold">{displayScore}</span>
-            <svg
-              className={`h-4 w-4 text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
+            <span className="font-bebas text-3xl tabular-nums text-neon tracking-wider">{displayScore}</span>
+            <svg className={`h-4 w-4 text-white/30 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
@@ -566,25 +535,22 @@ const TeamCard = ({ entry, mode }) => {
       </button>
 
       {expanded && (
-        <div className="border-t border-gray-800/60">
+        <div className="border-t border-white/[0.04]">
           {!hasData ? (
             <div className="px-5 py-8 text-center">
-              <p className="text-sm text-gray-500">
-                Click <span className="font-semibold text-gray-300">{isSquad ? '🛡️ Rate by Squad' : '🏏 Rate by Playing 12'}</span> above to generate this view.
+              <p className="text-sm text-white/30">
+                Click <span className="font-semibold text-white/60">{isSquad ? '🛡️ Rate by Squad' : '🏏 Rate by Playing 12'}</span> above to generate this view.
               </p>
             </div>
           ) : (
             <>
           {/* Tabs */}
-          <div className="flex border-b border-gray-800">
+          <div className="flex border-b border-white/[0.06]">
             {['scores', 'playing12'].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
+              <button key={t} onClick={() => setTab(t)}
                 className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition ${
-                  tab === t ? 'border-b-2 border-ipl-gold text-ipl-gold' : 'text-gray-500 hover:text-gray-300'
-                }`}
-              >
+                  tab === t ? 'border-b-2 border-neon text-neon' : 'text-white/30 hover:text-white/60'
+                }`}>
                 {t === 'scores' ? 'Score Breakdown' : 'Playing 12'}
               </button>
             ))}
@@ -593,12 +559,11 @@ const TeamCard = ({ entry, mode }) => {
           <div className="space-y-4 px-5 pb-5 pt-4">
             {tab === 'playing12' ? (
               <Playing12 players={isSquad ? (entry.squadPlaying12 ?? entry.playing12) : entry.playing12} />
-
             ) : (
               <>
                 {!isSquad && entry.changeLog && entry.changeLog !== 'No changes made to squad.' && (
-                  <div className="mt-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
-                    <p className="font-bold text-xs uppercase tracking-wider mb-1">Recent Playing 12 Changes</p>
+                  <div className="mt-3 rounded-lg border border-neon/20 bg-neon/[0.06] p-3 text-sm text-neon/80">
+                    <p className="font-bold text-xs uppercase tracking-wider mb-1 text-neon">Recent Playing 12 Changes</p>
                     <p>{entry.changeLog}</p>
                   </div>
                 )}
@@ -646,38 +611,38 @@ const TeamCard = ({ entry, mode }) => {
                   {/* Batting order assignment for cross-checking */}
                   {b.batting.battingOrder?.length > 0 && (
                     <div className="mt-3">
-                      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">Batting Order Assignment</p>
-                      <div className="rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 space-y-1">
+                      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/25">Batting Order Assignment</p>
+                      <div className="rounded-lg border border-white/[0.06] bg-obsidian/60 px-3 py-2 space-y-1">
                         {Array.from({ length: 12 }, (_, i) => i + 1).map((pos) => {
                           const entry = b.batting.battingOrder.find((e) => e.position === pos);
                           if (!entry) return (
-                            <div key={pos} className="flex items-center gap-2 text-xs opacity-30">
-                              <span className="w-5 text-center font-black tabular-nums text-ipl-gold">{pos}</span>
-                              <span className="text-gray-600 italic">— empty —</span>
+                            <div key={pos} className="flex items-center gap-2 text-xs opacity-25">
+                              <span className="w-5 text-center font-black tabular-nums text-neon">{pos}</span>
+                              <span className="text-white/20 italic">— empty —</span>
                             </div>
                           );
                           return (
                             <div key={pos} className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
-                                <span className="w-5 text-center font-black tabular-nums text-ipl-gold">{pos}</span>
-                                <span className="text-gray-300 font-medium">{entry.name}</span>
+                                <span className="w-5 text-center font-black tabular-nums text-neon">{pos}</span>
+                                <span className="text-white/70 font-medium">{entry.name}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="tabular-nums text-[10px] text-gray-500">
+                                <span className="tabular-nums text-[10px] text-white/30">
                                   {entry.contribution != null ? entry.contribution.toFixed(2) : '—'}
-                                  <span className="text-gray-700">/{entry.slotMax != null ? entry.slotMax.toFixed(2) : '—'}</span>
+                                  <span className="text-white/15">/{entry.slotMax != null ? entry.slotMax.toFixed(2) : '—'}</span>
                                 </span>
-                                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${entry.isPreferred ? 'bg-green-500/15 text-green-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${entry.isPreferred ? 'bg-neon/10 text-neon' : 'bg-amber-500/15 text-amber-400'}`}>
                                   {entry.isPreferred ? '✓' : '✗ out of pos'}
                                 </span>
                               </div>
                             </div>
                           );
                         })}
-                        <div className="mt-1.5 flex items-center justify-between border-t border-gray-800 pt-1.5 text-[10px]">
-                          <span className="text-gray-500 font-semibold uppercase tracking-wider">Total Position Fit</span>
+                        <div className="mt-1.5 flex items-center justify-between border-t border-white/[0.06] pt-1.5 text-[10px]">
+                          <span className="text-white/25 font-semibold uppercase tracking-wider">Total Position Fit</span>
                           <span className="tabular-nums font-black text-blue-400">
-                            {b.batting.positions}<span className="text-gray-600 font-normal">/34</span>
+                            {b.batting.positions}<span className="text-white/20 font-normal">/34</span>
                           </span>
                         </div>
                       </div>
@@ -700,7 +665,7 @@ const TeamCard = ({ entry, mode }) => {
                   {/* Phase assignment breakdown for cross-checking */}
                   {b.bowling.phaseAssignments && (
                     <div className="mt-3 space-y-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Phase Assignments (top 4 per phase)</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/25">Phase Assignments (top 4 per phase)</p>
                       {[
                         { key: 'powerplay', label: 'Powerplay' },
                         { key: 'middle',    label: 'Middle' },
@@ -709,20 +674,18 @@ const TeamCard = ({ entry, mode }) => {
                         const bowlers = b.bowling.phaseAssignments[key] ?? [];
                         if (!bowlers.length) return null;
                         return (
-                          <div key={key} className="rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2">
-                            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-red-400">{label}</p>
+                          <div key={key} className="rounded-lg border border-white/[0.06] bg-obsidian/60 px-3 py-2">
+                            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-bid-red">{label}</p>
                             <div className="space-y-1">
                               {bowlers.map((b) => (
                                 <div key={b.name} className="flex items-center justify-between text-xs">
-                                  <span className="text-gray-300 font-medium">{b.name}</span>
+                                  <span className="text-white/70 font-medium">{b.name}</span>
                                   <div className="flex items-center gap-2 text-[10px]">
-                                    {!b.designated && (
-                                      <span className="text-amber-400">−2 penalty</span>
-                                    )}
-                                    <span className="tabular-nums text-gray-500">
+                                    {!b.designated && <span className="text-amber-400">−2 penalty</span>}
+                                    <span className="tabular-nums text-white/30">
                                       {b.base}{!b.designated && <span className="text-amber-400">→{b.effective}</span>}
                                     </span>
-                                    <span className={`rounded-full px-1.5 py-0.5 font-bold ${b.designated ? 'bg-green-500/15 text-green-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                                    <span className={`rounded-full px-1.5 py-0.5 font-bold ${b.designated ? 'bg-neon/10 text-neon' : 'bg-amber-500/15 text-amber-400'}`}>
                                       {b.designated ? '✓' : '✗'}
                                     </span>
                                   </div>
@@ -1207,14 +1170,15 @@ export default function RankingPage() {
 
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-black text-ipl-gold">Team Rankings</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Analysis</p>
+          <h1 className="font-bebas text-4xl tracking-wider text-white">Team Rankings</h1>
+          <p className="mt-1 text-sm text-white/30">
             Deterministic scoring based on squad composition and role balance
           </p>
         </div>
         <div className="flex items-center gap-2">
           {hasRankings && (() => {
-            const hasP12  = data.rankings.some((r) => r.breakdown != null);
+            const hasP12   = data.rankings.some((r) => r.breakdown != null);
             const hasSquad = data.rankings.some((r) => r.squadBreakdown != null);
             const dlIcon = (
               <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1226,15 +1190,15 @@ export default function RankingPage() {
               return (
                 <div className="flex gap-1.5">
                   <button onClick={() => handleDownload('playing12')} title="Download Playing 12 report"
-                    className="flex items-center gap-1 rounded-full border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:border-ipl-gold hover:text-ipl-gold">
+                    className="flex items-center gap-1 rounded-full border border-white/[0.08] bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-white/50 transition hover:border-neon/40 hover:text-neon">
                     {dlIcon} P12
                   </button>
                   <button onClick={() => handleDownload('squad')} title="Download Squad report"
-                    className="flex items-center gap-1 rounded-full border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:border-ipl-blue hover:text-ipl-blue">
+                    className="flex items-center gap-1 rounded-full border border-white/[0.08] bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-white/50 transition hover:border-sky-400/50 hover:text-sky-400">
                     {dlIcon} Squad
                   </button>
                   <button onClick={() => handleDownload('both')} title="Download combined P12 + Squad report"
-                    className="flex items-center gap-1 rounded-full border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:border-purple-400 hover:text-purple-400">
+                    className="flex items-center gap-1 rounded-full border border-white/[0.08] bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-white/50 transition hover:border-purple-400/50 hover:text-purple-400">
                     {dlIcon} Both
                   </button>
                 </div>
@@ -1242,16 +1206,13 @@ export default function RankingPage() {
             }
             return (
               <button onClick={() => handleDownload(hasSquad ? 'squad' : 'playing12')} title="Download ratings report"
-                className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-semibold text-gray-300 transition hover:border-ipl-gold hover:text-ipl-gold">
+                className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-surface-2 px-3 py-1.5 text-xs font-semibold text-white/50 transition hover:border-neon/40 hover:text-neon">
                 {dlIcon} Download Report
               </button>
             );
           })()}
-          <button
-            onClick={() => setShowInfo(true)}
-            title="How are teams rated?"
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-gray-700 bg-gray-800 text-gray-400 transition hover:border-ipl-gold hover:text-ipl-gold"
-          >
+          <button onClick={() => setShowInfo(true)} title="How are teams rated?"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-surface-2 text-white/30 transition hover:border-neon/40 hover:text-neon">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
@@ -1260,41 +1221,33 @@ export default function RankingPage() {
         </div>
       </div>
 
-      {/* Rating mode toggle — only show tabs for modes that have been generated */}
+      {/* Rating mode toggle */}
       {hasRankings && (() => {
-        const hasP12  = data.rankings.some((r) => r.breakdown != null);
+        const hasP12   = data.rankings.some((r) => r.breakdown != null);
         const hasSquad = data.rankings.some((r) => r.squadBreakdown != null);
         if (!hasP12 && !hasSquad) return null;
         return (
-          <div className="mb-5 flex gap-2 rounded-xl border border-gray-800 bg-gray-900/60 p-1">
-            <button
-              id="mode-playing12"
-              disabled={!hasP12}
-              onClick={() => setMode('playing12')}
+          <div className="mb-5 flex gap-2 rounded-xl border border-white/[0.06] bg-surface/60 p-1">
+            <button id="mode-playing12" disabled={!hasP12} onClick={() => setMode('playing12')}
               title={hasP12 ? undefined : 'Click "🏏 Rate by Playing 12" to generate'}
               className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold transition ${
                 !hasP12
-                  ? 'cursor-not-allowed opacity-40 text-gray-600'
+                  ? 'cursor-not-allowed opacity-30 text-white/20'
                   : mode === 'playing12'
-                    ? 'bg-ipl-gold text-gray-950 shadow'
-                    : 'text-gray-400 hover:text-white'
-              }`}
-            >
+                    ? 'bg-neon text-black shadow'
+                    : 'text-white/40 hover:text-white'
+              }`}>
               🏏 Playing 12{!hasP12 && <span className="ml-1 text-[9px] font-normal">(not generated)</span>}
             </button>
-            <button
-              id="mode-squad"
-              disabled={!hasSquad}
-              onClick={() => setMode('squad')}
+            <button id="mode-squad" disabled={!hasSquad} onClick={() => setMode('squad')}
               title={hasSquad ? undefined : 'Click "🛡️ Rate by Squad" to generate'}
               className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold transition ${
                 !hasSquad
-                  ? 'cursor-not-allowed opacity-40 text-gray-600'
+                  ? 'cursor-not-allowed opacity-30 text-white/20'
                   : mode === 'squad'
-                    ? 'bg-ipl-gold text-gray-950 shadow'
-                    : 'text-gray-400 hover:text-white'
-              }`}
-            >
+                    ? 'bg-neon text-black shadow'
+                    : 'text-white/40 hover:text-white'
+              }`}>
               🛡️ Squad{!hasSquad && <span className="ml-1 text-[9px] font-normal">(not generated)</span>}
             </button>
           </div>
@@ -1303,12 +1256,8 @@ export default function RankingPage() {
 
       {amHost && (
         <div className="mb-6 flex gap-3">
-          {/* Playing 12 generate button */}
-          <button
-            onClick={() => handleGenerate('playing12')}
-            disabled={loadingP12 || loadingSquad}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-ipl-gold bg-ipl-gold py-3 text-sm font-bold text-gray-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <button onClick={() => handleGenerate('playing12')} disabled={loadingP12 || loadingSquad}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-neon py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
             {loadingP12 ? (
               <>
                 <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -1327,12 +1276,8 @@ export default function RankingPage() {
             )}
           </button>
 
-          {/* Squad generate button */}
-          <button
-            onClick={() => handleGenerate('squad')}
-            disabled={loadingP12 || loadingSquad}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-ipl-blue bg-ipl-blue/10 py-3 text-sm font-bold text-ipl-blue transition hover:bg-ipl-blue/20 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <button onClick={() => handleGenerate('squad')} disabled={loadingP12 || loadingSquad}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-surface-2 py-3 text-sm font-bold text-white/60 transition hover:border-neon/40 hover:text-neon disabled:cursor-not-allowed disabled:opacity-50">
             {loadingSquad ? (
               <>
                 <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -1344,7 +1289,8 @@ export default function RankingPage() {
             ) : (
               <>
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 🛡️ Rate by Squad
               </>
@@ -1354,24 +1300,25 @@ export default function RankingPage() {
       )}
 
       {error && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+        <div className="mb-4 rounded-xl border border-bid-red/25 bg-bid-red/10 p-4 text-sm text-bid-red">
           {error}
         </div>
       )}
 
       {data && data.rankings?.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-700 bg-gray-900/50 p-12 text-center">
-          <svg className="mb-4 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.06] bg-surface/50 p-12 text-center">
+          <svg className="mb-4 h-12 w-12 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
-          <p className="text-lg font-bold text-gray-400">No ratings generated yet</p>
-          <p className="mt-1 text-sm text-gray-500">Wait for the auctioneer to calculate the squad scores.</p>
+          <p className="text-lg font-bold text-white/40">No ratings generated yet</p>
+          <p className="mt-1 text-sm text-white/25">Wait for the auctioneer to calculate the squad scores.</p>
         </div>
       ) : data && data.rankings?.length > 0 ? (
         <>
-          <div className="mb-5 rounded-2xl border border-ipl-blue/30 bg-ipl-blue/10 p-5">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-ipl-gold">Ranking Verdict</p>
-            <p className="text-sm leading-relaxed text-gray-200">{data.verdict}</p>
+          <div className="mb-5 rounded-2xl border border-white/[0.06] bg-surface-2 p-5">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-neon">Ranking Verdict</p>
+            <p className="text-sm leading-relaxed text-white/70">{data.verdict}</p>
           </div>
 
           {/* Sorted by the active mode's score */}

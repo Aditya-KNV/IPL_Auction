@@ -1,26 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useRoom } from '../../context/RoomContext';
+import { useRoom }   from '../../context/RoomContext';
 import { useSocket } from '../../context/SocketContext';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+import { useAuth }   from '../../context/AuthContext';
+import api           from '../../services/api';
 
-// ── User row ──────────────────────────────────────────────────────────────────
 const UserRow = ({ user, isHost, isMe, onKick, canKick, teamAssignments }) => {
   const assignment = Object.entries(teamAssignments).find(([uid]) => uid === user.userId)?.[1];
   return (
-    <div className={`flex items-center justify-between px-4 py-3 rounded-xl transition ${
-      isMe ? 'bg-ipl-blue/20 border border-ipl-blue/40' : 'bg-gray-800'
-    }`}>
+    <div className={`flex items-center justify-between px-4 py-3 rounded-xl border transition
+      ${isMe ? 'bg-neon/[0.05] border-neon/20' : 'bg-white/[0.03] border-white/[0.06]'}`}>
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center font-bold text-sm text-white uppercase">
+        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center
+                        font-bold text-sm text-white uppercase">
           {user.username[0]}
         </div>
-        <div>
-          <span className="text-white font-medium">{user.username}</span>
-          {isMe && <span className="ml-2 text-xs text-gray-400">(you)</span>}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-semibold text-white">{user.username}</span>
+          {isMe && <span className="text-[10px] text-white/30">(you)</span>}
           {assignment && (
-            <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: assignment.color + '22', color: assignment.color, border: `1px solid ${assignment.color}44` }}>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: assignment.color + '22', color: assignment.color, border:`1px solid ${assignment.color}44` }}>
               {assignment.shortName}
             </span>
           )}
@@ -28,14 +27,17 @@ const UserRow = ({ user, isHost, isMe, onKick, canKick, teamAssignments }) => {
       </div>
       <div className="flex items-center gap-2">
         {isHost && (
-          <span className="flex items-center gap-1 text-xs font-semibold text-ipl-gold bg-ipl-gold/10 border border-ipl-gold/30 px-2 py-0.5 rounded-full">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6l3 6h10l3-6-4 3-4-6-4 6-4-3z" /></svg>
-            Host
+          <span className="flex items-center gap-1 text-[9px] font-black tracking-widest
+                           text-gold-bright bg-gold-bright/10 border border-gold-bright/25
+                           px-2 py-1 rounded-full uppercase">
+            HOST
           </span>
         )}
         {canKick && !isHost && !isMe && (
           <button onClick={() => onKick(user.socketId)}
-            className="text-xs text-red-400 hover:text-red-300 border border-red-400/30 px-2 py-0.5 rounded-full transition">
+            className="text-[10px] font-semibold text-bid-red/60 hover:text-bid-red
+                       border border-bid-red/20 hover:border-bid-red/40
+                       px-2.5 py-1 rounded-full transition">
             Kick
           </button>
         )}
@@ -44,94 +46,81 @@ const UserRow = ({ user, isHost, isMe, onKick, canKick, teamAssignments }) => {
   );
 };
 
-// ── Team card ─────────────────────────────────────────────────────────────────
 const TeamCard = ({ team, takenBy, isMyTeam, onPick }) => {
   const isTaken = !!takenBy && !isMyTeam;
   return (
     <button
       onClick={() => !isTaken && onPick(team)}
       disabled={isTaken}
-      className={`relative p-3 rounded-xl border text-left transition ${
-        isMyTeam
-          ? 'border-2 scale-[1.02]'
+      className={`relative p-3 rounded-xl border text-left transition-all
+        ${isMyTeam
+          ? 'scale-[1.03] shadow-lg'
           : isTaken
-          ? 'border-gray-700 opacity-40 cursor-not-allowed'
-          : 'border-gray-700 hover:border-gray-500 hover:bg-gray-800/60 cursor-pointer'
-      }`}
-      style={isMyTeam ? { borderColor: team.color, background: team.color + '18' } : {}}
+          ? 'border-white/[0.05] opacity-35 cursor-not-allowed'
+          : 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.04] cursor-pointer'
+        }`}
+      style={isMyTeam ? { borderColor: team.color, background: team.color + '18', boxShadow:`0 0 16px ${team.color}33` } : {}}
     >
-      {/* Color bar */}
-      <div className="w-full h-1 rounded-full mb-2" style={{ background: team.color }} />
-      <p className="text-white font-bold text-sm">{team.shortName}</p>
-      <p className="text-gray-400 text-xs truncate">{team.name}</p>
+      <div className="w-full h-0.5 rounded-full mb-2.5" style={{ background: team.color }} />
+      <p className="text-white font-bold text-sm leading-tight">{team.shortName}</p>
+      <p className="text-white/40 text-[10px] truncate mt-0.5">{team.name}</p>
       {takenBy && (
-        <p className="text-xs mt-1 font-medium truncate" style={{ color: team.color }}>
-          {isMyTeam ? 'Your team' : takenBy}
+        <p className="text-[10px] mt-1.5 font-semibold truncate" style={{ color: team.color }}>
+          {isMyTeam ? '★ Your team' : takenBy}
         </p>
       )}
       {isMyTeam && (
-        <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-400" />
+        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-neon
+                        shadow-[0_0_8px_rgba(0,255,102,.8)]" />
       )}
     </button>
   );
 };
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
 const Toast = ({ message, onDone }) => {
   useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, [onDone]);
   return (
-    <div className="fixed bottom-6 right-6 bg-gray-800 border border-gray-600 text-white text-sm px-4 py-3 rounded-xl shadow-xl animate-fade-in">
+    <div className="fixed bottom-6 right-6 z-50 bg-surface-2 border border-white/[0.1]
+                    text-white text-sm px-4 py-3 rounded-xl shadow-2xl animate-fade-in">
       {message}
     </div>
   );
 };
 
-// ── Main Lobby ────────────────────────────────────────────────────────────────
 export default function RoomLobby() {
   const { room, teamAssignments, leaveRoom, kickUser, pickTeam } = useRoom();
   const { socket } = useSocket();
   const { user }   = useAuth();
 
-  const [copied,         setCopied]        = useState(false);
-  const [toasts,         setToasts]        = useState([]);
-  const [allTeams,       setAllTeams]      = useState([]);
-  const [auctionStatus,  setAuctionStatus] = useState(null);
+  const [copied,        setCopied]       = useState(false);
+  const [toasts,        setToasts]       = useState([]);
+  const [allTeams,      setAllTeams]     = useState([]);
+  const [auctionStatus, setAuctionStatus]= useState(null);
 
   const mySocketId = socket?.id;
   const amHost     = user?.id != null && room?.hostUserId === String(user.id);
-
-  // Find my assignment
   const myAssignment = user ? teamAssignments[user.id] : null;
 
-  // Fetch all teams + auction status once
   useEffect(() => {
-    api.get('/teams').then((r) => setAllTeams(r.data)).catch(() => {});
-    api.get('/auction/session').then((r) => setAuctionStatus(r.data?.status ?? null)).catch(() => {});
+    api.get('/teams').then(r => setAllTeams(r.data)).catch(() => {});
+    api.get('/auction/session').then(r => setAuctionStatus(r.data?.status ?? null)).catch(() => {});
   }, []);
 
-  // Keep auction status in sync via socket events
   useEffect(() => {
     if (!socket) return;
     const onStatus    = ({ status }) => setAuctionStatus(status);
     const onCompleted = () => setAuctionStatus('completed');
     socket.on('auction:status',    onStatus);
     socket.on('auction:completed', onCompleted);
-    return () => {
-      socket.off('auction:status',    onStatus);
-      socket.off('auction:completed', onCompleted);
-    };
+    return () => { socket.off('auction:status', onStatus); socket.off('auction:completed', onCompleted); };
   }, [socket]);
 
-  // Build a reverse map: teamId → claimedBy username
   const takenMap = {};
-  Object.values(teamAssignments).forEach((a) => {
-    takenMap[a.teamId] = a.claimedBy;
-  });
+  Object.values(teamAssignments).forEach(a => { takenMap[a.teamId] = a.claimedBy; });
 
-  // Toast listeners
   useEffect(() => {
     if (!socket) return;
-    const add = (msg) => setToasts((p) => [...p, { id: Date.now(), msg }]);
+    const add = (msg) => setToasts(p => [...p, { id: Date.now(), msg }]);
     socket.on('room:userJoined', ({ user: u }) => add(`${u.username} joined`));
     socket.on('room:userLeft',   ({ username }) => add(`${username} left`));
     return () => { socket.off('room:userJoined'); socket.off('room:userLeft'); };
@@ -144,7 +133,6 @@ export default function RoomLobby() {
   };
 
   const auctionLocked = auctionStatus === 'active' || auctionStatus === 'paused' || auctionStatus === 'completed';
-
   const handlePickTeam = (team) => {
     if (auctionLocked) return;
     pickTeam({ teamId: team._id, name: team.name, shortName: team.shortName, color: team.color });
@@ -153,55 +141,49 @@ export default function RoomLobby() {
   if (!room) return null;
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
+    <div className="flex flex-col gap-5 w-full max-w-2xl mx-auto">
 
-      {/* ── Room code ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6">
-        <div className="bg-gray-800 rounded-xl p-5 text-center">
-          <p className="text-gray-400 text-sm mb-2">Room Code</p>
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-4xl font-mono font-bold tracking-widest text-ipl-gold">{room.code}</span>
-            <button onClick={copyCode}
-              className="flex items-center gap-1 text-sm text-gray-300 hover:text-white border border-gray-600 px-3 py-1.5 rounded-lg transition">
-              {copied ? <span className="text-green-400">Copied!</span> : 'Copy'}
-            </button>
-          </div>
-          <p className="text-gray-500 text-xs mt-2">Share this code with others to let them join</p>
+      {/* Room code */}
+      <div className="bg-surface border border-white/[0.07] rounded-2xl p-6">
+        <p className="text-[10px] font-bold tracking-[2px] text-white/30 uppercase mb-3">Room Code</p>
+        <div className="flex items-center justify-center gap-4">
+          <span className="font-bebas text-5xl tracking-[8px] text-neon neon-glow">{room.code}</span>
+          <button onClick={copyCode}
+            className={`flex items-center gap-1.5 text-xs font-bold tracking-wider
+                        border px-3 py-2 rounded-lg transition
+                        ${copied ? 'border-neon/30 text-neon bg-neon/10' : 'border-white/[0.1] text-white/50 hover:border-white/20 hover:text-white'}`}>
+            {copied ? '✓ COPIED' : 'COPY'}
+          </button>
         </div>
+        <p className="text-white/25 text-xs text-center mt-3">Share this code with others to join</p>
       </div>
 
-      {/* ── Team picker ── */}
-      <div className={`bg-gray-900 border rounded-2xl p-6 ${auctionLocked ? 'border-gray-800 opacity-75' : 'border-gray-700'}`}>
+      {/* Team picker */}
+      <div className={`bg-surface border rounded-2xl p-6
+        ${auctionLocked ? 'border-white/[0.04] opacity-80' : 'border-white/[0.07]'}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Pick Your Team</h3>
+            <p className="text-[10px] font-bold tracking-[2px] text-white/40 uppercase">Pick Your Team</p>
             {auctionLocked && (
-              <span className="text-xs font-semibold text-yellow-500 bg-yellow-500/10 border border-yellow-500/30 px-2 py-0.5 rounded-full">
+              <span className="text-[9px] font-black tracking-widest text-gold-bright
+                               bg-gold-bright/10 border border-gold-bright/25 px-2 py-0.5 rounded-full uppercase">
                 Locked
               </span>
             )}
           </div>
           {myAssignment && (
-            <span className="text-xs text-green-400 font-medium">
-              You picked: {myAssignment.shortName}
+            <span className="text-xs font-semibold" style={{ color: myAssignment.color }}>
+              ★ {myAssignment.shortName}
             </span>
           )}
         </div>
 
-        {auctionLocked && (
-          <p className="text-yellow-600 text-xs mb-3 text-center">
-            Team selection is locked once the auction has started.
-          </p>
-        )}
-
         {allTeams.length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-4">Loading teams…</p>
+          <p className="text-white/25 text-sm text-center py-4">Loading teams…</p>
         ) : (
           <div className={`grid grid-cols-4 gap-2 ${auctionLocked ? 'pointer-events-none' : ''}`}>
-            {allTeams.map((team) => (
-              <TeamCard
-                key={team._id}
-                team={team}
+            {allTeams.map(team => (
+              <TeamCard key={team._id} team={team}
                 takenBy={takenMap[team._id] ?? null}
                 isMyTeam={myAssignment?.teamId === team._id}
                 onPick={handlePickTeam}
@@ -210,25 +192,25 @@ export default function RoomLobby() {
           </div>
         )}
 
-        <p className="text-gray-600 text-xs mt-3 text-center">
+        <p className="text-white/20 text-[11px] mt-4 text-center">
           {auctionLocked
-            ? 'The auction is underway — head to the Auction tab to bid.'
+            ? 'Auction underway — head to the Auction tab to bid.'
             : amHost
-            ? 'You are the host — pick first, then share the code.'
+            ? 'You are the host — pick your team, then share the code.'
             : 'Pick a team before the auction starts. First come, first served.'}
         </p>
       </div>
 
-      {/* ── Users in room ── */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-gray-300 text-sm font-semibold uppercase tracking-wider">Users in Room</h3>
-          <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">
+      {/* Users */}
+      <div className="bg-surface border border-white/[0.07] rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[10px] font-bold tracking-[2px] text-white/40 uppercase">Users in Room</p>
+          <span className="text-[10px] text-white/30 bg-white/[0.05] px-2 py-0.5 rounded-full">
             {room.users.length} {room.users.length === 1 ? 'person' : 'people'}
           </span>
         </div>
         <div className="flex flex-col gap-2">
-          {room.users.map((u) => (
+          {room.users.map(u => (
             <UserRow key={u.socketId} user={u}
               isHost={u.socketId === room.hostId}
               isMe={u.socketId === mySocketId}
@@ -240,17 +222,19 @@ export default function RoomLobby() {
         </div>
       </div>
 
-      {/* ── Leave ── */}
+      {/* Leave */}
       <button onClick={leaveRoom}
-        className="w-full border border-red-500/40 text-red-400 hover:bg-red-500/10 font-semibold py-2.5 rounded-xl transition">
+        className="w-full border border-bid-red/25 text-bid-red/60 hover:text-bid-red
+                   hover:bg-bid-red/[0.07] hover:border-bid-red/40
+                   font-semibold py-3 rounded-xl transition text-sm">
         Leave Room
       </button>
-      <p className="text-center text-xs text-gray-600 -mt-3">
-        Your team stays reserved for you unless the host removes you.
+      <p className="text-center text-[11px] text-white/20 -mt-3">
+        Your team stays reserved unless the host removes you.
       </p>
 
-      {toasts.map((t) => (
-        <Toast key={t.id} message={t.msg} onDone={() => setToasts((p) => p.filter((x) => x.id !== t.id))} />
+      {toasts.map(t => (
+        <Toast key={t.id} message={t.msg} onDone={() => setToasts(p => p.filter(x => x.id !== t.id))} />
       ))}
     </div>
   );

@@ -4,98 +4,64 @@ import PlayerStatsModal from '../players/PlayerStatsModal';
 import api from '../../services/api';
 
 const ROLE_COLOR = {
-  Batsman: '#3b82f6',
-  Bowler: '#ef4444',
-  'All-Rounder': '#a855f7',
-  'Wicket-Keeper': '#f59e0b',
+  Batsman:        '#3b82f6',
+  Bowler:         '#ef4444',
+  'All-Rounder':  '#a855f7',
+  'Wicket-Keeper':'#f59e0b',
 };
-
 const ROLE_ORDER = ['Batsman', 'Wicket-Keeper', 'All-Rounder', 'Bowler'];
-const isOverseasPlayer = (player) => {
-  const nat = String(player?.nationality || '').trim().toLowerCase();
+
+const isOverseas = (p) => {
+  const nat = String(p?.nationality || '').trim().toLowerCase();
   return nat.length > 0 && nat !== 'indian';
 };
 
-const PurseBar = ({ remaining, total, color }) => {
-  const pct = total > 0 ? Math.max(0, (remaining / total) * 100) : 0;
-
-  return (
-    <div className="flex items-center gap-2 mt-1.5">
-      <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(2, pct)}%`, backgroundColor: color || '#004BA0' }} />
-      </div>
-      <span className="text-[10px] text-gray-600 tabular-nums w-7 text-right flex-shrink-0">{pct.toFixed(0)}%</span>
-    </div>
-  );
-};
-
 const SquadList = ({ players, onPlayerClick, loadingId }) => {
-  if (!players || players.length === 0) {
-    return <p className="text-gray-600 text-xs text-center py-3">No players bought yet</p>;
-  }
+  if (!players?.length) return (
+    <p className="text-white/20 text-xs text-center py-3">No players bought yet</p>
+  );
 
   const byRole = players.reduce((acc, p) => {
-    const key = p.role || 'Other';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(p);
+    const k = p.role || 'Other';
+    if (!acc[k]) acc[k] = [];
+    acc[k].push(p);
     return acc;
   }, {});
-
   const orderedRoles = [
-    ...ROLE_ORDER.filter((r) => byRole[r]?.length),
-    ...Object.keys(byRole).filter((r) => !ROLE_ORDER.includes(r) && byRole[r]?.length),
+    ...ROLE_ORDER.filter(r => byRole[r]?.length),
+    ...Object.keys(byRole).filter(r => !ROLE_ORDER.includes(r) && byRole[r]?.length),
   ];
 
   return (
-    <div className="flex flex-col gap-3 pt-1">
-      {orderedRoles.map((role) => (
+    <div className="flex flex-col gap-2.5 pt-1">
+      {orderedRoles.map(role => (
         <div key={role}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-1 px-1" style={{ color: ROLE_COLOR[role] || '#6b7280' }}>
+          <p className="text-[9px] font-black uppercase tracking-widest mb-1 px-1"
+             style={{ color: ROLE_COLOR[role] || '#6b7280' }}>
             {role}s ({byRole[role].length})
           </p>
           <div className="flex flex-col gap-0.5">
-            {byRole[role].map((p) => {
-              const isLoading = loadingId === String(p._id);
-              return (
-                <button
-                  key={p._id}
-                  onClick={() => onPlayerClick(p._id)}
-                  disabled={!!loadingId}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-gray-800/50 hover:bg-gray-700/60 transition text-left w-full cursor-pointer disabled:opacity-60"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: ROLE_COLOR[p.role] || '#6b7280' }} />
-                    <span className="text-sm text-gray-200 truncate">
-                      {p.name}
-                      {isOverseasPlayer(p) && <span className="ml-1 text-sky-400">✈</span>}
-                    </span>
-                    {(p.fitness?.injury_risk ?? 0) > 4 && (
-                      <span
-                        className="w-2 h-2 rounded-full flex-shrink-0 bg-yellow-400"
-                        title={`Injury risk ${p.fitness.injury_risk}/10 — needs bench backup`}
-                      />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                    {p.soldPrice != null && (
-                      <span className="text-xs text-ipl-gold font-semibold tabular-nums">
-                        Rs {formatCroreAmount(p.soldPrice)} Cr
-                      </span>
-                    )}
-                    {isLoading ? (
-                      <svg className="w-3 h-3 animate-spin text-ipl-gold" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+            {byRole[role].map(p => (
+              <button key={p._id} onClick={() => onPlayerClick(p._id)}
+                disabled={!!loadingId}
+                className="flex items-center justify-between px-2 py-1.5 rounded-lg
+                           bg-white/[0.03] hover:bg-white/[0.07] transition text-left w-full
+                           disabled:opacity-50">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: ROLE_COLOR[p.role] || '#6b7280' }} />
+                  <span className="text-xs text-white/70 truncate">
+                    {p.name}
+                    {isOverseas(p) && <span className="ml-1 text-sky-400 text-[10px]">✈</span>}
+                  </span>
+                </div>
+                {p.soldPrice != null && (
+                  <span className="text-[10px] text-neon font-bold tabular-nums flex-shrink-0 ml-1">
+                    {formatCroreAmount(p.soldPrice)} Cr
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
       ))}
@@ -103,59 +69,70 @@ const SquadList = ({ players, onPlayerClick, loadingId }) => {
   );
 };
 
-const TeamRow = ({ team, rank, isMyTeam, username, onPlayerClick, loadingId }) => {
+const TeamRow = ({ team, isMyTeam, username, onPlayerClick, loadingId }) => {
   const [expanded, setExpanded] = useState(false);
-  const remaining = normalizeCroreAmount(team.remainingPurse ?? 0);
-  const total = normalizeCroreAmount(team.purse ?? 0);
-  const spent = normalizeCroreAmount(total - remaining);
-  const playerCount = team.players?.length ?? 0;
+  const remaining  = normalizeCroreAmount(team.remainingPurse ?? 0);
+  const total      = normalizeCroreAmount(team.purse ?? 120);
+  const spent      = normalizeCroreAmount(total - remaining);
+  const pct        = total > 0 ? Math.max(2, (remaining / total) * 100) : 2;
+  const playerCount= team.players?.length ?? 0;
 
   return (
-    <div className={`border-b border-gray-800/60 last:border-b-0 ${isMyTeam ? 'bg-ipl-blue/5' : ''}`}>
-      <button onClick={() => setExpanded((v) => !v)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800/30 transition text-left">
-        <span className="text-xs text-gray-600 font-mono w-4 flex-shrink-0">{isMyTeam ? '★' : rank}</span>
+    <div className={`border-b border-white/[0.04] last:border-b-0
+                     ${isMyTeam ? 'border-l-2' : 'border-l-2 border-l-transparent'}`}
+         style={isMyTeam ? { borderLeftColor: team.color } : {}}>
 
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black text-white flex-shrink-0" style={{ backgroundColor: team.color || '#374151' }}>
-          {team.shortName?.slice(0, 2) ?? '??'}
+      <button onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3
+                   hover:bg-white/[0.03] transition text-left group">
+
+        {/* Logo orb */}
+        <div className="w-9 h-9 rounded-full flex items-center justify-center
+                        text-[10px] font-black flex-shrink-0 border border-white/[0.06]"
+             style={{ background: (team.color || '#374151') + '28', color: team.color || '#9ca3af' }}>
+          {team.shortName?.slice(0, 3) ?? '?'}
         </div>
 
-        <div className="flex-1 min-w-0 text-left">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-200 truncate">{team.name}</span>
-            {isMyTeam ? (
-              <span className="text-[9px] font-bold text-ipl-gold border border-ipl-gold/30 px-1.5 py-0.5 rounded-full tracking-widest flex-shrink-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-xs font-bold text-white/80 truncate">{team.shortName}</span>
+            {isMyTeam && (
+              <span className="text-[8px] font-black tracking-widest text-neon
+                               bg-neon/10 border border-neon/20 px-1.5 py-0.5 rounded-full flex-shrink-0">
                 YOU
               </span>
-            ) : username ? (
-              <span className="text-[9px] font-bold text-gray-400 border border-gray-700 px-1.5 py-0.5 rounded-full tracking-widest flex-shrink-0 truncate max-w-[80px]">
-                {username}
-              </span>
-            ) : null}
+            )}
+            {username && !isMyTeam && (
+              <span className="text-[8px] text-white/25 truncate max-w-[60px]">{username}</span>
+            )}
           </div>
-          <PurseBar remaining={remaining} total={total || 120} color={team.color} />
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-gray-600">
-              Spent: <span className="text-gray-400">Rs {formatCroreAmount(spent)} Cr</span>
-            </span>
-            <span className="text-[10px] text-gray-600">
-              <span className="text-gray-400 font-medium">{playerCount}</span> / {team.maxPlayers ?? 25} players
-            </span>
+          {/* Purse bar */}
+          <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-700 ease-out"
+                 style={{ width: `${pct}%`, backgroundColor: team.color || '#374151' }} />
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-[9px] text-white/25">{playerCount}/{team.maxPlayers ?? 25} players</span>
+            <span className="text-[9px] text-white/25">₹{formatCroreAmount(spent)} spent</span>
           </div>
         </div>
 
         <div className="text-right flex-shrink-0">
-          <span className="text-sm font-bold text-white tabular-nums">Rs {formatCroreAmount(remaining)}</span>
-          <span className="text-[10px] text-gray-500 ml-0.5">Cr</span>
+          <p className="text-sm font-bold tabular-nums" style={{ color: team.color || '#fff' }}>
+            {formatCroreAmount(remaining)}
+          </p>
+          <p className="text-[9px] text-white/25">Cr left</p>
         </div>
 
-        <svg className={`w-4 h-4 text-gray-600 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-3.5 h-3.5 text-white/20 flex-shrink-0 transition-transform duration-200
+                         ${expanded ? 'rotate-180' : ''}`}
+             fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 border-t border-gray-800/40">
-          <div className="h-0.5 w-12 rounded-full mb-3 mt-3" style={{ backgroundColor: team.color || '#374151' }} />
+        <div className="px-4 pb-4 border-t border-white/[0.04]">
           <SquadList players={team.players} onPlayerClick={onPlayerClick} loadingId={loadingId} />
         </div>
       )}
@@ -165,9 +142,8 @@ const TeamRow = ({ team, rank, isMyTeam, username, onPlayerClick, loadingId }) =
 
 export default function OtherTeamsPanel({ teams, myTeamId, teamAssignments = {} }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [loadingId, setLoadingId] = useState(null);
+  const [loadingId,      setLoadingId]      = useState(null);
 
-  // Build teamId → username map from assignments
   const teamOwners = Object.values(teamAssignments).reduce((acc, a) => {
     if (a.teamId && a.claimedBy) acc[String(a.teamId)] = a.claimedBy;
     return acc;
@@ -186,54 +162,29 @@ export default function OtherTeamsPanel({ teams, myTeamId, teamAssignments = {} 
     }
   };
 
-  if (!teams || teams.length === 0) {
-    return (
-      <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-        <p className="text-gray-600 text-sm text-center">No teams registered yet</p>
-      </div>
-    );
-  }
-
-  const myTeam = teams.find((t) => String(t._id) === String(myTeamId));
-  const others = teams.filter((t) => String(t._id) !== String(myTeamId));
-
-  const sorted = [...others].sort(
-    (a, b) => (b.remainingPurse ?? 0) - (a.remainingPurse ?? 0)
+  if (!teams?.length) return (
+    <div className="flex items-center justify-center h-full">
+      <p className="text-white/20 text-xs">No teams registered</p>
+    </div>
   );
 
-  const displayList = myTeam ? [myTeam, ...sorted] : sorted;
+  const myTeam   = teams.find(t => String(t._id) === String(myTeamId));
+  const others   = teams.filter(t => String(t._id) !== String(myTeamId))
+                        .sort((a, b) => (b.remainingPurse ?? 0) - (a.remainingPurse ?? 0));
+  const displayList = myTeam ? [myTeam, ...others] : others;
 
   return (
     <>
-      {selectedPlayer && (
-        <PlayerStatsModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
-      )}
-
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">All Teams</p>
-            <p className="text-xs text-gray-600 mt-0.5">{teams.length} teams · click to view squad</p>
-          </div>
-        </div>
-
-        <div>
-          {displayList.map((team) => {
-            const isMyTeam = String(team._id) === String(myTeamId);
-            const rank = isMyTeam ? '-' : sorted.indexOf(team) + 1;
-            return (
-              <TeamRow
-                key={team._id}
-                team={team}
-                rank={rank}
-                isMyTeam={isMyTeam}
-                username={teamOwners[String(team._id)]}
-                onPlayerClick={openPlayer}
-                loadingId={loadingId}
-              />
-            );
-          })}
-        </div>
+      {selectedPlayer && <PlayerStatsModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />}
+      <div className="flex flex-col h-full overflow-hidden">
+        {displayList.map(team => (
+          <TeamRow key={team._id} team={team}
+            isMyTeam={String(team._id) === String(myTeamId)}
+            username={teamOwners[String(team._id)]}
+            onPlayerClick={openPlayer}
+            loadingId={loadingId}
+          />
+        ))}
       </div>
     </>
   );

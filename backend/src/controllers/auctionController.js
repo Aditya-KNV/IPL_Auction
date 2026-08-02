@@ -593,30 +593,35 @@ const executeSale = async (session) => {
 
   const [player, team] = await Promise.all([
     Player.findById(playerIdToFinish),
-    Team.findById(teamIdToBuy),
+    Team.findById(teamIdToBuy).lean(),
   ]);
 
   if (!player) throw new Error('Player not found');
   if (!team)   throw new Error('Team not found');
 
   const finalBid = normalizeBidAmount(session.currentBid);
-  if (team.remainingPurse < finalBid) throw new Error('Insufficient purse');
 
-  const eligibility = await canTeamBuyPlayer(team._id, player);
+  const eligibility = await canTeamBuyPlayer(team._id, player, team);
   if (!eligibility.allowed) {
     throw new Error(`Overseas squad limit reached (max ${eligibility.cap ?? 8} overseas per squad)`);
   }
+
+  // Atomic conditional deduction — the purse check and the write happen in a
+  // single query, closing the read-then-save gap that let two concurrent
+  // sales for the same team both pass a stale purse check and double-spend.
+  const updatedTeam = await Team.findOneAndUpdate(
+    { _id: teamIdToBuy, remainingPurse: { $gte: finalBid } },
+    { $inc: { remainingPurse: -finalBid }, $push: { players: player._id } },
+    { new: true }
+  );
+  if (!updatedTeam) throw new Error('Insufficient purse');
 
   player.status    = 'sold';
   player.team      = team._id;
   player.soldPrice = finalBid;
   await player.save();
 
-  team.remainingPurse = normalizeBidAmount(team.remainingPurse - finalBid);
-  team.players.push(player._id);
-  await team.save();
-
-  return { player: player.toObject(), team: team.toObject() };
+  return { player: player.toObject(), team: updatedTeam.toObject() };
 };
 
 const executeUnsold = async (session) => {

@@ -8,5 +8,5 @@ export const STATUS_COLOR = {
   sold: 'text-green-400',
   unsold: 'text-red-400',
   'in-auction': 'text-yellow-400',
-  available: 'text-gray-400',
+  available: 'text-white/40',
 };

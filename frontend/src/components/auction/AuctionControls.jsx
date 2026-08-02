@@ -1,76 +1,63 @@
 import { useState, useRef, useEffect } from 'react';
-import api from '../../services/api';
+import api         from '../../services/api';
 import { useRoom } from '../../context/RoomContext';
 
-const Btn = ({ onClick, disabled, color, children }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition disabled:opacity-50 disabled:cursor-not-allowed ${color}`}
-  >
-    {children}
-  </button>
-);
+const Btn = ({ onClick, disabled, variant, children }) => {
+  const styles = {
+    green:  'border-neon/30 bg-neon/[0.08] text-neon hover:bg-neon/[0.15]',
+    amber:  'border-orange-400/30 bg-orange-400/[0.08] text-orange-300 hover:bg-orange-400/[0.15]',
+    yellow: 'border-gold-bright/30 bg-gold-bright/[0.08] text-gold-bright hover:bg-gold-bright/[0.15]',
+    red:    'border-bid-red/30 bg-bid-red/[0.08] text-bid-red hover:bg-bid-red/[0.15]',
+  };
+  return (
+    <button type="button" onClick={onClick} disabled={disabled}
+      className={`rounded-lg border px-3 py-1.5 text-[10px] font-black
+                  uppercase tracking-[0.18em] transition
+                  disabled:opacity-40 disabled:cursor-not-allowed
+                  ${styles[variant] ?? styles.green}`}>
+      {children}
+    </button>
+  );
+};
 
 const AccelConfigPopover = ({ onConfirm, onClose }) => {
   const [maxPicks, setMaxPicks] = useState(7);
   const ref = useRef(null);
 
-  // Close on outside click
   useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
-    };
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
-  const adjust = (delta) =>
-    setMaxPicks((v) => Math.max(0, v + delta));
-
   return (
-    <div
-      ref={ref}
-      className="absolute right-0 top-full mt-2 z-50 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-4 w-56"
-    >
-      <p className="text-white text-sm font-semibold mb-0.5">Accelerated Auction</p>
-      <p className="text-gray-500 text-[11px] mb-3">Max picks per team</p>
+    <div ref={ref}
+      className="absolute right-0 top-full mt-2 z-50
+                 bg-surface-2 border border-white/[0.1] rounded-xl shadow-2xl p-4 w-52">
+      <p className="text-white text-sm font-bold mb-0.5">Accelerated Mode</p>
+      <p className="text-white/40 text-[11px] mb-4">Max picks per team</p>
 
       <div className="flex items-center justify-between gap-2 mb-4">
-        <button
-          onClick={() => adjust(-1)}
-          className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition font-bold text-lg leading-none flex items-center justify-center"
-        >
-          −
-        </button>
-
-        <div className="flex-1 text-center">
-          <span className="text-2xl font-black text-white tabular-nums">{maxPicks}</span>
-          {maxPicks === 0 && (
-            <p className="text-[10px] text-gray-500 mt-0.5">no picks</p>
-          )}
-        </div>
-
-        <button
-          onClick={() => adjust(1)}
-          className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition font-bold text-lg leading-none flex items-center justify-center"
-        >
-          +
-        </button>
+        <button onClick={() => setMaxPicks(v => Math.max(0, v - 1))}
+          className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.08]
+                     text-white/70 hover:text-white hover:bg-white/[0.1]
+                     transition font-bold text-lg flex items-center justify-center">−</button>
+        <span className="font-bebas text-3xl text-white tabular-nums">{maxPicks}</span>
+        <button onClick={() => setMaxPicks(v => v + 1)}
+          className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.08]
+                     text-white/70 hover:text-white hover:bg-white/[0.1]
+                     transition font-bold text-lg flex items-center justify-center">+</button>
       </div>
 
       <div className="flex gap-2">
-        <button
-          onClick={onClose}
-          className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-gray-400 border border-gray-700 hover:border-gray-500 transition"
-        >
+        <button onClick={onClose}
+          className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold
+                     text-white/40 border border-white/[0.08] hover:border-white/20 transition">
           Cancel
         </button>
-        <button
-          onClick={() => { onConfirm(maxPicks); onClose(); }}
-          className="flex-1 py-1.5 rounded-lg text-xs font-bold bg-yellow-400 text-black hover:bg-yellow-300 transition"
-        >
+        <button onClick={() => { onConfirm(maxPicks); onClose(); }}
+          className="flex-1 py-1.5 rounded-lg text-[11px] font-black
+                     bg-gold-bright text-black hover:brightness-110 transition">
           ⚡ Start
         </button>
       </div>
@@ -79,7 +66,7 @@ const AccelConfigPopover = ({ onConfirm, onClose }) => {
 };
 
 export default function AuctionControls({ session, onRefetch, onAccelerated }) {
-  const [loading, setLoading] = useState(false);
+  const [loading,         setLoading]         = useState(false);
   const [showAccelConfig, setShowAccelConfig] = useState(false);
   const { room } = useRoom();
 
@@ -99,64 +86,29 @@ export default function AuctionControls({ session, onRefetch, onAccelerated }) {
   const notStarted = !session || status === 'waiting';
 
   return (
-    <div className="relative flex flex-wrap items-center justify-end gap-2">
+    <div className="relative flex items-center gap-2 flex-wrap">
       {notStarted && (
-        <Btn
-          onClick={() => action('start')}
-          disabled={loading}
-          color="border-green-500/40 bg-green-500/10 text-green-300 hover:bg-green-500/20"
-        >
-          Start
-        </Btn>
+        <Btn onClick={() => action('start')} disabled={loading} variant="green">▶ Start</Btn>
       )}
-
       {status === 'active' && (
-        <Btn
-          onClick={() => action('pause')}
-          disabled={loading}
-          color="border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
-        >
-          Pause
-        </Btn>
+        <Btn onClick={() => action('pause')} disabled={loading} variant="amber">⏸ Pause</Btn>
       )}
-
       {status === 'paused' && (
-        <Btn
-          onClick={() => action('resume')}
-          disabled={loading}
-          color="border-green-500/40 bg-green-500/10 text-green-300 hover:bg-green-500/20"
-        >
-          Resume
-        </Btn>
+        <Btn onClick={() => action('resume')} disabled={loading} variant="green">▶ Resume</Btn>
       )}
-
       {(status === 'active' || status === 'paused') && onAccelerated && (
         <div className="relative">
-          <Btn
-            onClick={() => setShowAccelConfig((v) => !v)}
-            disabled={loading}
-            color="border-yellow-500/40 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20"
-          >
-            ⚡ Accelerated
-          </Btn>
+          <Btn onClick={() => setShowAccelConfig(v => !v)} disabled={loading} variant="yellow">⚡ Accel</Btn>
           {showAccelConfig && (
-            <AccelConfigPopover
-              onConfirm={onAccelerated}
-              onClose={() => setShowAccelConfig(false)}
-            />
+            <AccelConfigPopover onConfirm={onAccelerated} onClose={() => setShowAccelConfig(false)} />
           )}
         </div>
       )}
-
       {(status === 'active' || status === 'paused') && (
         <Btn
-          onClick={() => {
-            if (window.confirm('End the auction? This cannot be undone.')) action('end');
-          }}
-          disabled={loading}
-          color="border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20"
-        >
-          End
+          onClick={() => { if (window.confirm('End the auction? This cannot be undone.')) action('end'); }}
+          disabled={loading} variant="red">
+          ■ End
         </Btn>
       )}
     </div>

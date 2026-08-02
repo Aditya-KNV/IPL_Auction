@@ -4,11 +4,11 @@ import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const navigate  = useNavigate();
+  const [form, setForm]         = useState({ email: '', password: '' });
+  const [showPassword, setShow] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
 
   const validate = () => {
     if (!form.email || !form.password) return 'All fields are required';
@@ -18,9 +18,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationError = validate();
-    if (validationError) { setError(validationError); return; }
-
+    const err = validate();
+    if (err) { setError(err); return; }
     setError('');
     setLoading(true);
     try {
@@ -33,81 +32,91 @@ export default function LoginPage() {
     }
   };
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const set = (field) => (e) => { setForm(f => ({ ...f, [field]: e.target.value })); setError(''); };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md border border-gray-700 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-ipl-gold">Welcome Back</h1>
-          <p className="text-gray-400 mt-1 text-sm">Sign in to your account</p>
+      {/* Radial glow */}
+      <div className="absolute inset-0 pointer-events-none"
+           style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,255,102,0.055) 0%, transparent 70%)' }} />
+
+      <div className="relative z-10 w-full max-w-[360px]">
+
+        {/* Logomark + heading */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-10 h-10 rounded-xl bg-neon flex items-center justify-center mb-5"
+               style={{ boxShadow: '0 0 0 1px rgba(0,255,102,0.22), 0 0 28px rgba(0,255,102,0.16)' }}>
+            <svg className="w-5 h-5 text-black" viewBox="0 0 20 20" fill="none">
+              <path d="M13 3L3 13l2 2 2.5-2.5 4 4 2-2-4-4 2.5-2.5L13 3z" fill="currentColor"/>
+              <circle cx="16.5" cy="16.5" r="2" fill="currentColor"/>
+            </svg>
+          </div>
+          <h1 className="text-[22px] font-bold text-white tracking-tight">Welcome back</h1>
+          <p className="text-sm text-white/40 mt-1.5">Sign in to IPL Auction 2025</p>
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg mb-5">
-            <span className="text-base">&#9888;</span>
-            {error}
-          </div>
-        )}
+        {/* Form card */}
+        <div className="card p-6 space-y-4"
+             style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 60px rgba(0,0,0,0.5)' }}>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          {error && (
+            <div className="flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[13px]"
+                 style={{ background: 'rgba(255,51,85,0.07)', border: '1px solid rgba(255,51,85,0.18)', color: '#FF3355' }}>
+              <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+              </svg>
+              {error}
+            </div>
+          )}
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-medium uppercase tracking-wider text-white/35">
+              Email address
+            </label>
             <input
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              placeholder="you@example.com"
-              autoComplete="email"
-              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-ipl-gold transition"
+              type="email" value={form.email} onChange={set('email')}
+              placeholder="you@example.com" autoComplete="email"
+              className="field"
             />
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-medium uppercase tracking-wider text-white/35">
+              Password
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={set('password')}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-500 focus:outline-none focus:border-ipl-gold transition"
+                value={form.password} onChange={set('password')}
+                placeholder="Enter your password" autoComplete="current-password"
+                style={{ paddingRight: '52px' }}
+                className="field"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition text-sm"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
+              <button type="button" onClick={() => setShow(v => !v)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium
+                           text-white/30 hover:text-white/60 transition-colors uppercase tracking-wide select-none">
                 {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-ipl-gold text-black font-bold py-3 rounded-lg hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-          >
-            {loading && (
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-            )}
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+          <div className="pt-1">
+            <button onClick={handleSubmit} disabled={loading} className="btn-cta">
+              {loading && (
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+              )}
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </div>
+        </div>
 
-        <p className="text-gray-400 text-center mt-6 text-sm">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-ipl-gold hover:underline font-medium">
+        <p className="text-center mt-5 text-[13px] text-white/30">
+          No account?{' '}
+          <Link to="/register" className="text-neon hover:text-neon/75 font-medium transition-colors">
             Create one
           </Link>
         </p>
