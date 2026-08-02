@@ -74,10 +74,10 @@ const buildSections = (player) => {
 };
 
 const RatingChip = ({ label, rating, color, border, bg }) => (
-  <div className={`rounded-lg border ${border} ${bg} px-3 py-2`}>
-    <p className="text-[9px] uppercase tracking-[0.1em] text-white/40">{label}</p>
-    <p className={`mt-0.5 text-lg font-black leading-none ${color}`}>
-      {rating ?? 0}<span className="text-[10px] ml-0.5 font-semibold opacity-50">/10</span>
+  <div className={`rounded-lg border ${border} ${bg} px-2.5 py-1.5`}>
+    <p className="text-[8px] uppercase tracking-[0.1em] text-white/40 truncate">{label}</p>
+    <p className={`mt-0.5 text-sm font-black leading-none ${color}`}>
+      {rating ?? 0}<span className="text-[9px] ml-0.5 font-semibold opacity-50">/10</span>
     </p>
   </div>
 );
@@ -521,20 +521,20 @@ export default function AuctionBoard() {
                   <p className="text-white/20 text-xs">No rated stats for this player</p>
                 </div>
               ) : (
-                <div className="px-4 py-4 space-y-5">
+                <div className="px-4 py-3 space-y-3">
                   <div>
-                    <p className="text-white font-bold text-sm truncate">{currentPlayer.name}</p>
-                    <p className="text-white/30 text-[11px] mt-0.5">
+                    <p className="text-white font-bold text-[13px] truncate">{currentPlayer.name}</p>
+                    <p className="text-white/30 text-[10px] mt-0.5">
                       {currentPlayer.role}
                       {currentPlayer.nationality && ` · ${currentPlayer.nationality}`}
                     </p>
                   </div>
                   {sections.map(sec => (
                     <div key={sec.title}>
-                      <p className={`text-[10px] font-black uppercase tracking-[2px] mb-2 ${sec.color}`}>
+                      <p className={`text-[9px] font-black uppercase tracking-[1.5px] mb-1.5 ${sec.color}`}>
                         {sec.title}
                       </p>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-1.5">
                         {sec.items.map(item => (
                           <RatingChip key={item.label} {...item}
                             color={sec.color} border={sec.border} bg={sec.bg} />
@@ -543,9 +543,9 @@ export default function AuctionBoard() {
                     </div>
                   ))}
                   <button onClick={() => setModalPlayer(currentPlayer)}
-                    className="w-full text-[11px] font-bold tracking-wider text-white/40
+                    className="w-full text-[10px] font-bold tracking-wider text-white/40
                                border border-white/[0.1] hover:border-white/25
-                               hover:text-white/70 px-4 py-2.5 rounded-lg transition">
+                               hover:text-white/70 px-4 py-2 rounded-lg transition">
                     FULL STATS
                   </button>
                 </div>

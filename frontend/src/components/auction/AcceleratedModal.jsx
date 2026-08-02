@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import api from '../../services/api';
+import { useRoom } from '../../context/RoomContext';
 import PlayerStatsModal from '../players/PlayerStatsModal';
 
 const ROLE_COLOR = {
@@ -115,6 +116,7 @@ export default function AcceleratedModal({
   const [minRating,   setMinRating]   = useState('');
   const [statsPlayer, setStatsPlayer] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const { room } = useRoom();
 
   const teamById = useMemo(() => {
     const m = {};
@@ -148,7 +150,7 @@ export default function AcceleratedModal({
     e.stopPropagation();
     setLoadingStats(true);
     try {
-      const { data } = await api.get(`/players/${id}`);
+      const { data } = await api.get(`/players/${id}`, { params: room?.code ? { roomCode: room.code } : {} });
       setStatsPlayer(data);
     } catch (err) {
       console.error(err);

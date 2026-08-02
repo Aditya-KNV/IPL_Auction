@@ -128,6 +128,7 @@ const SET_OPTIONS = [
 
 function PlayersTab() {
   const { socket } = useSocket();
+  const { room } = useRoom();
   const [players, setPlayers] = useState([]);
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
@@ -149,6 +150,7 @@ function PlayersTab() {
     if (role) params.role = role;
     if (status) params.status = status;
     if (auctionSetName) params.auctionSetName = auctionSetName;
+    if (room?.code) params.roomCode = room.code;
     api
       .get("/players", { params })
       .then((r) => setPlayers(r.data))
@@ -157,7 +159,7 @@ function PlayersTab() {
 
   useEffect(() => {
     load();
-  }, [role, status, auctionSetName]);
+  }, [role, status, auctionSetName, room?.code]);
 
   useEffect(() => {
     if (!socket) return;
@@ -197,7 +199,7 @@ function PlayersTab() {
   const openPlayer = async (id) => {
     setLoadingPlayer(true);
     try {
-      const { data } = await api.get(`/players/${id}`);
+      const { data } = await api.get(`/players/${id}`, { params: room?.code ? { roomCode: room.code } : {} });
       setSelected(data);
     } catch (err) {
       console.error(err);

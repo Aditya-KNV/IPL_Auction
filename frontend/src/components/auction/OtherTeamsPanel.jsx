@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { formatCroreAmount, normalizeCroreAmount } from '../../utils/currency';
 import PlayerStatsModal from '../players/PlayerStatsModal';
+import { useRoom } from '../../context/RoomContext';
 import api from '../../services/api';
 
 const ROLE_COLOR = {
@@ -143,6 +144,7 @@ const TeamRow = ({ team, isMyTeam, username, onPlayerClick, loadingId }) => {
 export default function OtherTeamsPanel({ teams, myTeamId, teamAssignments = {} }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [loadingId,      setLoadingId]      = useState(null);
+  const { room } = useRoom();
 
   const teamOwners = Object.values(teamAssignments).reduce((acc, a) => {
     if (a.teamId && a.claimedBy) acc[String(a.teamId)] = a.claimedBy;
@@ -153,7 +155,7 @@ export default function OtherTeamsPanel({ teams, myTeamId, teamAssignments = {} 
     if (loadingId) return;
     setLoadingId(String(playerId));
     try {
-      const { data } = await api.get(`/players/${playerId}`);
+      const { data } = await api.get(`/players/${playerId}`, { params: room?.code ? { roomCode: room.code } : {} });
       setSelectedPlayer(data);
     } catch (err) {
       console.error(err);

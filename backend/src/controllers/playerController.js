@@ -8,16 +8,21 @@ const attachDisplayStatus = (player, unsoldPlayerIds) => {
   return { ...doc, displayStatus: isUnsold ? 'unsold' : doc.status };
 };
 
-const getUnsoldPlayerIds = async () => {
-  const session = await AuctionSession.findOne().select('unsoldPlayers');
+// Scoped to the room asking — without this, `AuctionSession.findOne()` with no
+// filter returns an arbitrary session (often a stale one from a different room),
+// so players never touched in the current room's auction were showing up as
+// "unsold" just because some other room's session happened to list them.
+const getUnsoldPlayerIds = async (roomCode) => {
+  if (!roomCode) return new Set();
+  const session = await AuctionSession.findOne({ roomCode }).select('unsoldPlayers');
   return new Set((session?.unsoldPlayers || []).map((id) => String(id)));
 };
 
 const getPlayers = async (req, res) => {
   try {
-    const { role, status, team, auctionSetName } = req.query;
+    const { role, status, team, auctionSetName, roomCode } = req.query;
     const filter = {};
-    const unsoldPlayerIds = await getUnsoldPlayerIds();
+    const unsoldPlayerIds = await getUnsoldPlayerIds(roomCode);
 
     if (role) filter.role = role;
     if (status) {
@@ -44,7 +49,7 @@ const getPlayers = async (req, res) => {
 
 const getPlayer = async (req, res) => {
   try {
-    const unsoldPlayerIds = await getUnsoldPlayerIds();
+    const unsoldPlayerIds = await getUnsoldPlayerIds(req.query.roomCode);
     const player = await Player.findById(req.params.id).populate('team');
     if (!player) return res.status(404).json({ message: 'Player not found' });
     res.json(attachDisplayStatus(player, unsoldPlayerIds));

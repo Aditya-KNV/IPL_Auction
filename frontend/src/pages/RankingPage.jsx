@@ -418,12 +418,13 @@ const POSITION_LABEL = (pos) => {
 const Playing12 = ({ players }) => {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [loadingId, setLoadingId] = useState(null);
+  const { room } = useRoom();
 
   const openStats = async (playerId) => {
     if (loadingId) return;
     setLoadingId(playerId);
     try {
-      const { data } = await api.get(`/players/${playerId}`);
+      const { data } = await api.get(`/players/${playerId}`, { params: room?.code ? { roomCode: room.code } : {} });
       setSelectedPlayer(data);
     } catch (err) {
       console.error(err);

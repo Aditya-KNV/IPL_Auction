@@ -20,8 +20,13 @@ export default function SoldTicker({ soldHistory = [] }) {
     );
   }
 
-  // Duplicate items for seamless looping
-  const items = [...soldHistory, ...soldHistory];
+  // The scrolling marquee only works as a seamless loop when the content is
+  // duplicated (CSS animates 0% → -50%, i.e. exactly one copy's width, then
+  // snaps back). With few entries that duplicate is short enough to still be
+  // on screen at once, which reads as "the same sale shown twice" — so below
+  // this threshold we just render the list once, statically, with no loop.
+  const shouldLoop = soldHistory.length > 4;
+  const items = shouldLoop ? [...soldHistory, ...soldHistory] : soldHistory;
 
   return (
     <div className="h-[38px] border-t border-white/[0.05] bg-obsidian/97
@@ -35,7 +40,7 @@ export default function SoldTicker({ soldHistory = [] }) {
 
       {/* Scrolling track */}
       <div className="flex-1 overflow-hidden h-full flex items-center">
-        <div className="flex items-center whitespace-nowrap animate-ticker-scroll">
+        <div className={`flex items-center whitespace-nowrap ${shouldLoop ? 'animate-ticker-scroll' : ''}`}>
           {items.map((sale, i) => (
             <React.Fragment key={i}>
               <span className="inline-flex items-center gap-1.5 px-5 text-[11px] font-semibold">
