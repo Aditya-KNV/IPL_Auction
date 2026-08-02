@@ -82,6 +82,35 @@ body::after {
     box-shadow: inset 0 1px 0 rgb(var(--fg) / 0.045), 0 2px 12px rgb(var(--shadow) / 0.28);
   }
 
+  /* Glass panel — translucent, blurred, for modular blocks floating over the
+     ambient stage glow (used by the auction board's cards). ------------------ */
+  .glass-panel {
+    position: relative;
+    border-radius: 20px;
+    border: 1px solid rgb(var(--fg) / 0.07);
+    background: linear-gradient(165deg, rgb(var(--surface-2) / 0.42) 0%, rgb(var(--surface) / 0.6) 55%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow:
+      inset 0 1px 0 rgb(var(--fg) / 0.06),
+      inset 0 0 0 1px rgb(var(--fg) / 0.02),
+      0 10px 30px -8px rgb(var(--shadow) / 0.45);
+  }
+
+  /* Thin gradient accent bar along a card's top edge — set --accent to a CSS
+     color (e.g. an inline style) to theme it per-instance (role colour, neon…). */
+  .top-accent {
+    position: relative;
+  }
+  .top-accent::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent, rgb(var(--neon))) 50%, transparent);
+    opacity: 0.55;
+  }
+
   /* Card with hover lift -------------------------------------------------- */
   .card-lift {
     border-radius: 16px;
@@ -204,6 +233,27 @@ body::after {
     radial-gradient(ellipse 55% 45% at 15% 55%, rgb(0 79 199 / 0.08) 0%, transparent 70%),
     radial-gradient(ellipse 40% 35% at 82% 20%, rgb(var(--neon) / 0.05) 0%, transparent 65%),
     radial-gradient(ellipse 50% 50% at 55% 90%, rgb(236 28 36 / 0.05) 0%, transparent 60%);
+}
+
+/* ── Stadium backdrop ────────────────────────────────────────────────────── */
+/* Abstract "broadcast control room" atmosphere: floodlight beams sweeping in
+   from the corners, concentric rings suggesting a floodlight tower, a fine
+   dot-grid for texture, and the three team-colour ambient pools. All pure
+   gradients — no image asset, so it stays crisp and adapts to both themes
+   via the existing colour tokens. */
+.stadium-backdrop {
+  background-image:
+    linear-gradient(118deg, transparent 32%, rgb(var(--neon) / 0.05) 46%, transparent 58%),
+    linear-gradient(-62deg, transparent 55%, rgb(var(--gold-bright) / 0.045) 68%, transparent 80%),
+    repeating-radial-gradient(circle at 90% 6%,
+      transparent 0, transparent 39px,
+      rgb(var(--fg) / 0.05) 40px, rgb(var(--fg) / 0.05) 41px),
+    radial-gradient(ellipse 55% 45% at 15% 55%, rgb(0 79 199 / 0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 35% at 85% 18%, rgb(var(--neon) / 0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 50% 96%, rgb(236 28 36 / 0.06) 0%, transparent 60%),
+    radial-gradient(rgb(var(--fg) / 0.05) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 24px 24px;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat;
 }
 
 /* ── Scrollbars ──────────────────────────────────────────────────────────── */

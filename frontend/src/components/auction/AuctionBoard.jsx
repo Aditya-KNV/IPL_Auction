@@ -74,7 +74,8 @@ const buildSections = (player) => {
 };
 
 const RatingChip = ({ label, rating, color, border, bg }) => (
-  <div className={`rounded-lg border ${border} ${bg} px-2.5 py-1.5`}>
+  <div className={`relative rounded-lg border ${border} ${bg} px-2.5 py-1.5 overflow-hidden`}>
+    <div className="absolute inset-x-0 top-0 h-px bg-white/[0.15]" />
     <p className="text-[8px] uppercase tracking-[0.1em] text-white/40 truncate">{label}</p>
     <p className={`mt-0.5 text-sm font-black leading-none ${color}`}>
       {rating ?? 0}<span className="text-[9px] ml-0.5 font-semibold opacity-50">/10</span>
@@ -274,12 +275,12 @@ export default function AuctionBoard() {
       <UnsoldFlash player={unsoldFlash} />
 
       {/* ── Shell ── */}
-      <div className="flex flex-col bg-obsidian h-full overflow-hidden
-                      relative ambient-glows">
+      <div className="flex flex-col gap-3 p-3 bg-obsidian h-full overflow-hidden
+                      relative stadium-backdrop">
 
         {/* ── Status strip ── */}
-        <div className="flex-shrink-0 h-[54px] flex items-center justify-between px-5
-                        border-b border-white/[0.05] bg-obsidian/80 backdrop-blur-sm z-10">
+        <div className="glass-panel top-accent flex-shrink-0 h-[54px] flex items-center justify-between px-5 z-10"
+             style={{ '--accent': roleColor, borderRadius: '18px' }}>
           <div className="flex items-center gap-4">
             <span className="text-white/40 text-sm font-semibold">
               {soldCount} sold · {unsoldCount} unsold
@@ -314,13 +315,13 @@ export default function AuctionBoard() {
         </div>
 
         {/* ── Bento grid ── */}
-        <div className="flex-1 min-h-0 grid overflow-hidden
-                        grid-cols-1 lg:grid-cols-[210px_1fr_420px]
+        <div className="flex-1 min-h-0 grid overflow-hidden gap-3
+                        grid-cols-1 lg:grid-cols-[220px_1fr_420px]
                         grid-rows-[minmax(0,1fr)]">
 
           {/* LEFT — Bid Log ──────────────────────────────── */}
-          <aside className="hidden lg:flex flex-col min-h-0 border-r border-white/[0.05]
-                            bg-surface overflow-hidden">
+          <aside className="glass-panel top-accent hidden lg:flex flex-col min-h-0 overflow-hidden"
+                 style={{ '--accent': 'rgb(var(--bid-red))' }}>
             <div className="flex-shrink-0 flex items-center justify-between
                             px-4 py-3 border-b border-white/[0.05]">
               <span className="text-[9px] font-black tracking-[2.5px] text-white/30 uppercase">Bid Log</span>
@@ -337,34 +338,36 @@ export default function AuctionBoard() {
           </aside>
 
           {/* CENTER — Main stage (~80% width): player card / bid controls / withdraw ── */}
-          <main className="flex flex-col min-h-0 overflow-hidden relative"
+          <main className="flex flex-col gap-3 min-h-0 overflow-hidden relative"
                 style={{ background: `radial-gradient(ellipse 70% 65% at 50% 40%, ${roleColor}12 0%, transparent 70%)` }}>
 
             {currentPlayer ? (
               <>
                 {/* ── Top: player card (name, age, batting position, full stats) ── */}
                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar
-                                flex items-center justify-center px-8 py-4"
-                     style={{ borderBottom: '1px solid rgb(var(--fg) / 0.05)' }}>
-                  <div className="w-full max-w-4xl flex items-center justify-center gap-8 lg:gap-14
-                                  rounded-3xl border border-white/[0.06] bg-white/[0.015] px-10 py-8">
+                                flex items-center justify-center px-8 py-4">
+                  <div className="glass-panel top-accent dot-matrix relative w-full max-w-4xl overflow-hidden
+                                  flex items-center justify-center gap-8 lg:gap-14 px-10 py-8"
+                       style={{ '--accent': roleColor }}>
 
-                    {/* Role tile (fills the left of the wide card) */}
-                    <div className="hidden sm:block flex-shrink-0 text-center">
-                      <p className="text-[9px] font-black tracking-[2px] text-white/25 uppercase mb-1.5">Role</p>
-                      <p className="font-bebas text-3xl leading-none" style={{ color: roleColor }}>
+                    {/* Role capsule (fills the left of the wide card) */}
+                    <div className="hidden sm:flex flex-col items-center gap-2 flex-shrink-0 z-[1]">
+                      <span className="text-[9px] font-black tracking-[2px] text-white/30 uppercase">Role</span>
+                      <span className="font-bebas text-2xl leading-none px-4 py-2 rounded-xl border"
+                            style={{ color: roleColor, borderColor: roleColor + '35', background: roleColor + '12' }}>
                         {currentPlayer.role}
-                      </p>
+                      </span>
                     </div>
-                    <div className="hidden sm:block w-px h-20 bg-white/[0.06] flex-shrink-0" />
+                    <div className="hidden sm:block w-px h-20 flex-shrink-0"
+                         style={{ background: `linear-gradient(to bottom, transparent, rgb(var(--fg) / 0.12), transparent)` }} />
 
                     {/* Name + meta (center) */}
-                    <div className="flex-1 min-w-0 text-center">
+                    <div className="flex-1 min-w-0 text-center z-[1]">
                       <p className="text-[10px] font-bold tracking-[3px] text-white/30 uppercase mb-2">
                         {currentPlayer.auctionSetName || 'UP FOR AUCTION'}
                       </p>
                       <h1 className="font-bebas text-[64px] lg:text-[80px] leading-none text-white tracking-[2px]"
-                          style={{ textShadow: `0 2px 24px ${roleColor}40` }}>
+                          style={{ textShadow: `0 4px 32px ${roleColor}55, 0 1px 0 rgba(0,0,0,.3)` }}>
                         {currentPlayer.name}
                       </h1>
                       <div className="flex items-center justify-center gap-2 flex-wrap mt-4">
@@ -393,27 +396,31 @@ export default function AuctionBoard() {
 
                       <button onClick={() => setModalPlayer(currentPlayer)}
                         className="mt-5 text-[11px] font-bold tracking-wider text-white/40
-                                   border border-white/[0.1] hover:border-white/25
-                                   hover:text-white/70 px-5 py-2 rounded-lg transition">
+                                   border border-white/[0.1] hover:border-white/25 hover:bg-white/[0.03]
+                                   hover:text-white/70 px-5 py-2 rounded-lg transition-all">
                         FULL STATS
                       </button>
                     </div>
 
-                    <div className="hidden sm:block w-px h-20 bg-white/[0.06] flex-shrink-0" />
-                    {/* Base price tile (fills the right of the wide card) */}
-                    <div className="hidden sm:block flex-shrink-0 text-center">
-                      <p className="text-[9px] font-black tracking-[2px] text-white/25 uppercase mb-1.5">Base Price</p>
-                      <p className="font-bebas text-3xl leading-none text-white/60">
+                    <div className="hidden sm:block w-px h-20 flex-shrink-0"
+                         style={{ background: `linear-gradient(to bottom, transparent, rgb(var(--fg) / 0.12), transparent)` }} />
+                    {/* Base price capsule (fills the right of the wide card) */}
+                    <div className="hidden sm:flex flex-col items-center gap-2 flex-shrink-0 z-[1]">
+                      <span className="text-[9px] font-black tracking-[2px] text-white/30 uppercase">Base Price</span>
+                      <span className="font-bebas text-2xl leading-none px-4 py-2 rounded-xl border
+                                       text-gold-bright border-gold-bright/30 bg-gold-bright/[0.08]">
                         ₹{formatCroreAmount(currentPlayer.basePrice)}
-                      </p>
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* ── Middle: current bid + leader + timer, quick bid buttons ── */}
-                <div className="flex-shrink-0 border-b border-white/[0.05] bg-obsidian/60">
-                  <div className="flex items-center justify-center px-4 py-3 gap-0 max-w-xl mx-auto
-                                  border-b border-white/[0.04]">
+                <div className="flex-shrink-0 flex justify-center px-4">
+                <div className="glass-panel top-accent flex-shrink-0 w-full max-w-xl overflow-hidden"
+                     style={{ '--accent': 'rgb(var(--neon))' }}>
+                  <div className="flex items-center justify-center px-4 py-3 gap-0
+                                  border-b border-white/[0.06]">
                     {/* Current bid (odometer) */}
                     <div className="flex-1">
                       <p className="text-[8px] font-black tracking-[2px] text-white/25 uppercase mb-0.5">
@@ -428,7 +435,8 @@ export default function AuctionBoard() {
                       </div>
                     </div>
 
-                    <div className="w-px bg-white/[0.06] self-stretch mx-3" />
+                    <div className="w-px self-stretch mx-3"
+                         style={{ background: `linear-gradient(to bottom, transparent, rgb(var(--fg) / 0.12), transparent)` }} />
 
                     {/* Leading team */}
                     <div className="flex flex-col items-center gap-1 px-2">
@@ -437,7 +445,7 @@ export default function AuctionBoard() {
                         <>
                           <div className="w-10 h-10 rounded-full flex items-center justify-center
                                           text-[10px] font-black border-2"
-                               style={{ borderColor: leadColor, color: leadColor, background: leadColor + '22' }}>
+                               style={{ borderColor: leadColor, color: leadColor, background: leadColor + '22', boxShadow: `0 0 16px ${leadColor}30` }}>
                             {highestBidder.shortName?.slice(0, 3) ?? '?'}
                           </div>
                           <p className="text-[9px] font-bold" style={{ color: leadColor }}>
@@ -452,7 +460,8 @@ export default function AuctionBoard() {
                       )}
                     </div>
 
-                    <div className="w-px bg-white/[0.06] self-stretch mx-3" />
+                    <div className="w-px self-stretch mx-3"
+                         style={{ background: `linear-gradient(to bottom, transparent, rgb(var(--fg) / 0.12), transparent)` }} />
 
                     {/* Timer */}
                     <AuctionTimer
@@ -475,9 +484,12 @@ export default function AuctionBoard() {
                     onWithdraw={withdraw}
                   />
                 </div>
+                </div>
 
                 {/* ── Bottom: withdraw — always docked, never clipped ── */}
-                <div className="flex-shrink-0 bg-obsidian/90 backdrop-blur-sm">
+                <div className="flex-shrink-0 flex justify-center px-4 pb-1">
+                <div className="glass-panel top-accent flex-shrink-0 w-full max-w-xl overflow-hidden"
+                     style={{ '--accent': 'rgb(var(--bid-red))' }}>
                   <BidPanel
                     mode="withdraw"
                     currentBid={currentBid}
@@ -490,6 +502,7 @@ export default function AuctionBoard() {
                     onWithdraw={withdraw}
                   />
                 </div>
+                </div>
               </>
             ) : (
               <div className="flex-1 min-h-0 flex items-center justify-center">
@@ -499,8 +512,8 @@ export default function AuctionBoard() {
           </main>
 
           {/* RIGHT — Player stats ───────────────────────── */}
-          <aside className="hidden lg:flex flex-col min-h-0 border-l border-white/[0.05]
-                            bg-surface overflow-hidden">
+          <aside className="glass-panel top-accent hidden lg:flex flex-col min-h-0 overflow-hidden"
+                 style={{ '--accent': 'rgb(var(--gold-bright))' }}>
             <div className="flex-shrink-0 flex items-center justify-between
                             px-4 py-3 border-b border-white/[0.05]">
               <span className="text-[9px] font-black tracking-[2.5px] text-white/30 uppercase">Player Stats</span>

@@ -128,8 +128,9 @@ export default function BidPanel({
 
       {isLeading && (
         <div className="flex items-center justify-center gap-2 py-1.5 rounded-xl
-                        bg-neon/[0.08] border border-neon/20">
-          <span className="text-neon font-black text-xs tracking-widest">★ YOU'RE LEADING</span>
+                        bg-gradient-to-r from-neon/[0.04] via-neon/[0.12] to-neon/[0.04]
+                        border border-neon/25 shadow-[0_0_20px_rgba(0,255,102,.12)]">
+          <span className="text-neon font-black text-xs tracking-widest neon-glow">★ YOU'RE LEADING</span>
         </div>
       )}
 
@@ -140,8 +141,8 @@ export default function BidPanel({
                         border transition-all active:scale-95
                         disabled:opacity-30 disabled:cursor-not-allowed
                         ${i === 0
-                          ? 'bg-neon text-black border-neon hover:brightness-110 hover:shadow-[0_0_18px_rgba(0,255,102,.4)]'
-                          : 'bg-transparent text-white border-white/[0.1] hover:border-neon/40 hover:text-neon'
+                          ? 'bg-gradient-to-b from-neon to-neon-dim text-black border-transparent shadow-[0_4px_16px_rgba(0,255,102,.28),inset_0_1px_0_rgba(255,255,255,.35)] hover:brightness-110 hover:shadow-[0_4px_22px_rgba(0,255,102,.42)]'
+                          : 'bg-white/[0.02] text-white border-white/[0.1] hover:border-neon/40 hover:text-neon hover:bg-neon/[0.04]'
                         }`}>
             <span className="font-bebas text-xl leading-none tracking-wider">
               {formatCroreAmount(amount)}

@@ -9,10 +9,10 @@ import { formatCroreAmount } from '../../utils/currency';
 export default function SoldTicker({ soldHistory = [] }) {
   if (!soldHistory.length) {
     return (
-      <div className="h-[38px] border-t border-white/[0.05] bg-obsidian/95
-                      flex items-center overflow-hidden flex-shrink-0">
+      <div className="glass-panel top-accent h-[40px] flex items-center overflow-hidden flex-shrink-0"
+           style={{ '--accent': 'rgb(var(--gold-bright))', borderRadius: '18px' }}>
         <div className="flex-shrink-0 px-3 h-full flex items-center
-                        bg-neon text-black text-[9px] font-black tracking-[2px] uppercase">
+                        bg-gradient-to-b from-neon to-neon-dim text-black text-[9px] font-black tracking-[2px] uppercase">
           RECENT SALES
         </div>
         <p className="text-white/20 text-[10px] px-4">No sales yet — auction in progress</p>
@@ -29,11 +29,11 @@ export default function SoldTicker({ soldHistory = [] }) {
   const items = shouldLoop ? [...soldHistory, ...soldHistory] : soldHistory;
 
   return (
-    <div className="h-[38px] border-t border-white/[0.05] bg-obsidian/97
-                    flex items-center overflow-hidden flex-shrink-0">
+    <div className="glass-panel top-accent h-[40px] flex items-center overflow-hidden flex-shrink-0"
+         style={{ '--accent': 'rgb(var(--gold-bright))', borderRadius: '18px' }}>
       {/* Label tab */}
       <div className="flex-shrink-0 px-3 h-full flex items-center
-                      bg-neon text-black text-[9px] font-black tracking-[2px] uppercase
+                      bg-gradient-to-b from-neon to-neon-dim text-black text-[9px] font-black tracking-[2px] uppercase
                       z-10">
         RECENT SALES
       </div>

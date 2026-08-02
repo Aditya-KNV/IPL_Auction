@@ -31,10 +31,10 @@ const ICONS = {
 // default next step. Everything else is a secondary outline, tinted by intent.
 const Btn = ({ onClick, disabled, variant, icon, children }) => {
   const styles = {
-    primary: 'border-transparent bg-neon text-black hover:brightness-110 shadow-[0_2px_12px_rgba(0,255,102,0.28)]',
-    amber:   'border-orange-400/30 bg-orange-400/[0.1] text-orange-300 hover:bg-orange-400/[0.18] hover:border-orange-400/45',
-    yellow:  'border-gold-bright/30 bg-gold-bright/[0.1] text-gold-bright hover:bg-gold-bright/[0.18] hover:border-gold-bright/45',
-    danger:  'border-bid-red/30 bg-bid-red/[0.1] text-bid-red hover:bg-bid-red/[0.18] hover:border-bid-red/45',
+    primary: 'border-transparent bg-gradient-to-b from-neon to-neon-dim text-black hover:brightness-110 shadow-[0_4px_16px_rgba(0,255,102,.3),inset_0_1px_0_rgba(255,255,255,.35)]',
+    amber:   'border-orange-400/30 bg-gradient-to-b from-orange-400/[0.14] to-orange-400/[0.05] text-orange-300 hover:from-orange-400/[0.22] hover:border-orange-400/45',
+    yellow:  'border-gold-bright/30 bg-gradient-to-b from-gold-bright/[0.14] to-gold-bright/[0.05] text-gold-bright hover:from-gold-bright/[0.22] hover:border-gold-bright/45',
+    danger:  'border-bid-red/30 bg-gradient-to-b from-bid-red/[0.14] to-bid-red/[0.05] text-bid-red hover:from-bid-red/[0.22] hover:border-bid-red/45',
   };
   return (
     <button type="button" onClick={onClick} disabled={disabled}
