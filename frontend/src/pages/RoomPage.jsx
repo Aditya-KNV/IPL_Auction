@@ -15,6 +15,7 @@ import PlayerStatsModal from "../components/players/PlayerStatsModal";
 import RankingPage from "./RankingPage";
 import RatingFilters, { activeRatingFilters, meetsRatingFilters } from "../components/players/RatingFilters";
 import api from "../services/api";
+import { downloadSquadsPdf } from "../utils/squadsPdf";
 import { STATUS_COLOR, getDisplayStatus } from "../utils/playerDisplay";
 
 function PlayersTab() {
@@ -258,6 +259,44 @@ function PlayersTab() {
   );
 }
 
+// Available to everyone in the room. Fetches the squads again so the file is current.
+function DownloadSquadsButton() {
+  const { room, teamAssignments } = useRoom();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const download = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await api.get("/teams", { params: { roomCode: room.code } });
+      const owners = Object.fromEntries(
+        Object.values(teamAssignments ?? {}).map((a) => [String(a.teamId), a.claimedBy]),
+      );
+      await downloadSquadsPdf({ teams: data, roomCode: room.code, owners });
+    } catch (err) {
+      console.error(err);
+      setError("Could not create the PDF. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-stretch sm:items-end gap-1">
+      <button type="button" onClick={download} disabled={busy || !room?.code}
+        className="inline-flex items-center justify-center gap-2 rounded-xl bg-neon px-4 py-2.5 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-50 disabled:cursor-wait">
+        <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        {busy ? "Preparing PDF…" : "Download squads (PDF)"}
+      </button>
+      {error && <p className="text-xs text-bid-red">{error}</p>}
+    </div>
+  );
+}
+
 function TeamsTab() {
   const { user } = useAuth();
   const { teamAssignments } = useRoom();
@@ -275,9 +314,12 @@ function TeamsTab() {
 
   return (
     <div className="max-w-7xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Squads</p>
-        <h2 className="font-bebas text-3xl tracking-wider text-white">Teams</h2>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Squads</p>
+          <h2 className="font-bebas text-3xl tracking-wider text-white">Teams</h2>
+        </div>
+        <DownloadSquadsButton />
       </div>
 
       {myTeam && (
