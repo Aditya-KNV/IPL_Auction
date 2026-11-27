@@ -117,6 +117,10 @@ export const RoomProvider = ({ children }) => {
     socket?.emit('room:kick', { targetSocketId });
   }, [socket]);
 
+  const removeAbsentUser = useCallback((userId) => {
+    socket?.emit('room:remove-absent', { userId });
+  }, [socket]);
+
   const pickTeam = useCallback((teamInfo) => {
     socket?.emit('room:pick-team', teamInfo);
   }, [socket]);
@@ -126,7 +130,7 @@ export const RoomProvider = ({ children }) => {
   }, [socket]);
 
   return (
-    <RoomContext.Provider value={{ ...state, createRoom, joinRoom, leaveRoom, kickUser, pickTeam, transferHost }}>
+    <RoomContext.Provider value={{ ...state, createRoom, joinRoom, leaveRoom, kickUser, removeAbsentUser, pickTeam, transferHost }}>
       {children}
     </RoomContext.Provider>
   );
