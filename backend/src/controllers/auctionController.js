@@ -589,7 +589,7 @@ const openAcceleratedSelection = async (roomCode, maxPicks) => {
         : []),
     ],
   })
-    .select('_id name role nationality basePrice status')
+    .select('_id name role nationality basePrice status batting.phases bowling.phases')
     .lean();
 
   const assignedTeamIds = getAssignedTeamIds(roomCode);

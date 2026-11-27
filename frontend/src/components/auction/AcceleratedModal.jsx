@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import api from '../../services/api';
 import { useRoom } from '../../context/RoomContext';
 import PlayerStatsModal from '../players/PlayerStatsModal';
+import RatingFilters, { activeRatingFilters, meetsRatingFilters } from '../players/RatingFilters';
 
 const ROLE_COLOR = {
   Batsman:         '#3b82f6',
@@ -10,35 +11,6 @@ const ROLE_COLOR = {
   'Wicket-Keeper': '#f59e0b',
 };
 const ROLE_ORDER = ['Batsman', 'Wicket-Keeper', 'All-Rounder', 'Bowler'];
-
-const ROLE_PHASES = {
-  Batsman: [
-    { label: 'Powerplay', key: 'batting.phases.powerplay.rating' },
-    { label: 'Middle',    key: 'batting.phases.middle.rating'    },
-    { label: 'Death',     key: 'batting.phases.death.rating'     },
-  ],
-  Bowler: [
-    { label: 'Powerplay', key: 'bowling.phases.powerplay' },
-    { label: 'Middle',    key: 'bowling.phases.middle'    },
-    { label: 'Death',     key: 'bowling.phases.death'     },
-  ],
-  'All-Rounder': [
-    { label: 'Bat Powerplay',  key: 'batting.phases.powerplay.rating' },
-    { label: 'Bat Middle',     key: 'batting.phases.middle.rating'    },
-    { label: 'Bat Death',      key: 'batting.phases.death.rating'     },
-    { label: 'Bowl Powerplay', key: 'bowling.phases.powerplay'        },
-    { label: 'Bowl Middle',    key: 'bowling.phases.middle'           },
-    { label: 'Bowl Death',     key: 'bowling.phases.death'            },
-  ],
-  'Wicket-Keeper': [
-    { label: 'Powerplay', key: 'batting.phases.powerplay.rating' },
-    { label: 'Middle',    key: 'batting.phases.middle.rating'    },
-    { label: 'Death',     key: 'batting.phases.death.rating'     },
-  ],
-};
-
-const resolvePath = (obj, path) =>
-  path.split('.').reduce((cur, k) => (cur != null ? cur[k] : undefined), obj);
 
 const isOverseas = (p) => {
   const nat = String(p?.nationality || '').trim().toLowerCase();
@@ -112,8 +84,7 @@ export default function AcceleratedModal({
   const [localDone,   setLocalDone]   = useState(false);
   const [search,      setSearch]      = useState('');
   const [roleFilter,  setRoleFilter]  = useState('All');
-  const [phase,       setPhase]       = useState('');
-  const [minRating,   setMinRating]   = useState('');
+  const [ratingMins,  setRatingMins]  = useState({});
   const [statsPlayer, setStatsPlayer] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const { room } = useRoom();
@@ -159,36 +130,21 @@ export default function AcceleratedModal({
     }
   };
 
-  const phaseOptions = roleFilter !== 'All' ? (ROLE_PHASES[roleFilter] || []) : [];
-
   const handleRoleChange = (r) => {
     setRoleFilter(r);
-    setPhase('');
-    setMinRating('');
+    setRatingMins({});
   };
 
+  const ratingFilters = activeRatingFilters(roleFilter, ratingMins);
+
   const filteredPlayers = useMemo(() => {
-    let result = players.filter((p) => {
+    const active = activeRatingFilters(roleFilter, ratingMins);
+    return players.filter((p) => {
       if (roleFilter !== 'All' && p.role !== roleFilter) return false;
       if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
+      return meetsRatingFilters(p, active);
     });
-
-    if (phase && minRating !== '') {
-      const min = Number(minRating);
-      if (Number.isFinite(min)) {
-        const phaseObj = phaseOptions.find((po) => po.key === phase);
-        if (phaseObj) {
-          result = result.filter((p) => {
-            const val = resolvePath(p, phaseObj.key);
-            return typeof val === 'number' && val >= min;
-          });
-        }
-      }
-    }
-
-    return result;
-  }, [players, roleFilter, search, phase, minRating, phaseOptions]);
+  }, [players, roleFilter, search, ratingMins]);
 
   const byRole = useMemo(() => filteredPlayers.reduce((acc, p) => {
     const key = p.role || 'Other';
@@ -201,7 +157,7 @@ export default function AcceleratedModal({
     ...Object.keys(byRole).filter((r) => !ROLE_ORDER.includes(r) && byRole[r]?.length),
   ];
 
-  const hasFilters = roleFilter !== 'All' || search || phase;
+  const hasFilters = roleFilter !== 'All' || search || ratingFilters.length > 0;
 
   return (
     <>
@@ -261,60 +217,26 @@ export default function AcceleratedModal({
                     </button>
                   ))}
                 </div>
-
-                {/* Phase + MinRating row */}
-                {phaseOptions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <select
-                      value={phase}
-                      onChange={(e) => { setPhase(e.target.value); setMinRating(''); }}
-                      className="bg-surface-2 border border-white/[0.08] text-white text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-neon/50 transition"
-                    >
-                      <option value="">All Phases</option>
-                      {phaseOptions.map((po) => (
-                        <option key={po.key} value={po.key}>{po.label}</option>
-                      ))}
-                    </select>
-
-                    {phase && (
-                      <div className="flex items-center gap-1.5 bg-surface-2 border border-white/[0.08] rounded-lg px-3 py-1.5">
-                        <span className="text-white/40 text-xs whitespace-nowrap">Min</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={10}
-                          step={1}
-                          value={minRating}
-                          onChange={(e) => setMinRating(e.target.value)}
-                          placeholder="e.g. 7"
-                          className="bg-transparent text-white w-12 text-xs outline-none"
-                        />
-                        <span className="text-white/25 text-xs">/10</span>
-                      </div>
-                    )}
-
-                    {hasFilters && (
-                      <button
-                        onClick={() => { handleRoleChange('All'); setSearch(''); }}
-                        className="text-[11px] text-white/30 border border-white/[0.08] rounded-lg px-2.5 py-1.5 hover:border-white/20 hover:text-white transition"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Result count */}
-                {(phase && minRating !== '') && (
-                  <p className="text-white/20 text-[11px]">
-                    {filteredPlayers.length} player{filteredPlayers.length !== 1 ? 's' : ''} match
-                    {' · '}
-                    {phaseOptions.find((po) => po.key === phase)?.label} ≥ {minRating}/10
-                  </p>
-                )}
               </div>
 
               <div className="flex-1 overflow-y-auto px-5 py-3 custom-scrollbar">
+                <div className="space-y-2 mb-4">
+                  <RatingFilters role={roleFilter} mins={ratingMins} onChange={setRatingMins} />
+
+                  {hasFilters && (
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-white/20 text-[11px]">
+                        {filteredPlayers.length} player{filteredPlayers.length !== 1 ? 's' : ''} match
+                      </p>
+                      <button
+                        onClick={() => { handleRoleChange('All'); setSearch(''); }}
+                        className="text-[11px] text-white/30 border border-white/[0.08] rounded-lg px-2.5 py-1 hover:border-white/20 hover:text-white transition"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {orderedRoles.length === 0 && (
                   <p className="text-white/20 text-sm text-center py-8">No players found</p>
                 )}
@@ -331,7 +253,6 @@ export default function AcceleratedModal({
                         const id         = String(p._id);
                         const isSelected = selected.has(id);
                         const maxed      = !isSelected && maxPicks > 0 && selected.size >= maxPicks;
-                        const phaseVal   = phase ? resolvePath(p, phase) : null;
                         return (
                           <button
                             key={id}
@@ -361,17 +282,22 @@ export default function AcceleratedModal({
                               style={{ backgroundColor: ROLE_COLOR[p.role] || '#6b7280' }}
                             />
 
-                            <span className="flex-1 text-sm text-white/80 truncate">
-                              {p.name}
-                              {isOverseas(p) && <span className="ml-1 text-sky-400 text-xs">✈</span>}
-                            </span>
-
-                            {/* Phase rating badge */}
-                            {phase && typeof phaseVal === 'number' && (
-                              <span className="text-[10px] font-semibold text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                                {phaseVal}/10
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-sm text-white/80 truncate">
+                                {p.name}
+                                {isOverseas(p) && <span className="ml-1 text-sky-400 text-xs">✈</span>}
                               </span>
-                            )}
+                              {/* Ratings being filtered on */}
+                              {ratingFilters.length > 0 && (
+                                <span className="mt-0.5 flex flex-wrap gap-1">
+                                  {ratingFilters.map((f) => (
+                                    <span key={f.key} className="text-[10px] font-semibold text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-full">
+                                      {f.label} {f.value(p)}
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
+                            </span>
 
                             {p.status === 'unsold' && (
                               <span className="text-[10px] font-semibold text-orange-400 border border-orange-500/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
