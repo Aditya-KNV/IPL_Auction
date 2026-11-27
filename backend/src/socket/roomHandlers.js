@@ -1,4 +1,4 @@
-const { createRoom, joinRoom, leaveRoom, leaveRoomExplicit, pickTeam, transferHost, restoreRoom, getRoomBySocket } = require('./roomStore');
+const { createRoom, joinRoom, leaveRoom, leaveRoomExplicit, pickTeam, transferHost, removeAbsentUser, restoreRoom, getRoomBySocket } = require('./roomStore');
 const { createRoomData, ensureRoomData } = require('../services/roomData');
 const Team = require('../models/Team');
 const AuctionSession = require('../models/AuctionSession');
@@ -126,15 +126,19 @@ const registerRoomHandlers = (io, socket) => {
       teamAssignments: result.room.teamAssignments,
     });
 
-    // Persist team assignments so they survive a server restart
-    try {
-      await AuctionSession.findOneAndUpdate(
-        { roomCode: result.room.code },
-        { $set: { roomTeamAssignments: result.room.teamAssignments } }
-      );
-    } catch (err) {
-      console.error('[room:pick-team] persist error:', err.message);
-    }
+    await persistAssignments(result.room);
+  });
+
+  // ── room:remove-absent ─────────────────────────────────────────────────────
+  // Host frees the team of someone who left or is offline. Client sends: { userId }
+  socket.on('room:remove-absent', async ({ userId: targetUserId } = {}) => {
+    const result = removeAbsentUser(socket.id, String(targetUserId));
+    if (result.error) return socket.emit('room:error', { message: result.error });
+
+    io.to(result.room.code).emit('room:teams-updated', {
+      teamAssignments: result.room.teamAssignments,
+    });
+    await persistAssignments(result.room);
   });
 
   // ── room:kick ──────────────────────────────────────────────────────────────
@@ -153,6 +157,8 @@ const registerRoomHandlers = (io, socket) => {
     if (targetSocket) {
       targetSocket.emit('room:kicked', { message: 'You were removed from the room by the host' });
       _leaveExplicit(io, targetSocket, { releaseTeam: true });
+      const updated = getRoomBySocket(socket.id);
+      if (updated) persistAssignments(updated); // or a restart would restore the team
     }
   });
 
@@ -172,6 +178,18 @@ const registerRoomHandlers = (io, socket) => {
 
   // ── disconnect ─────────────────────────────────────────────────────────────
   socket.on('disconnecting', () => _leave(io, socket));
+};
+
+// Saves team assignments so they survive a server restart.
+const persistAssignments = async (room) => {
+  try {
+    await AuctionSession.findOneAndUpdate(
+      { roomCode: room.code },
+      { $set: { roomTeamAssignments: room.teamAssignments } }
+    );
+  } catch (err) {
+    console.error('[room] persist team assignments error:', err.message);
+  }
 };
 
 // ── Shared leave logic ────────────────────────────────────────────────────────

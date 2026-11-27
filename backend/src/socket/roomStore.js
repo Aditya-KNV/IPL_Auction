@@ -220,6 +220,21 @@ const pickTeam = (socketId, teamInfo) => {
   return { room: serializeRoom(room) };
 };
 
+/**
+ * Host removes someone who is no longer connected, freeing the team they held.
+ * The team's squad and purse are untouched.
+ */
+const removeAbsentUser = (hostSocketId, userId) => {
+  const room = rooms.get(socketToRoom.get(hostSocketId));
+  if (!room) return { error: 'Not in a room' };
+  if (room.hostId !== hostSocketId) return { error: 'Only the host can remove users' };
+  if ([...room.users.values()].some((user) => user.userId === userId)) {
+    return { error: 'That user is online — use Kick instead' };
+  }
+  if (!room.teamAssignments.delete(userId)) return { error: 'That user holds no team' };
+  return { room: serializeRoom(room) };
+};
+
 const transferHost = (fromSocketId, toSocketId) => {
   const code = socketToRoom.get(fromSocketId);
   if (!code) return { error: 'Not in a room' };
@@ -297,6 +312,7 @@ module.exports = {
   leaveRoomExplicit,
   pickTeam,
   transferHost,
+  removeAbsentUser,
   restoreRoom,
   getRoom,
   getRoomBySocket,

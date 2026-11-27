@@ -3,6 +3,7 @@ import { useRoom }   from '../../context/RoomContext';
 import { useSocket } from '../../context/SocketContext';
 import { useAuth }   from '../../context/AuthContext';
 import api           from '../../services/api';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const UserRow = ({ user, isHost, isMe, onKick, canKick, teamAssignments }) => {
   const assignment = Object.entries(teamAssignments).find(([uid]) => uid === user.userId)?.[1];
@@ -88,7 +89,7 @@ const Toast = ({ message, onDone }) => {
 };
 
 export default function RoomLobby() {
-  const { room, teamAssignments, leaveRoom, kickUser, pickTeam } = useRoom();
+  const { room, teamAssignments, leaveRoom, kickUser, removeAbsentUser, pickTeam } = useRoom();
   const { socket } = useSocket();
   const { user }   = useAuth();
 
@@ -96,6 +97,7 @@ export default function RoomLobby() {
   const [toasts,        setToasts]       = useState([]);
   const [allTeams,      setAllTeams]     = useState([]);
   const [auctionStatus, setAuctionStatus]= useState(null);
+  const [toRemove,      setToRemove]     = useState(null); // offline user awaiting confirmation
 
   const mySocketId = socket?.id;
   const amHost     = user?.id != null && room?.hostUserId === String(user.id);
@@ -143,6 +145,10 @@ export default function RoomLobby() {
   };
 
   if (!room) return null;
+
+  // People who left or lost connection but still hold a team.
+  const onlineIds = new Set(room.users.map(u => u.userId));
+  const absent = Object.entries(teamAssignments).filter(([userId]) => !onlineIds.has(userId));
 
   return (
     <div className="flex flex-col gap-5 w-full max-w-2xl mx-auto">
@@ -224,7 +230,44 @@ export default function RoomLobby() {
             />
           ))}
         </div>
+
+        {absent.length > 0 && (
+          <div className="mt-4">
+            <p className="text-[10px] font-bold tracking-[2px] text-white/40 uppercase mb-2">Offline · team reserved</p>
+            <div className="flex flex-col gap-2">
+              {absent.map(([userId, assignment]) => (
+                <div key={userId}
+                  className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-dashed border-white/[0.1]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-semibold text-white/60 truncate">{assignment.claimedBy}</span>
+                    <span className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: assignment.color + '22', color: assignment.color, border:`1px solid ${assignment.color}44` }}>
+                      {assignment.shortName}
+                    </span>
+                  </div>
+                  {amHost && (
+                    <button onClick={() => setToRemove({ userId, ...assignment })}
+                      className="flex-shrink-0 text-[11px] font-semibold text-bid-red/80 hover:text-bid-red
+                                 border border-bid-red/25 hover:border-bid-red/40 px-3 py-1.5 rounded-full transition">
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      <ConfirmDialog
+        open={!!toRemove}
+        title={`Remove ${toRemove?.claimedBy ?? 'user'}?`}
+        message={`${toRemove?.shortName ?? 'Their team'} becomes free for someone else. Its players and purse stay as they are.`}
+        confirmLabel="Remove"
+        danger
+        onConfirm={() => { removeAbsentUser(toRemove.userId); setToRemove(null); }}
+        onCancel={() => setToRemove(null)}
+      />
 
       {/* Leave */}
       <button onClick={leaveRoom}
