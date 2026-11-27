@@ -694,133 +694,29 @@ function RulesTab() {
           3. Position Fit Score (Max 34 pts)
         </h3>
         <p className="text-white/40 text-xs mb-3">
-          Dynamic programming assigns players to optimal batting slots. Each
-          slot score is a{" "}
-          <strong className="text-white/70">weighted average</strong> of the
-          listed ratings — weights are divided by their sum, giving a value 0–10
-          — then scaled to the slot max:
+          Batters, wicket-keepers and all-rounders fill three groups of up to 3
+          players. Each player counts in one group only, and the groups are
+          filled together to give the highest total.
         </p>
-        <div className="bg-surface-2/60 rounded-xl px-4 py-3 font-mono text-sm text-neon mb-5">
-          slot contribution = max(0, slotScore / 10) × slotMax
+        <Table
+          headers={["Group", "Rating (0–10)", "Max points"]}
+          rows={[
+            ["Top order (#1–3)", "70% powerplay + 30% pace play", "14"],
+            ["Middle order (#4–6)", "70% middle + 30% spin play", "12"],
+            ["Finishers (#7–9)", "60% death + 20% finishing + 20% power hitting", "8"],
+          ]}
+        />
+        <div className="bg-surface-2/60 rounded-xl px-4 py-3 font-mono text-sm text-neon mt-3">
+          player contribution = (rating / 10) × (group max / 3)
         </div>
 
-
-        {/* Per-position weight breakdowns */}
-        {[
-          {
-            label: "Positions 1–2 · Openers",
-            slotMax: "4.5 each",
-            totalW: 0.9,
-            rows: [
-              ["powerplay", 0.5, "55.6%"],
-              ["pace_play", 0.15, "16.7%"],
-              ["middle", 0.1, "11.1%"],
-              ["anchor", 0.05, "5.6%"],
-              ["spin_play", 0.05, "5.6%"],
-              ["power_hitting", 0.05, "5.6%"],
-            ],
-          },
-          {
-            label: "Positions 3–4 · Top order",
-            slotMax: "4.0 each",
-            totalW: 0.9,
-            rows: [
-              ["middle", 0.4, "44.4%"],
-              ["powerplay", 0.2, "22.2%"],
-              ["pace_play", 0.1, "11.1%"],
-              ["spin_play", 0.1, "11.1%"],
-              ["anchor", 0.05, "5.6%"],
-              ["power_hitting", 0.05, "5.6%"],
-            ],
-          },
-          {
-            label: "Positions 5–6 · Middle order",
-            slotMax: "4.0 each",
-            totalW: 0.8,
-            rows: [
-              ["death", 0.3, "37.5%"],
-              ["middle", 0.2, "25.0%"],
-              ["pace_play", 0.1, "12.5%"],
-              ["spin_play", 0.1, "12.5%"],
-              ["finishing", 0.05, "6.25%"],
-              ["power_hitting", 0.05, "6.25%"],
-            ],
-          },
-          {
-            label: "Positions 7–8 · Lower order",
-            slotMax: "#7: 4.0 · #8: 3.0",
-            totalW: 0.7,
-            rows: [
-              ["death", 0.4, "57.1%"],
-              ["pace_play", 0.1, "14.3%"],
-              ["finishing", 0.1, "14.3%"],
-              ["power_hitting", 0.1, "14.3%"],
-            ],
-          },
-          {
-            label: "Positions 9–12 · Tail",
-            slotMax: "#9: 1.0 · #10: 0.34 · #11–12: 0.33",
-            totalW: 1.0,
-            rows: [
-              ["power_hitting", 0.6, "60.0%"],
-              ["finishing", 0.4, "40.0%"],
-            ],
-          },
-        ].map(({ label, slotMax, totalW, rows }) => (
-          <div
-            key={label}
-            className="mb-4 bg-surface-2/40 rounded-xl overflow-hidden"
-          >
-            <div className="flex items-center justify-between px-4 py-2 bg-surface-2/80 border-b border-white/[0.08]">
-              <span className="text-white text-xs font-semibold">{label}</span>
-              <span className="text-white/30 text-xs">
-                Slot max:{" "}
-                <span className="text-neon font-mono">{slotMax}</span>{" "}
-                &nbsp;·&nbsp; Σ weights:{" "}
-                <span className="font-mono">{totalW.toFixed(2)}</span>
-              </span>
-            </div>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-white/[0.08]">
-                  <th className="text-left text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
-                    Rating
-                  </th>
-                  <th className="text-right text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
-                    Raw weight
-                  </th>
-                  <th className="text-right text-white/30 font-semibold py-1.5 px-4 text-xs uppercase tracking-wider">
-                    Effective %
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(([attr, raw, pct]) => (
-                  <tr key={attr} className="border-b border-white/[0.04]">
-                    <td className="py-1.5 px-4 text-white/60 font-mono">
-                      {attr}
-                    </td>
-                    <td className="py-1.5 px-4 text-white/30 text-right font-mono">
-                      {raw.toFixed(2)}
-                    </td>
-                    <td className="py-1.5 px-4 text-neon text-right font-mono">
-                      {pct}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ))}
-
-        <div className="mt-1 space-y-1 text-xs text-white/40">
-          <p>• Bowlers can only occupy positions 9–12.</p>
-          <p>• Batsmen &amp; Wicket-Keepers can only occupy positions 1–8.</p>
-          <p>• All-Rounders can occupy positions 1–9.</p>
+        <div className="mt-3 space-y-1 text-xs text-white/40">
+          <p>• Bowlers add no batting points.</p>
+          <p>• An empty place in a group scores 0.</p>
           <p>
-            • Batting outside preferred positions:{" "}
-            <span className="text-red-400">−3 penalty</span> applied to slot
-            score before scaling.
+            • A player with preferred positions, none of them in the group, takes
+            a <span className="text-red-400">−2 penalty</span> to the rating
+            (never below 0).
           </p>
         </div>
       </Section>

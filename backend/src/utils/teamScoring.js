@@ -5,225 +5,149 @@ const average = (values) => {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 };
 
-const getBattingMetrics = (player) => ({
-  powerplay: player.batting?.phases?.powerplay?.rating ?? 0,
-  middle: player.batting?.phases?.middle?.rating ?? 0,
-  death: player.batting?.phases?.death?.rating ?? 0,
-  finishing: player.batting?.skills?.finishing ?? 0,
-  power_hitting: player.batting?.skills?.power_hitting ?? 0,
-  anchor: player.batting?.skills?.anchor ?? 0,
-  spin_play: player.batting?.skills?.spin_play ?? 0,
-  pace_play: player.batting?.skills?.pace_play ?? 0,
-});
+// ── Batting groups (34 pts) ───────────────────────────────────────────────────
+// Non-bowlers are placed in three groups of up to 3: top order, middle order and
+// finishers. Each player counts in at most one group, and the groups are filled
+// together so that the total batting points are as high as possible.
+const BATTING_GROUPS = [
+  {
+    key: 'top', positions: [1, 2, 3], max: 14,
+    rating: (b) => 0.7 * (b?.phases?.powerplay?.rating ?? 0) + 0.3 * (b?.skills?.pace_play ?? 0),
+  },
+  {
+    key: 'middle', positions: [4, 5, 6], max: 12,
+    rating: (b) => 0.7 * (b?.phases?.middle?.rating ?? 0) + 0.3 * (b?.skills?.spin_play ?? 0),
+  },
+  {
+    key: 'finisher', positions: [7, 8, 9], max: 8,
+    rating: (b) => 0.6 * (b?.phases?.death?.rating ?? 0)
+      + 0.2 * (b?.skills?.finishing ?? 0)
+      + 0.2 * (b?.skills?.power_hitting ?? 0),
+  },
+];
+const GROUP_SIZE = 3;
+const OUT_OF_GROUP_PENALTY = 2;
 
-const battingFormulaForPosition = (position) => {
-  if ([1, 2].includes(position)) {
-    return {
-      powerplay: 0.5,
-      pace_play: 0.15,
-      middle: 0.1,
-      anchor: 0.05,
-      spin_play: 0.05,
-      power_hitting: 0.05,
-    };
+// DP state = places available per group, encoded as top + 4*middle + 16*finisher.
+const BATTING_STATES = 64;
+const FULL_STATE = BATTING_STATES - 1;
+
+const prefersGroup = (player, group) =>
+  (player.tactical?.positions ?? []).some((position) => group.positions.includes(position));
+
+// Rating (0–10) of a player in a group, after the preferred-position penalty.
+const battingGroupRating = (player, group) => {
+  const hasPreference = (player.tactical?.positions?.length ?? 0) > 0;
+  const penalty = hasPreference && !prefersGroup(player, group) ? OUT_OF_GROUP_PENALTY : 0;
+  return Math.max(0, group.rating(player.batting) - penalty);
+};
+
+// Points a player adds in each of the three groups. Bowlers add none.
+const battingGroupPoints = (player) => BATTING_GROUPS.map((group) => (
+  player.role === 'Bowler' ? 0 : (battingGroupRating(player, group) / 10) * (group.max / GROUP_SIZE)
+));
+
+// Adds one batter to the DP. best[state] is the highest points using at most the
+// places in `state`. States are visited from high to low, so every value read has
+// not yet been updated for this batter and nobody is counted twice.
+// `choice` (optional) records the group picked, for reconstructing the line-up.
+const addBatter = (best, points, offset, choice = null, choiceOffset = 0) => {
+  const top = points[offset];
+  const middle = points[offset + 1];
+  const finisher = points[offset + 2];
+  for (let state = FULL_STATE; state > 0; state -= 1) {
+    let value = best[state];
+    let picked = 0;
+    if ((state & 3) !== 0 && best[state - 1] + top > value) { value = best[state - 1] + top; picked = 1; }
+    if ((state & 12) !== 0 && best[state - 4] + middle > value) { value = best[state - 4] + middle; picked = 2; }
+    if ((state & 48) !== 0 && best[state - 16] + finisher > value) { value = best[state - 16] + finisher; picked = 3; }
+    best[state] = value;
+    if (choice) choice[choiceOffset + state] = picked;
   }
-  if ([3, 4].includes(position)) {
-    return {
-      middle: 0.4,
-      powerplay: 0.2,
-      pace_play: 0.1,
-      spin_play: 0.1,
-      anchor: 0.05,
-      power_hitting: 0.05,
-    };
-  }
-  if ([5, 6].includes(position)) {
-    return {
-      middle: 0.2,
-      death: 0.3,
-      pace_play: 0.1,
-      spin_play: 0.1,
-      finishing: 0.05,
-      power_hitting: 0.05,
-    };
-  }
-  if ([7, 8].includes(position)) {
-    return {
-      death: 0.4,
-      pace_play: 0.1,
-      finishing: 0.1,
-      power_hitting: 0.1,
-    };
-  }
-  return {
-    power_hitting: 0.6,
-    finishing: 0.4,
-  };
 };
 
-// Per-slot contribution cap toward the 34-point Position Fit total.
-// Slot maxes — #1–2: 4.5 pts · #3–7: 4 pts · #8: 3 pts · #9: 1 pt · #10: 0.34 pts · #11–12: 0.33 pts
-const POSITION_SLOT_MAX = {
-  1: 4.5, 2: 4.5,
-  3: 4,   4: 4,
-  5: 4,   6: 4,
-  7: 4,   8: 3,
-  9: 1,   10: 0.34, 11: 0.33, 12: 0.33,
-};
-
-const weightedNormalizedScore = (metrics, weights) => {
-  const weightEntries = Object.entries(weights);
-  const totalWeight = weightEntries.reduce((sum, [, weight]) => sum + weight, 0);
-  if (totalWeight === 0) return 0;
-  const weighted = weightEntries.reduce((sum, [key, weight]) => sum + (metrics[key] ?? 0) * weight, 0);
-  return weighted / totalWeight;
-};
-
-const playerBattingScoreForPosition = (player, position) => {
-  const weights = battingFormulaForPosition(position);
-  return weightedNormalizedScore(getBattingMetrics(player), weights);
-};
-
-const canOccupyBattingPosition = (player, position) => {
-  if (!player) return false;
-  // Batsmen and Wicket-Keepers can bat up to position 9 (e.g. power-hitting specialist at 9).
-  if (player.role === 'Batsman' || player.role === 'Wicket-Keeper') return position >= 1 && position <= 9;
-  // All-Rounders naturally bat anywhere from 1 to 10.
-  if (player.role === 'All-Rounder') return position >= 1 && position <= 10;
-  // Pure Bowlers bat in the tail.
-  if (player.role === 'Bowler') return position >= 9 && position <= 12;
-  return position >= 1 && position <= 12;
-};
-
-const battingSlotScore = (player, position) => {
-  if (!canOccupyBattingPosition(player, position)) return null;
-  const preferred = player.tactical?.positions ?? [];
-  const base = playerBattingScoreForPosition(player, position);
-  // Only penalise if the player has explicit preferred positions AND this isn't one of them.
-  // Empty preferred list means no preference — place them anywhere without penalty.
-  if (preferred.length > 0 && !preferred.includes(position)) return base - 3;
-  return base;
-};
-
-const optimizeBattingOrder = (players) => {
-  const n = players.length;
-  // Use a numeric key: (slotIndex << n) | usedMask — avoids string concatenation overhead.
-  const memo = new Map();
-
-  const dfs = (slotIndex, usedMask) => {
-    if (slotIndex >= 12) return 0;
-    const key = (slotIndex << n) | usedMask;
-    if (memo.has(key)) return memo.get(key);
-
-    const position = slotIndex + 1;
-    let best = -Infinity;
-    let hasCandidate = false;
-
-    for (let pi = 0; pi < n; pi += 1) {
-      if (usedMask & (1 << pi)) continue;
-      const slotScore = battingSlotScore(players[pi], position);
-      if (slotScore === null) continue;
-      hasCandidate = true;
-      const candidate = slotScore + dfs(slotIndex + 1, usedMask | (1 << pi));
-      if (candidate > best) best = candidate;
-    }
-
-    // Only allow skipping when no valid candidate exists for this position.
-    // A skip is never preferred over a valid assignment — it only fires as a
-    // forced fallback (e.g. fewer than 12 players, or role/range mismatch).
-    if (!hasCandidate) best = -8 + dfs(slotIndex + 1, usedMask);
-
-    memo.set(key, best);
-    return best;
-  };
-
-  dfs(0, 0);
-
-  // Reconstruct the optimal assignment from the memoised values.
-  const assignments = [];
-  let usedMask = 0;
-
-  for (let slotIndex = 0; slotIndex < 12; slotIndex += 1) {
-    const position = slotIndex + 1;
-    // Use -Infinity fallback so missing memo states never falsely inflate candidate values.
-    const nextKey = (slotIdx, mask) => memo.get((slotIdx << n) | mask) ?? -Infinity;
-
-    // Start at -Infinity so any valid assignment beats "no assignment".
-    let bestValue = -Infinity;
-    let bestPi = -1;
-    let bestSlotScore = 0;
-
-    for (let pi = 0; pi < n; pi += 1) {
-      if (usedMask & (1 << pi)) continue;
-      const slotScore = battingSlotScore(players[pi], position);
-      if (slotScore === null) continue;
-      const rest = slotIndex + 1 < 12 ? nextKey(slotIndex + 1, usedMask | (1 << pi)) : 0;
-      const candidate = slotScore + rest;
-      if (candidate > bestValue) { bestValue = candidate; bestPi = pi; bestSlotScore = slotScore; }
-    }
-
-    if (bestPi >= 0) {
-      const preferred = players[bestPi].tactical?.positions ?? [];
-      assignments.push({
-        position,
-        playerIndex: bestPi,
-        isPreferred: preferred.length > 0 && preferred.includes(position),
-        slotScore: round(bestSlotScore),
-      });
-      usedMask |= (1 << bestPi);
-    }
-    // If bestPi is still -1, no valid candidate exists for this slot — leave it unassigned.
-  }
-
-  return { assignments };
+const keeperPoints = (keeperCount, firstKeeperInjuryRisk) => {
+  if (keeperCount > 1) return 3;
+  if (keeperCount === 1) return firstKeeperInjuryRisk <= 3 ? 2.5 : 2;
+  return 0;
 };
 
 const wicketKeeperScore = (players) => {
   const keepers = players.filter((player) => player.role === 'Wicket-Keeper');
-  if (keepers.length > 1) return 3;
-  if (keepers.length === 1) {
-    return (keepers[0].fitness?.injury_risk ?? 10) <= 3 ? 2.5 : 2;
-  }
-  return 0;
+  return keeperPoints(keepers.length, keepers[0]?.fitness?.injury_risk ?? 10);
 };
 
-const battingBalanceScore = (players) => {
-  // Bowlers are excluded — only batters and all-rounders face the opposition's bowling line
-  const batters = players.filter((p) => p.role !== 'Bowler');
-  const n = batters.length;
-  const left = batters.filter((player) => player.batting_style === 'left-handed').length;
-  const right = n - left;
+// `batters` counts non-bowlers — only they face the opposition's bowling line.
+const balancePoints = (left, batters) => {
+  const right = batters - left;
   if (!left || !right) return 0;
   // Normalise against the best achievable ratio for n players: floor(n/2) : ceil(n/2).
   // This means 4:5 with 9 batters and 3:4 with 7 batters both earn full marks,
   // because you cannot get closer to 50/50 with an odd group.
-  const perfectRatio = Math.floor(n / 2) / Math.ceil(n / 2);
+  const perfectRatio = Math.floor(batters / 2) / Math.ceil(batters / 2);
   if (perfectRatio === 0) return 0;
   const actualRatio = Math.min(left, right) / Math.max(left, right);
   return clamp(3 * (actualRatio / perfectRatio), 0, 3);
 };
 
-const battingComposite = (player) => {
-  const m = getBattingMetrics(player);
-  return Object.values(m).reduce((sum, v) => sum + v, 0);
+const battingBalanceScore = (players) => {
+  const batters = players.filter((p) => p.role !== 'Bowler');
+  const left = batters.filter((player) => player.batting_style === 'left-handed').length;
+  return balancePoints(left, batters.length);
 };
 
 const battingPositionScore = (players) => {
-  // Pass all players directly — the playing 12 is always ≤ 12 players.
-  // No pre-sort or slice needed; the DFS explores every valid assignment.
-  const { assignments } = optimizeBattingOrder(players);
+  const n = players.length;
+  const points = new Float64Array(3 * n);
+  const best = new Float64Array(BATTING_STATES);
+  const choice = new Uint8Array(n * BATTING_STATES);
 
-  let positionFitScore = 0;
+  players.forEach((player, i) => {
+    points.set(battingGroupPoints(player), 3 * i);
+    if (player.role !== 'Bowler') addBatter(best, points, 3 * i, choice, i * BATTING_STATES);
+  });
 
-  const battingOrder = assignments.map(({ position, playerIndex, isPreferred, slotScore }) => {
-    const p = players[playerIndex];
-    const slotMax = POSITION_SLOT_MAX[position] ?? 0;
-    const contribution = round(Math.max(0, slotScore / 10) * slotMax, 2);
-    positionFitScore += contribution;
-    return { playerId: String(p._id), name: p.name, position, isPreferred, slotScore, slotMax, contribution };
-  }).sort((a, b) => a.position - b.position);
+  // Walk the choices backwards to find who fills each group.
+  const members = BATTING_GROUPS.map(() => []);
+  let state = FULL_STATE;
+  for (let i = n - 1; i >= 0; i -= 1) {
+    const picked = choice[i * BATTING_STATES + state];
+    if (picked === 0) continue;
+    members[picked - 1].unshift(i);
+    state -= 1 << (2 * (picked - 1));
+  }
 
-  return { score: round(positionFitScore), battingOrder };
+  const entry = (i, position, g) => {
+    const player = players[i];
+    const group = BATTING_GROUPS[g];
+    return {
+      playerId: String(player._id),
+      name: player.name,
+      position,
+      group: group?.key ?? null,
+      isPreferred: group ? prefersGroup(player, group) : null,
+      slotScore: group ? round(battingGroupRating(player, group)) : 0,
+      slotMax: group ? round(group.max / GROUP_SIZE) : 0,
+      contribution: group ? round(points[3 * i + g]) : 0,
+    };
+  };
+
+  const battingOrder = [];
+  members.forEach((group, g) => {
+    group.forEach((i, slot) => battingOrder.push(entry(i, BATTING_GROUPS[g].positions[slot], g)));
+  });
+
+  // Players outside the groups fill the remaining positions, bowlers last.
+  const grouped = new Set(members.flat());
+  const rest = players.map((_, i) => i).filter((i) => !grouped.has(i))
+    .sort((a, b) => (players[a].role === 'Bowler') - (players[b].role === 'Bowler'));
+  const taken = new Set(battingOrder.map((e) => e.position));
+  for (let position = 1; position <= 12 && rest.length; position += 1) {
+    if (!taken.has(position)) battingOrder.push(entry(rest.shift(), position, -1));
+  }
+  battingOrder.sort((a, b) => a.position - b.position);
+
+  return { score: best[FULL_STATE], battingOrder };
 };
 
 const isPacer = (style = '') => /(fast|medium)/i.test(style);
@@ -338,8 +262,7 @@ const spinType = (style = '') => {
   return 'leg'; // leg-spin, wrist-spin, chinaman, mystery spin, and anything else
 };
 
-const totalOversScore = (players) => {
-  const overs = players.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0);
+const totalOversPoints = (overs) => {
   if (overs >= 24) return 3;
   if (overs === 23) return 2.5;
   if (overs === 22) return 2;
@@ -348,53 +271,59 @@ const totalOversScore = (players) => {
   return 0;
 };
 
-const paceOversScore = (players) => {
-  const pacers = players.filter((player) => isPacer(player.bowling_style));
-  const overs = pacers.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0);
+const totalOversScore = (players) =>
+  totalOversPoints(players.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0));
 
+const paceOversPoints = (overs, hasBothArms) => {
   let score = 0;
   if (overs >= 14) score = 2.5;
   else if (overs === 13) score = 2;
   else if (overs === 12) score = 1.5;
   else if (overs === 11) score = 1;
   else if (overs === 10) score = 0.5;
-
-  const arms = new Set(pacers.map((player) => bowlingArm(player.bowling_style)).filter((arm) => arm !== 'unknown'));
-  if (arms.has('left') && arms.has('right')) score += 0.5;
-
+  if (hasBothArms) score += 0.5;
   return clamp(score, 0, 3);
 };
 
-const spinOversScore = (players) => {
-  const spinners = players.filter((player) => isSpinner(player.bowling_style));
-  const overs = spinners.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0);
+const paceOversScore = (players) => {
+  const pacers = players.filter((player) => isPacer(player.bowling_style));
+  const overs = pacers.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0);
+  const arms = new Set(pacers.map((player) => bowlingArm(player.bowling_style)));
+  return paceOversPoints(overs, arms.has('left') && arms.has('right'));
+};
 
+// One bit per spin archetype, so a set of archetypes is a 4-bit mask:
+// off-left = 1, off-right = 2, leg-left = 4, leg-right = 8.
+const spinArchetypeBit = (style = '') => {
+  const arm = bowlingArm(style);
+  if (arm === 'unknown') return 0;
+  if (spinType(style) === 'off') return arm === 'left' ? 1 : 2;
+  return arm === 'left' ? 4 : 8;
+};
+
+const hasSpinCombo = (mask) => {
+  const offLeft = mask & 1, offRight = mask & 2, legLeft = mask & 4, legRight = mask & 8;
+  return Boolean(
+    (offLeft && legRight) || (offRight && legLeft) || (offLeft && offRight) || (legLeft && legRight)
+  );
+};
+
+const spinOversPoints = (overs, archetypeMask) => {
   let score = 0;
   if (overs >= 10) score = 2.5;
   else if (overs === 9) score = 2;
   else if (overs === 8) score = 1.5;
   else if (overs === 7) score = 1;
   else if (overs === 6) score = 0.5;
-
-  const archetypes = new Set(
-    spinners
-      .map((player) => {
-        const arm = bowlingArm(player.bowling_style);
-        const type = spinType(player.bowling_style);
-        if (arm === 'unknown' || !type) return null;
-        return `${type}-${arm}`;
-      })
-      .filter(Boolean)
-  );
-
-  const hasCombo =
-    (archetypes.has('off-left') && archetypes.has('leg-right')) ||
-    (archetypes.has('off-right') && archetypes.has('leg-left')) ||
-    (archetypes.has('off-left') && archetypes.has('off-right')) ||
-    (archetypes.has('leg-left') && archetypes.has('leg-right'));
-
-  if (hasCombo) score += 0.5;
+  if (hasSpinCombo(archetypeMask)) score += 0.5;
   return clamp(score, 0, 3);
+};
+
+const spinOversScore = (players) => {
+  const spinners = players.filter((player) => isSpinner(player.bowling_style));
+  const overs = spinners.reduce((sum, player) => sum + (player.tactical?.overs ?? 0), 0);
+  const mask = spinners.reduce((bits, player) => bits | spinArchetypeBit(player.bowling_style), 0);
+  return spinOversPoints(overs, mask);
 };
 
 // Only players who actually bowl (overs > 0) are eligible for phase scores.
@@ -406,20 +335,30 @@ const eligibleBowlers = (players) => players.filter((p) => (p.tactical?.overs ??
 // A value of 1 means the bowler is designated for that phase.
 // Bowlers not designated for the phase they are bowling in receive a -2 effective rating penalty.
 // Returns { score, assigned } where assigned is the top-4 bowler list used for scoring.
-const phaseBowlingScoreWithAssignment = (players, phaseKey, positionIndex, multiplier, maxScore) => {
+// Rating used for a bowler in a phase. The -2 penalty only applies if the bowler
+// has explicit phase designations set AND this phase isn't one of them. Bowlers
+// with no designations at all use their raw rating — "no designation" means
+// general-purpose, not "wrong phase".
+const phaseRating = (player, phaseKey, positionIndex) => {
+  const base = player.bowling?.phases?.[phaseKey] ?? 0;
+  const hasAnyDesignation = player.bowling?.positions?.some((v) => v === 1) ?? false;
+  const designated = !hasAnyDesignation || (player.bowling?.positions?.[positionIndex] ?? 0) === 1;
+  return { base, designated, effective: designated ? base : base - 2 };
+};
+
+// [phase key, index in bowling.positions, multiplier, max points]
+const BOWLING_PHASES = [
+  ['powerplay', 0, 1.0, 10],
+  ['middle', 1, 1.1, 11],
+  ['death', 2, 1.0, 10],
+];
+
+// Returns { score, assigned } where assigned is the top-4 bowler list used for scoring.
+const phaseBowlingScore = (players, [phaseKey, positionIndex, multiplier, maxScore]) => {
   const bowlers = eligibleBowlers(players);
   if (bowlers.length < 2) return { score: 0, assigned: [] };
 
-  // Build per-bowler entries with effective rating.
-  // The -2 penalty only applies if the bowler has explicit phase designations set
-  // AND this phase isn't one of them. Bowlers with no designations at all use their
-  // raw rating — "no designation" means general-purpose, not "wrong phase".
-  const entries = bowlers.map((p) => {
-    const base = p.bowling?.phases?.[phaseKey] ?? 0;
-    const hasAnyDesignation = p.bowling?.positions?.some((v) => v === 1) ?? false;
-    const designated = !hasAnyDesignation || (p.bowling?.positions?.[positionIndex] ?? 0) === 1;
-    return { name: p.name, base, designated, effective: designated ? base : base - 2 };
-  });
+  const entries = bowlers.map((p) => ({ name: p.name, ...phaseRating(p, phaseKey, positionIndex) }));
 
   // Take top 4 by effective rating
   const top4 = [...entries].sort((a, b) => b.effective - a.effective).slice(0, 4);
@@ -429,9 +368,9 @@ const phaseBowlingScoreWithAssignment = (players, phaseKey, positionIndex, multi
   return { score, assigned: top4 };
 };
 
-const powerplayBowlingScore = (players) => phaseBowlingScoreWithAssignment(players, 'powerplay', 0, 1.0, 10);
-const middleBowlingScore    = (players) => phaseBowlingScoreWithAssignment(players, 'middle',    1, 1.1, 11);
-const deathBowlingScore     = (players) => phaseBowlingScoreWithAssignment(players, 'death',     2, 1.0, 10);
+const powerplayBowlingScore = (players) => phaseBowlingScore(players, BOWLING_PHASES[0]);
+const middleBowlingScore    = (players) => phaseBowlingScore(players, BOWLING_PHASES[1]);
+const deathBowlingScore     = (players) => phaseBowlingScore(players, BOWLING_PHASES[2]);
 
 const playerFitnessComposite = (player) => average([
   player.fitness?.stamina ?? 0,
@@ -447,16 +386,24 @@ const playerImpactComposite = (player) => average([
 const fitnessScore = (players) => average(players.map(playerFitnessComposite)) * 0.5;
 const impactScore = (players) => average(players.map(playerImpactComposite)) * 0.7;
 const tacticalScore = (players) => average(players.map((player) => player.tactical?.flexibility ?? 0)) * 0.3;
-const captaincy = (players) => {
-  const total = players.reduce((sum, p) => sum + (p.tactical?.captaincy ?? 0), 0);
+const captaincyPoints = (total) => {
   if (total <= 0) return 0;
   const steps = Math.floor(Math.max(0, 1.75 - total) / 0.25);
   return Math.max(0, 4 - steps * 0.5);
 };
-const ageScore = (players) => {
-  const averageAge = average(players.map((player) => player.age ?? 0));
-  return clamp(1 - (Math.abs(averageAge - 30) / 15), 0, 1);
-};
+const captaincy = (players) =>
+  captaincyPoints(players.reduce((sum, p) => sum + (p.tactical?.captaincy ?? 0), 0));
+const agePoints = (averageAge) => clamp(1 - (Math.abs(averageAge - 30) / 15), 0, 1);
+const ageScore = (players) => agePoints(average(players.map((player) => player.age ?? 0)));
+
+// Players are always scored in ID order, so the same 12 gets exactly the same
+// score however the array was ordered.
+const byId = (players) => [...players].sort((a, b) => {
+  const x = String(a._id);
+  const y = String(b._id);
+  if (x === y) return 0;
+  return x < y ? -1 : 1;
+});
 
 const battingScore = (players) => {
   const wicketKeeper = wicketKeeperScore(players);
@@ -496,7 +443,8 @@ const bowlingScore = (players) => {
   };
 };
 
-const scoreBreakdown = (players) => {
+const scoreBreakdown = (squad) => {
+  const players = byId(squad);
   const batting = battingScore(players);
   const bowling = bowlingScore(players);
   const fitness = fitnessScore(players);
@@ -538,7 +486,9 @@ const scoreBreakdown = (players) => {
 // no tactical (0), plus benchStrength=10pts.
 // playing12: the selected 12 player objects
 // fullSquad: ALL players belonging to the team (including bench)
-const scoreBreakdownSquad = (playing12, fullSquad) => {
+const scoreBreakdownSquad = (selected, squad) => {
+  const playing12 = byId(selected);
+  const fullSquad = byId(squad);
   const batting = battingScore(playing12);
   const bowling = bowlingScore(playing12);
 
@@ -591,30 +541,28 @@ const scoreBreakdownSquad = (playing12, fullSquad) => {
   };
 };
 
-// ── Per-player composite helpers (for direct player-vs-player comparison) ─────
-const playerBowlingComposite = (p) => {
-  const pp = p.bowling?.phases?.powerplay ?? 0;
-  const mid = p.bowling?.phases?.middle ?? 0;
-  const dth = p.bowling?.phases?.death ?? 0;
-  return pp + mid + dth;
-};
-
-const playerBattingCompositeFn = (p) => battingComposite(p);
-
-const playerOverallComposite = (p) => {
-  return battingComposite(p) + playerBowlingComposite(p) +
-    (p.role_impact?.match_winner ?? 0) +
-    (p.role_impact?.clutch ?? 0) +
-    (p.role_impact?.consistency ?? 0);
-};
-
 module.exports = {
-  canOccupyBattingPosition,
-  playerBattingScoreForPosition,
   scoreBreakdown,
-
   scoreBreakdownSquad,
-  playerBowlingComposite,
-  playerBattingComposite: playerBattingCompositeFn,
-  playerOverallComposite,
+  // Rule building blocks shared with the exhaustive search (playing12Search.js).
+  BATTING_STATES,
+  BOWLING_PHASES,
+  addBatter,
+  agePoints,
+  balancePoints,
+  battingGroupPoints,
+  bowlingArm,
+  byId,
+  captaincyPoints,
+  isPacer,
+  isSpinner,
+  isValidBackup,
+  keeperPoints,
+  paceOversPoints,
+  phaseRating,
+  playerFitnessComposite,
+  playerImpactComposite,
+  spinArchetypeBit,
+  spinOversPoints,
+  totalOversPoints,
 };

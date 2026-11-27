@@ -1,9 +1,14 @@
+const Player = require('../models/Player');
 const Team = require('../models/Team');
 const AuctionSession = require('../models/AuctionSession');
 const { scoreBreakdown, scoreBreakdownSquad } = require('../utils/teamScoring');
+const { findBestPlaying12 } = require('../utils/playing12Search');
 const { getIO } = require('../socket');
 const { isUserHost, getRawRoomByCode } = require('../socket/roomStore');
-const { computePlaying12, computeBestPlaying12 } = require('./auctionController');
+
+// Rooms with a ranking run in progress — a full search takes minutes and uses
+// most CPU cores, so a second run must not start on top of it.
+const _generating = new Set();
 
 const round = (value, decimals = 2) => Number(Number(value).toFixed(decimals));
 
@@ -37,9 +42,9 @@ const explainBatting = (b) => {
   else if (b.leftRightBalance >= 1.5) parts.push('decent batting balance');
   else parts.push('uneven left/right balance');
 
-  if (b.positions >= 28) parts.push('batters fit their preferred positions very well');
-  else if (b.positions >= 20) parts.push('most batters reasonably placed in the order');
-  else parts.push('several batters out of their natural position');
+  if (b.positions >= 28) parts.push('very strong top order, middle order and finishers');
+  else if (b.positions >= 20) parts.push('batting groups reasonably well filled');
+  else parts.push('batting groups are weak or short of players');
 
   return `Batting (${b.total}/40): ${parts.join('; ')}.`;
 };
@@ -150,8 +155,9 @@ const _runRankings = async (roomCode, mode, sessionQuery) => {
       const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
       const oldScore = scoreBreakdown(oldSquad).final;
 
-      // skip2opt=true — 2-opt is too expensive for background ranking generation.
-      const newPlaying12Ids = await computePlaying12(team._id, prevPlaying12Ids, true);
+      const pool = await Player.find({ team: team._id, status: 'sold' }).lean();
+      const { playing } = await findBestPlaying12(pool, 'playing12');
+      const newPlaying12Ids = playing.map((p) => p._id);
       const newPlaying12Objs = team.players.filter((p) =>
         newPlaying12Ids.some((id) => String(id) === String(p._id))
       );
@@ -216,10 +222,7 @@ const _runRankings = async (roomCode, mode, sessionQuery) => {
       };
 
     } else {
-      const squadObjFn = (squad) => {
-        try { return scoreBreakdownSquad(squad, team.players).rawFinal; } catch { return 0; }
-      };
-      const squadP12Objs   = await computeBestPlaying12(team.players, prevPlaying12Ids, squadObjFn, true);
+      const { playing: squadP12Objs } = await findBestPlaying12(team.players, 'squad');
       const squadBreakdown = scoreBreakdownSquad(squadP12Objs, team.players);
 
       entry = {
@@ -290,12 +293,22 @@ exports.generateRankings = async (req, res) => {
     const mode = req.body.mode === 'squad' ? 'squad' : 'playing12';
     const sessionQuery = roomCode ? { roomCode } : {};
 
+    const runKey = roomCode || '';
+    if (_generating.has(runKey)) {
+      return res.status(409).json({ message: 'Rankings are already being generated. Please wait.' });
+    }
+    _generating.add(runKey);
+
     // Respond immediately — computation runs in background, result pushed via socket.
     res.status(202).json({ message: 'Rankings generation started.' });
 
-    setImmediate(() => _runRankings(roomCode, mode, sessionQuery).catch((err) => {
-      console.error('[rankingController _runRankings]', err.message);
-    }));
+    setImmediate(() => _runRankings(roomCode, mode, sessionQuery)
+      .catch((err) => {
+        console.error('[rankingController _runRankings]', err.message);
+        const io = getIO();
+        (roomCode ? io.to(roomCode) : io).emit('auction:rankings-failed');
+      })
+      .finally(() => _generating.delete(runKey)));
 
   } catch (err) {
     console.error('[rankingController generateRankings]', err.message);

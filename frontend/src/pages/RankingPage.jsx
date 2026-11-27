@@ -27,10 +27,10 @@ const explainBalance = (score) => {
 };
 
 const explainPositions = (score) => {
-  if (score >= 28) return 'Batters slot perfectly into their natural positions — optimal order.';
-  if (score >= 20) return 'Most batters are well-placed with minor mismatches.';
-  if (score >= 12) return 'Several batters are out of their preferred positions.';
-  return 'Major batting order issues — many players in the wrong slots.';
+  if (score >= 28) return 'Excellent top order, middle order and finishers.';
+  if (score >= 20) return 'Solid batting groups with a few weak places.';
+  if (score >= 12) return 'Several weak or mismatched places in the batting groups.';
+  return 'Major batting gaps — groups are weak or short of batters.';
 };
 
 const explainTotalOvers = (score) => {
@@ -130,14 +130,12 @@ const SCHEMA_SECTIONS = [
       { label: 'Left/Right Balance', max: 3, desc: '3 × (min(left, right) / max(left, right))' },
       {
         label: 'Position Fit', max: 34, desc:
-          'Slot maxes — #1–2: 4.5 pts · #3–7: 4 pts · #8: 3 pts · #9: 1 pt · #10: 0.34 pts · #11–12: 0.33 pts\n' +
-          'Each slot contribution = (fit score / 10) × slot max\n' +
-          '#1–2 Openers: Powerplay 50%, Pace play 15%, Middle 10%, Anchor 5%, Spin 5%, Power hit 5%\n' +
-          '#3–4 Top order: Middle 40%, Powerplay 20%, Pace 10%, Spin 10%, Anchor 5%, Power hit 5%\n' +
-          '#5–6 Middle: Death 30%, Middle 20%, Pace 10%, Spin 10%, Finishing 5%, Power hit 5%\n' +
-          '#7–8 Lower: Death 40%, Pace 10%, Finishing 10%, Power hit 10%\n' +
-          '#9–12 Tail: Power hitting 60%, Finishing 40%\n' +
-          'Out-of-position penalty: −3',
+          'Non-bowlers fill three groups of up to 3 players, one group each, chosen for the highest total\n' +
+          'Top order (#1–3), 14 pts: Powerplay 70%, Pace play 30%\n' +
+          'Middle order (#4–6), 12 pts: Middle 70%, Spin play 30%\n' +
+          'Finishers (#7–9), 8 pts: Death 60%, Finishing 20%, Power hitting 20%\n' +
+          'Player contribution = (rating / 10) × (group points / 3)\n' +
+          'No preferred position in the group: rating −2 (never below 0)',
       },
     ],
   },
@@ -408,10 +406,9 @@ const ROLE_COLOR = {
 
 const POSITION_LABEL = (pos) => {
   if (!pos) return null;
-  if (pos <= 2) return 'Opener';
-  if (pos <= 4) return 'Top Order';
+  if (pos <= 3) return 'Top Order';
   if (pos <= 6) return 'Middle Order';
-  if (pos <= 8) return 'Lower Order';
+  if (pos <= 9) return 'Finisher';
   return 'Tail';
 };
 
@@ -633,8 +630,8 @@ const TeamCard = ({ entry, mode }) => {
                                   {entry.contribution != null ? entry.contribution.toFixed(2) : '—'}
                                   <span className="text-white/15">/{entry.slotMax != null ? entry.slotMax.toFixed(2) : '—'}</span>
                                 </span>
-                                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${entry.isPreferred ? 'bg-neon/10 text-neon' : 'bg-amber-500/15 text-amber-400'}`}>
-                                  {entry.isPreferred ? '✓' : '✗ out of pos'}
+                                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${entry.isPreferred ? 'bg-neon/10 text-neon' : entry.isPreferred === null ? 'text-white/25' : 'bg-amber-500/15 text-amber-400'}`}>
+                                  {entry.isPreferred ? '✓' : entry.isPreferred === null ? '—' : '✗ out of pos'}
                                 </span>
                               </div>
                             </div>
@@ -826,7 +823,7 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
                 <td style="padding:5px 10px;color:#555;text-align:right;font-variant-numeric:tabular-nums;">${e.slotMax != null ? e.slotMax.toFixed(2) : '—'}</td>
                 <td style="padding:5px 10px;text-align:center;">
                   <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;${e.isPreferred ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
-                    ${e.isPreferred ? '✓ In pos' : '✗ Out of pos'}
+                    ${e.isPreferred ? '✓ In pos' : e.isPreferred === null ? '—' : '✗ Out of pos'}
                   </span>
                 </td>
               </tr>`;
@@ -1117,8 +1114,16 @@ export default function RankingPage() {
       setLoadingP12(false);
       setLoadingSquad(false);
     };
+    const onFailed = () => {
+      onDone();
+      setError('Failed to generate rankings.');
+    };
     socket.on('auction:rankings-updated', onDone);
-    return () => socket.off('auction:rankings-updated', onDone);
+    socket.on('auction:rankings-failed', onFailed);
+    return () => {
+      socket.off('auction:rankings-updated', onDone);
+      socket.off('auction:rankings-failed', onFailed);
+    };
   }, [socket]);
 
   // Only fetch once we have the room code — avoids the "failed to fetch" on mount
