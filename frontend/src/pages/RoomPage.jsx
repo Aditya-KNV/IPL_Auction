@@ -13,109 +13,9 @@ import OtherTeamsPanel from "../components/auction/OtherTeamsPanel";
 import MyTeamPanel from "../components/auction/MyTeamPanel";
 import PlayerStatsModal from "../components/players/PlayerStatsModal";
 import RankingPage from "./RankingPage";
+import RatingFilters, { activeRatingFilters, meetsRatingFilters } from "../components/players/RatingFilters";
 import api from "../services/api";
 import { STATUS_COLOR, getDisplayStatus } from "../utils/playerDisplay";
-
-// Groups of filter options per role — each group renders as an <optgroup>
-const ROLE_FILTERS = {
-  Batsman: [
-    {
-      group: "Batting Phases",
-      options: [
-        { label: "Powerplay", key: "batting.phases.powerplay.rating" },
-        { label: "Middle", key: "batting.phases.middle.rating" },
-        { label: "Death", key: "batting.phases.death.rating" },
-      ],
-    },
-    {
-      group: "Batting Skills",
-      options: [
-        { label: "Finishing", key: "batting.skills.finishing" },
-        { label: "Power Hitting", key: "batting.skills.power_hitting" },
-        { label: "Anchor", key: "batting.skills.anchor" },
-        { label: "Spin Play", key: "batting.skills.spin_play" },
-        { label: "Pace Play", key: "batting.skills.pace_play" },
-      ],
-    },
-  ],
-  Bowler: [
-    {
-      group: "Bowling Phases",
-      options: [
-        { label: "Powerplay", key: "bowling.phases.powerplay" },
-        { label: "Middle", key: "bowling.phases.middle" },
-        { label: "Death", key: "bowling.phases.death" },
-      ],
-    },
-    {
-      group: "Bowling Skills",
-      options: [
-        { label: "Variations", key: "bowling.skills.variations" },
-        { label: "Yorker", key: "bowling.skills.yorker" },
-        { label: "Bouncer", key: "bowling.skills.bouncer" },
-      ],
-    },
-  ],
-  "All-Rounder": [
-    {
-      group: "Batting Phases",
-      options: [
-        { label: "Bat Powerplay", key: "batting.phases.powerplay.rating" },
-        { label: "Bat Middle", key: "batting.phases.middle.rating" },
-        { label: "Bat Death", key: "batting.phases.death.rating" },
-      ],
-    },
-    {
-      group: "Batting Skills",
-      options: [
-        { label: "Finishing", key: "batting.skills.finishing" },
-        { label: "Power Hitting", key: "batting.skills.power_hitting" },
-        { label: "Anchor", key: "batting.skills.anchor" },
-        { label: "Spin Play", key: "batting.skills.spin_play" },
-        { label: "Pace Play", key: "batting.skills.pace_play" },
-      ],
-    },
-    {
-      group: "Bowling Phases",
-      options: [
-        { label: "Bowl Powerplay", key: "bowling.phases.powerplay" },
-        { label: "Bowl Middle", key: "bowling.phases.middle" },
-        { label: "Bowl Death", key: "bowling.phases.death" },
-      ],
-    },
-    {
-      group: "Bowling Skills",
-      options: [
-        { label: "Variations", key: "bowling.skills.variations" },
-        { label: "Yorker", key: "bowling.skills.yorker" },
-        { label: "Bouncer", key: "bowling.skills.bouncer" },
-      ],
-    },
-  ],
-  "Wicket-Keeper": [
-    {
-      group: "Batting Phases",
-      options: [
-        { label: "Powerplay", key: "batting.phases.powerplay.rating" },
-        { label: "Middle", key: "batting.phases.middle.rating" },
-        { label: "Death", key: "batting.phases.death.rating" },
-      ],
-    },
-    {
-      group: "Batting Skills",
-      options: [
-        { label: "Finishing", key: "batting.skills.finishing" },
-        { label: "Power Hitting", key: "batting.skills.power_hitting" },
-        { label: "Anchor", key: "batting.skills.anchor" },
-        { label: "Spin Play", key: "batting.skills.spin_play" },
-        { label: "Pace Play", key: "batting.skills.pace_play" },
-      ],
-    },
-  ],
-};
-
-const resolvePath = (obj, path) =>
-  path.split(".").reduce((cur, k) => (cur != null ? cur[k] : undefined), obj);
 
 function PlayersTab() {
   const { socket } = useSocket();
@@ -125,16 +25,14 @@ function PlayersTab() {
   const [status, setStatus] = useState("");
   const [auctionSetName, setAuctionSetName] = useState("");
   const [setOptions, setSetOptions] = useState([]);
-  const [phase, setPhase] = useState("");
-  const [minRating, setMinRating] = useState("");
+  const [ratingMins, setRatingMins] = useState({});
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [loadingPlayer, setLoadingPlayer] = useState(false);
 
-  // Reset phase/rating when role changes
+  // Rating filters differ by role, so start afresh when it changes
   useEffect(() => {
-    setPhase("");
-    setMinRating("");
+    setRatingMins({});
   }, [role]);
 
   // Set names come from the room's players, so a new seed needs no code change.
@@ -174,30 +72,14 @@ function PlayersTab() {
     };
   }, [socket, role, status, auctionSetName, room?.code]);
 
-  const filterGroups = role ? ROLE_FILTERS[role] || [] : [];
-  const allFilterOptions = filterGroups.flatMap((g) => g.options);
+  const ratingFilters = activeRatingFilters(role, ratingMins);
 
   const filtered = useMemo(() => {
-    let result = players;
-    if (phase && minRating !== "") {
-      const min = Number(minRating);
-      if (Number.isFinite(min)) {
-        result = result.filter((p) => {
-          const val = resolvePath(p, phase);
-          return typeof val === "number" && val >= min;
-        });
-      }
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter((p) => p.name.toLowerCase().includes(q));
-    }
-    return result;
-  }, [players, phase, minRating, search]);
-
-  const activeFilterLabel = allFilterOptions.find(
-    (o) => o.key === phase,
-  )?.label;
+    const active = activeRatingFilters(role, ratingMins);
+    const q = search.trim().toLowerCase();
+    return players.filter((p) =>
+      meetsRatingFilters(p, active) && (!q || p.name.toLowerCase().includes(q)));
+  }, [players, role, ratingMins, search]);
 
   const openPlayer = async (id) => {
     setLoadingPlayer(true);
@@ -266,40 +148,26 @@ function PlayersTab() {
           {setOptions.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
-        {filterGroups.length > 0 && (
-          <select value={phase} onChange={(e) => { setPhase(e.target.value); setMinRating(""); }}
-            className="bg-surface-2 border border-neon/20 text-white/70 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neon/50">
-            <option value="">Phase / Skill</option>
-            {filterGroups.map(g => (
-              <optgroup key={g.group} label={g.group}>
-                {g.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-              </optgroup>
-            ))}
-          </select>
-        )}
-
-        {phase && (
-          <div className="flex items-center gap-2 bg-surface-2 border border-neon/20 rounded-lg px-3 py-2">
-            <span className="text-white/30 text-sm whitespace-nowrap">Min rating</span>
-            <input type="number" min={1} max={10} step={1} value={minRating}
-              onChange={(e) => setMinRating(e.target.value)} placeholder="e.g. 8"
-              className="bg-transparent text-white w-12 text-sm outline-none" />
-            <span className="text-white/20 text-sm">/10</span>
-          </div>
-        )}
-
-        {(role || status || auctionSetName || phase || search) && (
-          <button onClick={() => { setRole(""); setStatus(""); setAuctionSetName(""); setPhase(""); setMinRating(""); setSearch(""); }}
+        {(role || status || auctionSetName || search || ratingFilters.length > 0) && (
+          <button onClick={() => { setRole(""); setStatus(""); setAuctionSetName(""); setRatingMins({}); setSearch(""); }}
             className="text-xs text-white/30 border border-white/[0.06] rounded-lg px-3 py-2 hover:border-white/15 hover:text-white transition">
             Clear filters
           </button>
         )}
       </div>
 
+      {role && (
+        <div className="mb-4">
+          <RatingFilters role={role} mins={ratingMins} onChange={setRatingMins} />
+        </div>
+      )}
+
       <p className="text-white/25 text-xs mb-3">
         {filtered.length} player{filtered.length !== 1 ? "s" : ""}
-        {activeFilterLabel && minRating !== "" && (
-          <span className="ml-1 text-neon">· {activeFilterLabel} ≥ {minRating}/10</span>
+        {ratingFilters.length > 0 && (
+          <span className="ml-1 text-neon">
+            · {ratingFilters.map((f) => `${f.label} ≥ ${f.min}`).join(" · ")}
+          </span>
         )}
       </p>
 
@@ -307,7 +175,6 @@ function PlayersTab() {
       <ul className="md:hidden rounded-xl border border-white/[0.06] divide-y divide-white/[0.06]">
         {filtered.map(p => {
           const displayStatus = getDisplayStatus(p);
-          const phaseVal = phase ? resolvePath(p, phase) : null;
           return (
             <li key={p._id}>
               <button onClick={() => openPlayer(p._id)}
@@ -316,8 +183,12 @@ function PlayersTab() {
                   <span className="block truncate font-semibold text-white">{p.name}</span>
                   <span className="block truncate text-xs text-white/40">
                     {p.role} · {p.nationality}
-                    {typeof phaseVal === "number" && ` · ${activeFilterLabel} ${phaseVal}/10`}
                   </span>
+                  {ratingFilters.length > 0 && (
+                    <span className="block text-xs text-blue-300">
+                      {ratingFilters.map((f) => `${f.label} ${f.value(p)}`).join(" · ")}
+                    </span>
+                  )}
                 </span>
                 <span className="flex-shrink-0 text-right">
                   <span className={`block text-xs font-semibold capitalize ${STATUS_COLOR[displayStatus] || "text-white/30"}`}>
@@ -344,7 +215,9 @@ function PlayersTab() {
               <th className="text-left py-3 px-4 font-semibold">Nationality</th>
               <th className="text-right py-3 px-4 font-semibold">Base (Cr)</th>
               <th className="text-right py-3 px-4 font-semibold">Sold (Cr)</th>
-              {phase && <th className="text-right py-3 px-4 font-semibold">{activeFilterLabel}</th>}
+              {ratingFilters.map((f) => (
+                <th key={f.key} className="text-right py-3 px-4 font-semibold whitespace-nowrap">{f.label}</th>
+              ))}
               <th className="text-left py-3 px-4 font-semibold">Team</th>
               <th className="text-left py-3 px-4 font-semibold">Status</th>
             </tr>
@@ -352,7 +225,6 @@ function PlayersTab() {
           <tbody>
             {filtered.map(p => {
               const displayStatus = getDisplayStatus(p);
-              const phaseVal = phase ? resolvePath(p, phase) : null;
               return (
                 <tr key={p._id} onClick={() => openPlayer(p._id)}
                   className="border-b border-white/[0.04] hover:bg-white/[0.03] transition cursor-pointer">
@@ -362,11 +234,11 @@ function PlayersTab() {
                   <td className="py-3 px-4 text-white/40">{p.nationality}</td>
                   <td className="py-3 px-4 text-right text-white/50">₹{p.basePrice}</td>
                   <td className="py-3 px-4 text-right text-neon font-semibold">{p.soldPrice ? `₹${p.soldPrice}` : "—"}</td>
-                  {phase && (
-                    <td className="py-3 px-4 text-right font-semibold text-blue-300">
-                      {typeof phaseVal === "number" ? `${phaseVal}/10` : "—"}
+                  {ratingFilters.map((f) => (
+                    <td key={f.key} className="py-3 px-4 text-right font-semibold text-blue-300">
+                      {f.value(p)}/10
                     </td>
-                  )}
+                  ))}
                   <td className="py-3 px-4 text-white/50">{p.team?.shortName || "—"}</td>
                   <td className={`py-3 px-4 font-semibold capitalize ${STATUS_COLOR[displayStatus] || "text-white/30"}`}>
                     {displayStatus}
@@ -376,7 +248,7 @@ function PlayersTab() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={phase ? 9 : 8} className="py-10 text-center text-white/20">No players found</td>
+                <td colSpan={8 + ratingFilters.length} className="py-10 text-center text-white/20">No players found</td>
               </tr>
             )}
           </tbody>
