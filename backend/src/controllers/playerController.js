@@ -1,47 +1,20 @@
 const Player = require('../models/Player');
-const AuctionSession = require('../models/AuctionSession');
-
-const attachDisplayStatus = (player, unsoldPlayerIds) => {
-  if (!player) return player;
-  const doc = player.toObject ? player.toObject() : player;
-  const isUnsold = unsoldPlayerIds.has(String(doc._id)) && doc.status === 'available';
-  return { ...doc, displayStatus: isUnsold ? 'unsold' : doc.status };
-};
-
-// Scoped to the room asking — without this, `AuctionSession.findOne()` with no
-// filter returns an arbitrary session (often a stale one from a different room),
-// so players never touched in the current room's auction were showing up as
-// "unsold" just because some other room's session happened to list them.
-const getUnsoldPlayerIds = async (roomCode) => {
-  if (!roomCode) return new Set();
-  const session = await AuctionSession.findOne({ roomCode }).select('unsoldPlayers');
-  return new Set((session?.unsoldPlayers || []).map((id) => String(id)));
-};
+// Every query is limited to one room. Without a roomCode only the master
+// templates are visible, never another room's data.
+const roomOf = (req) => req.query.roomCode || null;
 
 const getPlayers = async (req, res) => {
   try {
-    const { role, status, team, auctionSetName, roomCode } = req.query;
-    const filter = {};
-    const unsoldPlayerIds = await getUnsoldPlayerIds(roomCode);
+    const { role, status, team, auctionSetName } = req.query;
+    const filter = { roomCode: roomOf(req) };
 
     if (role) filter.role = role;
-    if (status) {
-      if (status === 'unsold') {
-        filter._id = { $in: [...unsoldPlayerIds] };
-      } else if (status === 'available') {
-        filter.status = 'available';
-        if (unsoldPlayerIds.size) {
-          filter._id = { $nin: [...unsoldPlayerIds] };
-        }
-      } else {
-        filter.status = status;
-      }
-    }
+    if (status) filter.status = status;
     if (team) filter.team = team;
     if (auctionSetName) filter.auctionSetName = auctionSetName;
 
     const players = await Player.find(filter).populate('team', 'name shortName color');
-    res.json(players.map((player) => attachDisplayStatus(player, unsoldPlayerIds)));
+    res.json(players);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -49,10 +22,9 @@ const getPlayers = async (req, res) => {
 
 const getPlayer = async (req, res) => {
   try {
-    const unsoldPlayerIds = await getUnsoldPlayerIds(req.query.roomCode);
-    const player = await Player.findById(req.params.id).populate('team');
+    const player = await Player.findOne({ _id: req.params.id, roomCode: roomOf(req) }).populate('team');
     if (!player) return res.status(404).json({ message: 'Player not found' });
-    res.json(attachDisplayStatus(player, unsoldPlayerIds));
+    res.json(player);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -60,7 +32,7 @@ const getPlayer = async (req, res) => {
 
 const createPlayer = async (req, res) => {
   try {
-    const player = await Player.create(req.body);
+    const player = await Player.create({ ...req.body, roomCode: null });
     res.status(201).json(player);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -69,7 +41,11 @@ const createPlayer = async (req, res) => {
 
 const updatePlayer = async (req, res) => {
   try {
-    const player = await Player.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const player = await Player.findOneAndUpdate(
+      { _id: req.params.id, roomCode: null },
+      { ...req.body, roomCode: null },
+      { new: true }
+    );
     if (!player) return res.status(404).json({ message: 'Player not found' });
     res.json(player);
   } catch (err) {
@@ -79,7 +55,7 @@ const updatePlayer = async (req, res) => {
 
 const deletePlayer = async (req, res) => {
   try {
-    await Player.findByIdAndDelete(req.params.id);
+    await Player.findOneAndDelete({ _id: req.params.id, roomCode: null });
     res.json({ message: 'Player deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -1,5 +1,6 @@
 const { createRoom, joinRoom, leaveRoom, leaveRoomExplicit, pickTeam, transferHost, restoreRoom, getRoomBySocket } = require('./roomStore');
-const { resetAuctionState } = require('../services/auctionReset');
+const { createRoomData, ensureRoomData } = require('../services/roomData');
+const Team = require('../models/Team');
 const AuctionSession = require('../models/AuctionSession');
 
 /**
@@ -22,14 +23,14 @@ const registerRoomHandlers = (io, socket) => {
     socket.join(room.code);
 
     try {
-      await resetAuctionState(io, room.code);
+      await createRoomData(room.code);
       // Persist hostUserId so the room can be restored after a server restart
       await AuctionSession.findOneAndUpdate(
         { roomCode: room.code },
         { $set: { roomHostUserId: userId, roomTeamAssignments: {} } }
       );
     } catch (err) {
-      console.error('[room:create] auction reset error:', err.message);
+      console.error('[room:create] room setup error:', err.message);
       return socket.emit('room:error', { message: 'Could not prepare a fresh auction room' });
     }
 
@@ -56,6 +57,15 @@ const registerRoomHandlers = (io, socket) => {
 
     const roomCode = code.toUpperCase();
     let result = joinRoom(roomCode, socket.id, userId, username);
+
+    // A room saved before rooms had their own data gets its copy now.
+    try {
+      const known = !result.error || await AuctionSession.exists({ roomCode });
+      if (known) await ensureRoomData(roomCode);
+    } catch (err) {
+      console.error('[room:join] room setup error:', err.message);
+      return socket.emit('room:error', { message: 'Could not load this room' });
+    }
 
     // Room not in memory — try to restore from DB (server may have restarted)
     if (result.error === 'Room not found') {
@@ -102,6 +112,12 @@ const registerRoomHandlers = (io, socket) => {
   // Server emits to all in room: room:teams-updated { teamAssignments }
   socket.on('room:pick-team', async (teamInfo) => {
     if (!teamInfo?.teamId) return socket.emit('room:error', { message: 'Invalid team' });
+
+    // Only a team belonging to this room can be picked.
+    const current = getRoomBySocket(socket.id);
+    const valid = current && await Team.exists({ _id: teamInfo.teamId, roomCode: current.code })
+      .catch(() => null);
+    if (!valid) return socket.emit('room:error', { message: 'Invalid team' });
 
     const result = pickTeam(socket.id, teamInfo);
     if (result.error) return socket.emit('room:error', { message: result.error });
@@ -169,12 +185,19 @@ const _onHostTransfer = (io) => (code, room) => {
   });
 };
 
+const _unsubscribe = (socket) => {
+  const current = getRoomBySocket(socket.id);
+  if (current) socket.leave(current.code);
+};
+
 const _leave = (io, socket) => {
+  _unsubscribe(socket);
   const updatedRoom = leaveRoom(socket.id, { onHostTransfer: _onHostTransfer(io) });
   _broadcast(io, socket, updatedRoom);
 };
 
 const _leaveExplicit = (io, socket, options) => {
+  _unsubscribe(socket);
   const updatedRoom = leaveRoomExplicit(socket.id, { ...options, onHostTransfer: _onHostTransfer(io) });
   _broadcast(io, socket, updatedRoom);
 };

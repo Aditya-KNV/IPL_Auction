@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 
 const playerSchema = new mongoose.Schema({
+  // Room that owns this copy; null for the master template loaded by seed.js.
+  roomCode: { type: String, default: null },
+
   // ── Identity ────────────────────────────────────────────────────────────────
   name:          { type: String, required: true },
   nationality:   { type: String, default: 'Indian' },
@@ -79,5 +82,7 @@ const playerSchema = new mongoose.Schema({
 
   imageUrl: { type: String, default: '' },
 }, { timestamps: true });
+
+playerSchema.index({ roomCode: 1, status: 1, auctionSetOrder: 1 });
 
 module.exports = mongoose.model('Player', playerSchema);

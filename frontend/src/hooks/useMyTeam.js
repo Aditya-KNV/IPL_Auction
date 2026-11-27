@@ -7,7 +7,8 @@ import api from '../services/api';
 export const useMyTeam = () => {
   const { user }            = useAuth();
   const { socket }          = useSocket();
-  const { teamAssignments } = useRoom();
+  const { room, teamAssignments } = useRoom();
+  const roomCode            = room?.code ?? null;
 
   const [myTeam,   setMyTeam]   = useState(null);
   const [allTeams, setAllTeams] = useState([]);
@@ -18,10 +19,17 @@ export const useMyTeam = () => {
 
   // ── Fetch full team data from server ─────────────────────────────────────────
   const fetchTeams = useCallback(async () => {
+    if (!roomCode) {
+      setAllTeams([]);
+      setMyTeam(null);
+      setLoading(false);
+      return;
+    }
     try {
+      const params = { roomCode };
       const [allRes, myRes] = await Promise.all([
-        api.get('/teams'),
-        myTeamId ? api.get(`/teams/${myTeamId}`) : Promise.resolve({ data: null }),
+        api.get('/teams', { params }),
+        myTeamId ? api.get(`/teams/${myTeamId}`, { params }) : Promise.resolve({ data: null }),
       ]);
       setAllTeams(allRes.data ?? []);
       setMyTeam(myRes.data);
@@ -30,7 +38,7 @@ export const useMyTeam = () => {
     } finally {
       setLoading(false);
     }
-  }, [myTeamId]);
+  }, [myTeamId, roomCode]);
 
   useEffect(() => { fetchTeams(); }, [fetchTeams]);
 

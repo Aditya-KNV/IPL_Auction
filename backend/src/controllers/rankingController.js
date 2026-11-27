@@ -4,7 +4,7 @@ const AuctionSession = require('../models/AuctionSession');
 const { scoreBreakdown, scoreBreakdownSquad } = require('../utils/teamScoring');
 const { findBestPlaying12 } = require('../utils/playing12Search');
 const { getIO } = require('../socket');
-const { isUserHost, getRawRoomByCode } = require('../socket/roomStore');
+const { getRawRoomByCode } = require('../socket/roomStore');
 
 // Rooms with a ranking run in progress — a full search takes minutes and uses
 // most CPU cores, so a second run must not start on top of it.
@@ -97,8 +97,9 @@ const buildVerdict = (rankings) => {
 exports.getRankings = async (req, res) => {
   try {
     const roomCode = req.query.roomCode;
-    const query = roomCode ? { roomCode } : {};
-    const session = await AuctionSession.findOne(query).select('latestRankings latestVerdict');
+    const session = roomCode
+      ? await AuctionSession.findOne({ roomCode }).select('latestRankings latestVerdict')
+      : null;
     if (!session || !session.latestRankings) {
       return res.json({ rankings: [], verdict: 'No rankings generated yet.' });
     }
@@ -134,7 +135,7 @@ const annotateWithBattingOrder = (squad, breakdown) => {
 
 // ── Background computation — runs after HTTP response is sent ─────────────────
 const _runRankings = async (roomCode, mode, sessionQuery) => {
-  const teams = await Team.find().populate('players').populate('playing12').lean();
+  const teams = await Team.find({ roomCode }).populate('players').populate('playing12').lean();
   if (!teams.length) return;
 
   const existingSession = await AuctionSession.findOne(sessionQuery).select('latestRankings latestVerdict');
@@ -154,7 +155,7 @@ const _runRankings = async (roomCode, mode, sessionQuery) => {
       const oldSquad = selectSquad({ ...team, playing12: team.playing12 });
       const oldScore = scoreBreakdown(oldSquad).final;
 
-      const pool = await Player.find({ team: team._id, status: 'sold' }).lean();
+      const pool = await Player.find({ roomCode, team: team._id, status: 'sold' }).lean();
       const { playing } = await findBestPlaying12(pool, 'playing12');
       const newPlaying12Ids = playing.map((p) => p._id);
       const newPlaying12Objs = team.players.filter((p) =>
@@ -270,8 +271,7 @@ const _runRankings = async (roomCode, mode, sessionQuery) => {
 
   try {
     const io = getIO();
-    if (roomCode) io.to(roomCode).emit('auction:rankings-updated');
-    else io.emit('auction:rankings-updated');
+    io.to(roomCode).emit('auction:rankings-updated');
   } catch (_) {
     console.error('[rankingController] Socket.io not available to emit update');
   }
@@ -282,26 +282,22 @@ exports.generateRankings = async (req, res) => {
     const roomCode = req.body.roomCode;
 
     const room = roomCode ? getRawRoomByCode(roomCode) : null;
-    const userIsHost = room
-      ? room.hostUserId === String(req.user.id)
-      : isUserHost(req.user.id);
-    if (!userIsHost) {
+    if (room?.hostUserId !== String(req.user.id)) {
       return res.status(403).json({ message: 'Only the room host can generate rankings.' });
     }
 
     const mode = req.body.mode === 'squad' ? 'squad' : 'playing12';
-    const sessionQuery = roomCode ? { roomCode } : {};
+    const sessionQuery = { roomCode };
 
     const session = await AuctionSession.findOne(sessionQuery).select('status');
     if (session?.status !== 'completed') {
       return res.status(400).json({ message: 'Rankings are available only after the auction has ended.' });
     }
 
-    const runKey = roomCode || '';
-    if (_generating.has(runKey)) {
+    if (_generating.has(roomCode)) {
       return res.status(409).json({ message: 'Rankings are already being generated. Please wait.' });
     }
-    _generating.add(runKey);
+    _generating.add(roomCode);
 
     // Respond immediately — computation runs in background, result pushed via socket.
     res.status(202).json({ message: 'Rankings generation started.' });
@@ -310,9 +306,9 @@ exports.generateRankings = async (req, res) => {
       .catch((err) => {
         console.error('[rankingController _runRankings]', err.message);
         const io = getIO();
-        (roomCode ? io.to(roomCode) : io).emit('auction:rankings-failed');
+        io.to(roomCode).emit('auction:rankings-failed');
       })
-      .finally(() => _generating.delete(runKey)));
+      .finally(() => _generating.delete(roomCode)));
 
   } catch (err) {
     console.error('[rankingController generateRankings]', err.message);

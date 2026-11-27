@@ -4,7 +4,6 @@ import { useMyTeam }   from '../../hooks/useMyTeam';
 import { useAuth }     from '../../context/AuthContext';
 import { useRoom }     from '../../context/RoomContext';
 import { formatCroreAmount } from '../../utils/currency';
-import { hasBattingStats, hasBowlingStats } from '../../utils/playerDisplay';
 import { setAudioMuted, isAudioMuted } from '../../utils/auctionAudio';
 
 import PlayerStatsModal, { PlayerStatsDetails } from '../players/PlayerStatsModal';
@@ -489,11 +488,7 @@ export default function AuctionBoard() {
                       ].filter(Boolean).join(' · ')}
                     </p>
                   </div>
-                  <PlayerStatsDetails
-                    player={currentPlayer}
-                    showBatting={hasBattingStats(currentPlayer.role)}
-                    showBowling={hasBowlingStats(currentPlayer.role)}
-                  />
+                  <PlayerStatsDetails player={currentPlayer} />
                 </>
               )}
             </div>

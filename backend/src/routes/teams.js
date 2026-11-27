@@ -5,7 +5,8 @@ const { protect, auctioneerOnly } = require('../middleware/auth');
 
 router.get('/', protect, async (req, res) => {
   try {
-    const teams = await Team.find().populate('players', 'name role soldPrice nationality fitness');
+    const teams = await Team.find({ roomCode: req.query.roomCode || null })
+      .populate('players', 'name role soldPrice nationality fitness');
     res.json(teams);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -15,7 +16,7 @@ router.get('/', protect, async (req, res) => {
 // GET /api/teams/available — teams with no owner (public, no auth needed for register page)
 router.get('/available', async (req, res) => {
   try {
-    const teams = await Team.find({ owner: null }, 'name shortName color');
+    const teams = await Team.find({ roomCode: null, owner: null }, 'name shortName color');
     res.json(teams);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -24,7 +25,7 @@ router.get('/available', async (req, res) => {
 
 router.get('/:id', protect, async (req, res) => {
   try {
-    const team = await Team.findById(req.params.id).populate('players');
+    const team = await Team.findOne({ _id: req.params.id, roomCode: req.query.roomCode || null }).populate('players');
     if (!team) return res.status(404).json({ message: 'Team not found' });
     res.json(team);
   } catch (err) {
@@ -34,7 +35,7 @@ router.get('/:id', protect, async (req, res) => {
 
 router.post('/', protect, auctioneerOnly, async (req, res) => {
   try {
-    const team = await Team.create(req.body);
+    const team = await Team.create({ ...req.body, roomCode: null });
     res.status(201).json(team);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -50,8 +51,8 @@ router.patch('/:id/playing12', protect, async (req, res) => {
     if (playing12.length > 12)
       return res.status(400).json({ message: 'playing12 cannot exceed 12 players' });
 
-    const team = await Team.findByIdAndUpdate(
-      req.params.id,
+    const team = await Team.findOneAndUpdate(
+      { _id: req.params.id, roomCode: req.body.roomCode || null },
       { playing12 },
       { new: true }
     ).populate('players').populate('playing12');

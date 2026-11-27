@@ -123,7 +123,7 @@ const initSocket = (server) => {
 
         // Fetch team + session in parallel — both lean for speed
         const [team, currentSession] = await Promise.all([
-          Team.findById(teamId).select('name shortName color remainingPurse maxPlayers').lean(),
+          Team.findOne({ _id: teamId, roomCode }).select('name shortName color remainingPurse maxPlayers').lean(),
           AuctionSession.findOne({ roomCode })
             .select('currentBid currentPlayer currentHighestBidder status')
             .lean(),

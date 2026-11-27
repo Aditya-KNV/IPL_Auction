@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 
 const teamSchema = new mongoose.Schema({
-  name:      { type: String, required: true, unique: true },
+  // Room that owns this copy; null for the master template loaded by seed.js.
+  roomCode:  { type: String, default: null },
+  name:      { type: String, required: true },
   shortName: { type: String, required: true },
   owner:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   purse:          { type: Number, required: true },
@@ -18,5 +20,8 @@ teamSchema.pre('save', function (next) {
   if (this.isNew) this.remainingPurse = this.purse;
   next();
 });
+
+// Team names are unique within a room.
+teamSchema.index({ roomCode: 1, name: 1 }, { unique: true });
 
 module.exports = mongoose.model('Team', teamSchema);
