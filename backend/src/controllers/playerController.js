@@ -20,6 +20,20 @@ const getPlayers = async (req, res) => {
   }
 };
 
+// The room's auction sets, in the order they come up.
+const getSets = async (req, res) => {
+  try {
+    const sets = await Player.aggregate([
+      { $match: { roomCode: roomOf(req) } },
+      { $group: { _id: '$auctionSetName', order: { $min: '$auctionSetOrder' } } },
+      { $sort: { order: 1, _id: 1 } },
+    ]);
+    res.json(sets.map((set) => set._id).filter(Boolean));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 const getPlayer = async (req, res) => {
   try {
     const player = await Player.findOne({ _id: req.params.id, roomCode: roomOf(req) }).populate('team');
@@ -62,4 +76,4 @@ const deletePlayer = async (req, res) => {
   }
 };
 
-module.exports = { getPlayers, getPlayer, createPlayer, updatePlayer, deletePlayer };
+module.exports = { getPlayers, getSets, getPlayer, createPlayer, updatePlayer, deletePlayer };
