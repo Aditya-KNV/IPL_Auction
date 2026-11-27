@@ -117,15 +117,6 @@ const ROLE_FILTERS = {
 const resolvePath = (obj, path) =>
   path.split(".").reduce((cur, k) => (cur != null ? cur[k] : undefined), obj);
 
-const SET_OPTIONS = [
-  "Marquee Set 1",
-  "Marquee Set 2",
-  "Set 3",
-  "Set 4",
-  "Set 5",
-  "Set 6",
-];
-
 function PlayersTab() {
   const { socket } = useSocket();
   const { room } = useRoom();
@@ -133,6 +124,7 @@ function PlayersTab() {
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [auctionSetName, setAuctionSetName] = useState("");
+  const [setOptions, setSetOptions] = useState([]);
   const [phase, setPhase] = useState("");
   const [minRating, setMinRating] = useState("");
   const [search, setSearch] = useState("");
@@ -144,6 +136,17 @@ function PlayersTab() {
     setPhase("");
     setMinRating("");
   }, [role]);
+
+  // Set names come from the room's players, so a new seed needs no code change.
+  useEffect(() => {
+    setAuctionSetName("");
+    setSetOptions([]);
+    if (!room?.code) return;
+    api
+      .get("/players/sets", { params: { roomCode: room.code } })
+      .then((r) => setSetOptions(r.data))
+      .catch(console.error);
+  }, [room?.code]);
 
   const load = () => {
     const params = {};
@@ -260,7 +263,7 @@ function PlayersTab() {
         <select value={auctionSetName} onChange={(e) => setAuctionSetName(e.target.value)}
           className="bg-surface-2 border border-white/[0.08] text-white/70 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-neon/40">
           <option value="">All Sets</option>
-          {SET_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          {setOptions.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
         {filterGroups.length > 0 && (
