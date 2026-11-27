@@ -27,9 +27,9 @@ const explainBalance = (score) => {
 };
 
 const explainPositions = (score) => {
-  if (score >= 28) return 'Excellent top order, middle order and finishers.';
+  if (score >= 28) return 'Excellent top, middle and lower order.';
   if (score >= 20) return 'Solid batting groups with a few weak places.';
-  if (score >= 12) return 'Several weak or mismatched places in the batting groups.';
+  if (score >= 12) return 'Several weak places in the batting groups.';
   return 'Major batting gaps — groups are weak or short of batters.';
 };
 
@@ -131,11 +131,11 @@ const SCHEMA_SECTIONS = [
       {
         label: 'Position Fit', max: 34, desc:
           'Non-bowlers fill three groups of up to 3 players, one group each, chosen for the highest total\n' +
-          'Top order (#1–3), 14 pts: Powerplay 70%, Pace play 30%\n' +
-          'Middle order (#4–6), 12 pts: Middle 70%, Spin play 30%\n' +
-          'Finishers (#7–9), 8 pts: Death 60%, Finishing 20%, Power hitting 20%\n' +
-          'Player contribution = (rating / 10) × (group points / 3)\n' +
-          'No preferred position in the group: rating −2 (never below 0)',
+          'Top order (#1–3), 14 pts: player\'s top order rating\n' +
+          'Middle order (#4–6), 12 pts: player\'s middle order rating\n' +
+          'Lower order (#7–9), 8 pts: player\'s lower order rating\n' +
+          'A batter counts only in groups that include a preferred position (no preference: any group)\n' +
+          'Player contribution = (rating / 10) × (group points / 3)\n',
       },
     ],
   },
@@ -146,9 +146,9 @@ const SCHEMA_SECTIONS = [
       { label: 'Total Overs', max: 3, desc: '≥24=3 · 23=2.5 · 22=2 · 21=1 · 20=0.5 · <20=0' },
       { label: 'Pace Overs', max: 3, desc: '≥14=2.5 · 13=2 · 12=1.5 · 11=1 · 10=0.5 · <10=0 · +0.5 if left+right arm pacers' },
       { label: 'Spin Overs', max: 3, desc: '≥10=2.5 · 9=2 · 8=1.5 · 7=1 · 6=0.5 · <6=0 · +0.5 for complementary spin combo' },
-      { label: 'Powerplay Bowling', max: 10, desc: 'Top 4 bowlers\' effective powerplay rating × 1.0\nBowler not designated for powerplay (positions[0]≠1): −2 rating penalty' },
-      { label: 'Middle Overs Bowling', max: 11, desc: 'Top 4 bowlers\' effective middle-over rating × 1.1\nBowler not designated for middle (positions[1]≠1): −2 rating penalty' },
-      { label: 'Death Bowling', max: 10, desc: 'Top 4 bowlers\' effective death-over rating × 1.0\nBowler not designated for death (positions[2]≠1): −2 rating penalty' },
+      { label: 'Powerplay Bowling', max: 10, desc: 'Average powerplay rating of the top 4 bowlers × 1.0' },
+      { label: 'Middle Overs Bowling', max: 11, desc: 'Average middle-overs rating of the top 4 bowlers × 1.1' },
+      { label: 'Death Bowling', max: 10, desc: 'Average death-overs rating of the top 4 bowlers × 1.0' },
     ],
   },
   {
@@ -278,7 +278,7 @@ const ScoreBar = ({ score }) => (
     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
       <div
         className="h-full rounded-full transition-all duration-700"
-        style={{ width: `${score}%`, background: 'linear-gradient(90deg, #00CC55, #00FF66)' }}
+        style={{ width: `${score}%`, background: 'linear-gradient(90deg, rgb(var(--neon-dim)), rgb(var(--neon)))' }}
       />
     </div>
     <span className="w-12 text-right text-xs tabular-nums text-white/30">{score}/100</span>
@@ -408,7 +408,7 @@ const POSITION_LABEL = (pos) => {
   if (!pos) return null;
   if (pos <= 3) return 'Top Order';
   if (pos <= 6) return 'Middle Order';
-  if (pos <= 9) return 'Finisher';
+  if (pos <= 9) return 'Lower Order';
   return 'Tail';
 };
 
@@ -463,11 +463,7 @@ const Playing12 = ({ players }) => {
           return (
             <div key={pos}
               onClick={() => openStats(String(p._id))}
-              className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 cursor-pointer transition hover:bg-white/[0.04] ${
-                p.isPreferred === false
-                  ? 'border-amber-500/20 bg-amber-500/[0.03]'
-                  : 'border-white/[0.06] bg-obsidian/60'
-              } ${isLoading ? 'opacity-60' : ''}`}
+              className={`flex items-center gap-2 rounded-lg border border-white/[0.06] bg-obsidian/60 px-2.5 py-2 cursor-pointer transition hover:bg-white/[0.04] ${isLoading ? 'opacity-60' : ''}`}
             >
               <div className="w-6 flex-shrink-0 text-center text-xs font-black tabular-nums text-neon">{pos}</div>
               <div className="min-w-0 flex-1">
@@ -475,7 +471,6 @@ const Playing12 = ({ players }) => {
                 <p className="truncate text-[10px] text-white/30">
                   {p.nationality} · {p.batting_style === 'left-handed' ? 'LHB' : 'RHB'}
                   {posLabel && <span className="ml-1 text-white/20">· {posLabel}</span>}
-                  {p.isPreferred === false && <span className="ml-1 text-amber-400">· out of pos</span>}
                 </p>
               </div>
               <span className="flex-shrink-0 rounded border border-white/[0.08] bg-surface-2 px-1.5 py-0.5 text-[9px] font-bold text-white/50">
@@ -630,9 +625,6 @@ const TeamCard = ({ entry, mode }) => {
                                   {entry.contribution != null ? entry.contribution.toFixed(2) : '—'}
                                   <span className="text-white/15">/{entry.slotMax != null ? entry.slotMax.toFixed(2) : '—'}</span>
                                 </span>
-                                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${entry.isPreferred ? 'bg-neon/10 text-neon' : entry.isPreferred === null ? 'text-white/25' : 'bg-amber-500/15 text-amber-400'}`}>
-                                  {entry.isPreferred ? '✓' : entry.isPreferred === null ? '—' : '✗ out of pos'}
-                                </span>
                               </div>
                             </div>
                           );
@@ -678,15 +670,7 @@ const TeamCard = ({ entry, mode }) => {
                               {bowlers.map((b) => (
                                 <div key={b.name} className="flex items-center justify-between text-xs">
                                   <span className="text-white/70 font-medium">{b.name}</span>
-                                  <div className="flex items-center gap-2 text-[10px]">
-                                    {!b.designated && <span className="text-amber-400">−2 penalty</span>}
-                                    <span className="tabular-nums text-white/30">
-                                      {b.base}{!b.designated && <span className="text-amber-400">→{b.effective}</span>}
-                                    </span>
-                                    <span className={`rounded-full px-1.5 py-0.5 font-bold ${b.designated ? 'bg-neon/10 text-neon' : 'bg-amber-500/15 text-amber-400'}`}>
-                                      {b.designated ? '✓' : '✗'}
-                                    </span>
-                                  </div>
+                                  <span className="tabular-nums text-[10px] text-white/30">{b.rating ?? b.base}</span>
                                 </div>
                               ))}
                             </div>
@@ -806,7 +790,6 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
               <th style="padding:6px 10px;color:#555;font-weight:700;text-align:left;letter-spacing:1px;font-size:9px;">PLAYER</th>
               <th style="padding:6px 10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;font-size:9px;">CONTRIBUTION</th>
               <th style="padding:6px 10px;color:#555;font-weight:700;text-align:right;letter-spacing:1px;font-size:9px;">SLOT MAX</th>
-              <th style="padding:6px 10px;color:#555;font-weight:700;text-align:center;letter-spacing:1px;font-size:9px;">FIT</th>
             </tr>
           </thead>
           <tbody>
@@ -814,23 +797,18 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
               const e = b.batting.battingOrder.find((x) => x.position === pos);
               if (!e) return `<tr style="border-top:1px solid #1a1a2e;">
                 <td style="padding:5px 10px;color:#f5c518;font-weight:700;text-align:center;">${pos}</td>
-                <td style="padding:5px 10px;color:#333;font-style:italic;" colspan="4">— empty —</td>
+                <td style="padding:5px 10px;color:#333;font-style:italic;" colspan="3">— empty —</td>
               </tr>`;
               return `<tr style="border-top:1px solid #1a1a2e;">
                 <td style="padding:5px 10px;color:#f5c518;font-weight:700;text-align:center;">${pos}</td>
                 <td style="padding:5px 10px;color:#ddd;font-weight:600;">${e.name}</td>
                 <td style="padding:5px 10px;color:#aaa;text-align:right;font-variant-numeric:tabular-nums;">${e.contribution != null ? e.contribution.toFixed(2) : '—'}</td>
                 <td style="padding:5px 10px;color:#555;text-align:right;font-variant-numeric:tabular-nums;">${e.slotMax != null ? e.slotMax.toFixed(2) : '—'}</td>
-                <td style="padding:5px 10px;text-align:center;">
-                  <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;${e.isPreferred ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
-                    ${e.isPreferred ? '✓ In pos' : e.isPreferred === null ? '—' : '✗ Out of pos'}
-                  </span>
-                </td>
               </tr>`;
             }).join('')}
             <tr style="border-top:2px solid #2a2a3a;">
               <td colspan="2" style="padding:6px 10px;font-size:9px;font-weight:900;color:#888;letter-spacing:1px;text-transform:uppercase;">Total Position Fit</td>
-              <td colspan="3" style="padding:6px 10px;text-align:right;font-weight:900;color:#4a9eff;font-size:13px;font-variant-numeric:tabular-nums;">${b.batting.positions}<span style="font-size:10px;color:#444;font-weight:400">/34</span></td>
+              <td colspan="2" style="padding:6px 10px;text-align:right;font-weight:900;color:#4a9eff;font-size:13px;font-variant-numeric:tabular-nums;">${b.batting.positions}<span style="font-size:10px;color:#444;font-weight:400">/34</span></td>
             </tr>
           </tbody>
         </table>
@@ -862,12 +840,7 @@ function buildReportHtml(rankings, verdict, myTeamShortName, teamOwners = {}, al
                   ${bowlers.map((bw) => `
                   <tr style="border-top:1px solid #1a1a2e;">
                     <td style="padding:4px 8px;color:#ddd;">${bw.name}</td>
-                    <td style="padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums;color:#aaa;">${bw.designated ? bw.base : `${bw.base}<span style="color:#f5a623;">→${bw.effective}</span>`}</td>
-                    <td style="padding:4px 8px;text-align:center;">
-                      <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;${bw.designated ? 'background:#0a2a0a;color:#4caf50;' : 'background:#2a1a00;color:#f5a623;'}">
-                        ${bw.designated ? '✓' : '−2'}
-                      </span>
-                    </td>
+                    <td style="padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums;color:#aaa;">${bw.rating ?? bw.base}</td>
                   </tr>`).join('')}
                 </tbody>
               </table>` : `<p style="padding:8px;font-size:10px;color:#333;text-align:center;">No bowlers</p>`}
@@ -1142,6 +1115,34 @@ export default function RankingPage() {
     };
   }, [socket]);
 
+  // Teams can only be rated once the auction has ended completely.
+  const [auctionEnded, setAuctionEnded] = useState(false);
+
+  useEffect(() => {
+    setAuctionEnded(false);
+    if (!room?.code) return undefined;
+    // A socket event is newer than the initial request, so it takes priority.
+    let stale = false;
+    const update = (ended) => {
+      stale = true;
+      setAuctionEnded(ended);
+    };
+    const onCompleted = () => update(true);
+    const onStatus = ({ status }) => update(status === 'completed');
+    socket?.on('auction:completed', onCompleted);
+    socket?.on('auction:status', onStatus);
+
+    api.get(`/auction/session?roomCode=${room.code}`)
+      .then((res) => { if (!stale) setAuctionEnded(res.data?.status === 'completed'); })
+      .catch(() => { if (!stale) setError('Failed to check the auction status.'); });
+
+    return () => {
+      stale = true;
+      socket?.off('auction:completed', onCompleted);
+      socket?.off('auction:status', onStatus);
+    };
+  }, [socket, room?.code]);
+
   const { user } = useAuth();
   const amHost = user?.id != null && room?.hostUserId === String(user.id);
   const hasRankings = data && data.rankings?.length > 0;
@@ -1260,9 +1261,15 @@ export default function RankingPage() {
         );
       })()}
 
+      {amHost && !auctionEnded && (
+        <p className="mb-2 text-center text-xs text-white/40">
+          Rating unlocks once the auction has ended.
+        </p>
+      )}
+
       {amHost && (
         <div className="mb-6 flex gap-3">
-          <button onClick={() => handleGenerate('playing12')} disabled={loadingP12 || loadingSquad}
+          <button onClick={() => handleGenerate('playing12')} disabled={!auctionEnded || loadingP12 || loadingSquad}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-neon py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
             {loadingP12 ? (
               <>
@@ -1282,7 +1289,7 @@ export default function RankingPage() {
             )}
           </button>
 
-          <button onClick={() => handleGenerate('squad')} disabled={loadingP12 || loadingSquad}
+          <button onClick={() => handleGenerate('squad')} disabled={!auctionEnded || loadingP12 || loadingSquad}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-surface-2 py-3 text-sm font-bold text-white/60 transition hover:border-neon/40 hover:text-neon disabled:cursor-not-allowed disabled:opacity-50">
             {loadingSquad ? (
               <>

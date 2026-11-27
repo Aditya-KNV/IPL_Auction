@@ -42,7 +42,7 @@ const explainBatting = (b) => {
   else if (b.leftRightBalance >= 1.5) parts.push('decent batting balance');
   else parts.push('uneven left/right balance');
 
-  if (b.positions >= 28) parts.push('very strong top order, middle order and finishers');
+  if (b.positions >= 28) parts.push('very strong top, middle and lower order');
   else if (b.positions >= 20) parts.push('batting groups reasonably well filled');
   else parts.push('batting groups are weak or short of players');
 
@@ -123,7 +123,6 @@ const annotateWithBattingOrder = (squad, breakdown) => {
         nationality: p.nationality, batting_style: p.batting_style,
         bowling_style: p.bowling_style, age: p.age,
         battingPosition: bo?.position ?? null,
-        isPreferred: bo?.isPreferred ?? null,
       };
     })
     .sort((a, b) => {
@@ -292,6 +291,11 @@ exports.generateRankings = async (req, res) => {
 
     const mode = req.body.mode === 'squad' ? 'squad' : 'playing12';
     const sessionQuery = roomCode ? { roomCode } : {};
+
+    const session = await AuctionSession.findOne(sessionQuery).select('status');
+    if (session?.status !== 'completed') {
+      return res.status(400).json({ message: 'Rankings are available only after the auction has ended.' });
+    }
 
     const runKey = roomCode || '';
     if (_generating.has(runKey)) {

@@ -701,9 +701,9 @@ function RulesTab() {
         <Table
           headers={["Group", "Rating (0–10)", "Max points"]}
           rows={[
-            ["Top order (#1–3)", "70% powerplay + 30% pace play", "14"],
-            ["Middle order (#4–6)", "70% middle + 30% spin play", "12"],
-            ["Finishers (#7–9)", "60% death + 20% finishing + 20% power hitting", "8"],
+            ["Top order (#1–3)", "Top order rating", "14"],
+            ["Middle order (#4–6)", "Middle order rating", "12"],
+            ["Lower order (#7–9)", "Lower order rating", "8"],
           ]}
         />
         <div className="bg-surface-2/60 rounded-xl px-4 py-3 font-mono text-sm text-neon mt-3">
@@ -712,12 +712,11 @@ function RulesTab() {
 
         <div className="mt-3 space-y-1 text-xs text-white/40">
           <p>• Bowlers add no batting points.</p>
-          <p>• An empty place in a group scores 0.</p>
           <p>
-            • A player with preferred positions, none of them in the group, takes
-            a <span className="text-red-400">−2 penalty</span> to the rating
-            (never below 0).
+            • A batter can fill only groups that include one of their preferred
+            positions. With no preferred positions, any group is allowed.
           </p>
+          <p>• An empty place in a group scores 0.</p>
         </div>
       </Section>
 
@@ -781,13 +780,9 @@ function RulesTab() {
         </h3>
         <p className="text-white/40 text-xs mb-3">
           Requires ≥ 2 eligible bowlers. Takes top 4 bowlers per phase.
-          <br />
-          Effective rating = base rating if designated for that phase, else{" "}
-          <span className="text-red-400">base − 2.</span>
         </p>
         <div className="bg-surface-2/60 rounded-xl px-4 py-3 font-mono text-sm text-neon mb-3">
-          Phase Score = avg(top 4 effective ratings) × multiplier [clamped to
-          max]
+          Phase Score = avg(top 4 ratings) × multiplier [clamped to max]
         </div>
         <Table
           headers={["Phase", "Multiplier", "Max Points"]}

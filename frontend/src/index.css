@@ -7,37 +7,41 @@
    pattern and CSS's rgb(var(--x) / N) syntax can both apply opacity. */
 :root,
 :root[data-theme="dark"] {
-  --obsidian:     7 8 14;
-  --surface:      13 15 24;
-  --surface-2:    17 20 32;
-  --surface-3:    22 27 46;
+  --obsidian:     11 13 20;
+  --surface:      20 23 34;
+  --surface-2:    27 31 45;
+  --surface-3:    35 41 60;
   --neon:         0 255 102;
   --neon-dim:     0 204 82;
   --bid-red:      255 51 85;
   --gold-bright:  255 208 96;
   --text-primary: 240 244 255;
-  --text-muted:   139 146 165;
-  --text-subtle:  69 78 102;
+  --text-muted:   170 177 196;
+  --text-subtle:  112 122 148;
   --fg:           255 255 255; /* replaces literal "white" throughout the app */
   --shadow:       0 0 0;
   --body-bg-dot:  255 255 255;
+  --text-floor: 0.32;
+  --border-floor: 0.07;
 }
 
 :root[data-theme="light"] {
-  --obsidian:     245 247 250;
-  --surface:      255 255 255;
-  --surface-2:    240 242 246;
-  --surface-3:    228 231 238;
-  --neon:         4 148 79;    /* deepened green — legible on white, still reads "neon" */
-  --neon-dim:     3 121 63;
-  --bid-red:      216 27 70;   /* deepened red */
-  --gold-bright:  166 106 0;   /* deepened gold */
-  --text-primary: 16 19 28;
-  --text-muted:   86 93 112;
-  --text-subtle:  144 152 172;
-  --fg:           16 19 28;    /* dark foreground — "white/NN" utilities become correct greys */
+  --obsidian:     231 233 237;
+  --surface:      244 245 247;
+  --surface-2:    235 237 241;
+  --surface-3:    221 224 231;
+  --neon:         34 113 82;    /* deepened green — legible on white, still reads "neon" */
+  --neon-dim:     28 94 68;
+  --bid-red:      168 56 74;   /* deepened red */
+  --gold-bright:  133 96 32;   /* deepened gold */
+  --text-primary: 31 36 48;
+  --text-muted:   78 85 102;
+  --text-subtle:  116 124 142;
+  --fg:           31 36 48;    /* dark foreground — "white/NN" utilities become correct greys */
   --shadow:       15 23 42;
   --body-bg-dot:  15 23 42;
+  --text-floor: 0.34;
+  --border-floor: 0.06;
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────── */
@@ -307,3 +311,29 @@ body::after {
 
 /* ── Animations ──────────────────────────────────────────────────────────── */
 /* (keyframes remain the same, referenced by tailwind.config.js) */
+
+/* ── Light theme: calmer tones ───────────────────────────────────────────── */
+/* The pastel Tailwind shades are too pale or too loud on a light background. */
+:root[data-theme="light"] .text-blue-300,
+:root[data-theme="light"] .text-blue-400   { color: #3b5b87; }
+:root[data-theme="light"] .text-sky-400    { color: #2f6680; }
+:root[data-theme="light"] .text-red-400    { color: #9c4449; }
+:root[data-theme="light"] .text-rose-400   { color: #96465c; }
+:root[data-theme="light"] .text-amber-400  { color: #85602a; }
+:root[data-theme="light"] .text-orange-300,
+:root[data-theme="light"] .text-orange-400 { color: #94562f; }
+:root[data-theme="light"] .text-purple-400 { color: #68508c; }
+:root[data-theme="light"] .text-green-400  { color: #2f6f4f; }
+
+/* Solid accent buttons are darker here, so their labels are light. */
+:root[data-theme="light"] .btn-cta,
+:root[data-theme="light"] .text-black.bg-neon,
+:root[data-theme="light"] .text-black.from-neon,
+:root[data-theme="light"] .text-black.bg-gold-bright { color: #fff; }
+
+/* No glows or coloured light pools on a light background. */
+:root[data-theme="light"] .neon-glow,
+:root[data-theme="light"] .gold-glow,
+:root[data-theme="light"] .red-bloom { text-shadow: none; }
+:root[data-theme="light"] .ambient-glows,
+:root[data-theme="light"] .stadium-backdrop { background-image: none; }

@@ -39,7 +39,7 @@ export default function BidFeed({ bids, currentPlayer }) {
                         transition-colors
                         ${isTop ? 'animate-slide-left border-l-2 bg-neon/[0.04]' : 'hover:bg-white/[0.02]'}
                         ${isTop && i === 0 ? 'animate-bid-flash' : ''}`}
-            style={isTop ? { borderLeftColor: team?.color || '#00FF66' } : { borderLeftColor: 'transparent', borderLeftWidth: '2px' }}>
+            style={isTop ? { borderLeftColor: team?.color || 'rgb(var(--neon))' } : { borderLeftColor: 'transparent', borderLeftWidth: '2px' }}>
 
             {/* Team orb */}
             <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center
