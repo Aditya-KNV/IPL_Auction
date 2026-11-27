@@ -57,14 +57,14 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden">
 
       <div className="absolute inset-0 pointer-events-none"
-           style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,255,102,0.055) 0%, transparent 70%)' }} />
+           style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgb(var(--neon) / 0.055) 0%, transparent 70%)' }} />
 
       <div className="relative z-10 w-full max-w-[360px]">
 
         {/* Logomark + heading */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-10 h-10 rounded-xl bg-neon flex items-center justify-center mb-5"
-               style={{ boxShadow: '0 0 0 1px rgba(0,255,102,0.22), 0 0 28px rgba(0,255,102,0.16)' }}>
+               style={{ boxShadow: '0 0 0 1px rgb(var(--neon) / 0.22), 0 0 28px rgb(var(--neon) / 0.16)' }}>
             <svg className="w-5 h-5 text-black" viewBox="0 0 20 20" fill="none">
               <path d="M13 3L3 13l2 2 2.5-2.5 4 4 2-2-4-4 2.5-2.5L13 3z" fill="currentColor"/>
               <circle cx="16.5" cy="16.5" r="2" fill="currentColor"/>
@@ -111,7 +111,7 @@ export default function RegisterPage() {
                   </button>
                 )}
               </div>
-              {errors[key] && <p className="text-[11px] mt-1" style={{ color: '#FF3355' }}>{errors[key]}</p>}
+              {errors[key] && <p className="text-[11px] mt-1" style={{ color: 'rgb(var(--bid-red))' }}>{errors[key]}</p>}
             </div>
           ))}
 

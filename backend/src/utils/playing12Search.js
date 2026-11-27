@@ -61,8 +61,8 @@ const compileSquad = (squad) => {
 
   squad.forEach((player, i) => {
     features.battingPoints.set(rules.battingGroupPoints(player), 3 * i);
-    rules.BOWLING_PHASES.forEach(([key, index], phase) => {
-      features.phaseRatings[3 * i + phase] = rules.phaseRating(player, key, index).effective;
+    rules.BOWLING_PHASES.forEach(([key], phase) => {
+      features.phaseRatings[3 * i + phase] = rules.phaseRating(player, key);
     });
     squad.forEach((candidate, j) => {
       features.backup[i * n + j] = rules.isValidBackup(player, candidate, 1) ? 1 : 0;
@@ -146,7 +146,7 @@ const createScorer = (f, mode) => {
       }
       let sum = 0;
       for (let t = 0; t < count; t += 1) sum += top[t];
-      const [, , multiplier, max] = rules.BOWLING_PHASES[phase];
+      const [, multiplier, max] = rules.BOWLING_PHASES[phase];
       phaseScore[phase] = clamp((sum / count) * multiplier, 0, max);
     }
 

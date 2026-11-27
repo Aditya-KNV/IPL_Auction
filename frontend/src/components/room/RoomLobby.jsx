@@ -71,7 +71,7 @@ const TeamCard = ({ team, takenBy, isMyTeam, onPick }) => {
       )}
       {isMyTeam && (
         <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-neon
-                        shadow-[0_0_8px_rgba(0,255,102,.8)]" />
+                        shadow-[0_0_8px_rgb(var(--neon)/.8)]" />
       )}
     </button>
   );

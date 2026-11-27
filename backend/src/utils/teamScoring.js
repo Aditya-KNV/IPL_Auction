@@ -7,44 +7,37 @@ const average = (values) => {
 
 // ── Batting groups (34 pts) ───────────────────────────────────────────────────
 // Non-bowlers are placed in three groups of up to 3: top order, middle order and
-// finishers. Each player counts in at most one group, and the groups are filled
+// lower order. Each player counts in at most one group, and the groups are filled
 // together so that the total batting points are as high as possible.
+// Each batter has one rating per group, taken straight from the batting phases:
+// powerplay = top order, middle = middle order, death = lower order.
 const BATTING_GROUPS = [
-  {
-    key: 'top', positions: [1, 2, 3], max: 14,
-    rating: (b) => 0.7 * (b?.phases?.powerplay?.rating ?? 0) + 0.3 * (b?.skills?.pace_play ?? 0),
-  },
-  {
-    key: 'middle', positions: [4, 5, 6], max: 12,
-    rating: (b) => 0.7 * (b?.phases?.middle?.rating ?? 0) + 0.3 * (b?.skills?.spin_play ?? 0),
-  },
-  {
-    key: 'finisher', positions: [7, 8, 9], max: 8,
-    rating: (b) => 0.6 * (b?.phases?.death?.rating ?? 0)
-      + 0.2 * (b?.skills?.finishing ?? 0)
-      + 0.2 * (b?.skills?.power_hitting ?? 0),
-  },
+  { key: 'top',    phase: 'powerplay', positions: [1, 2, 3], max: 14 },
+  { key: 'middle', phase: 'middle',    positions: [4, 5, 6], max: 12 },
+  { key: 'lower',  phase: 'death',     positions: [7, 8, 9], max: 8 },
 ];
 const GROUP_SIZE = 3;
-const OUT_OF_GROUP_PENALTY = 2;
 
-// DP state = places available per group, encoded as top + 4*middle + 16*finisher.
+// DP state = places available per group, encoded as top + 4*middle + 16*lower.
 const BATTING_STATES = 64;
 const FULL_STATE = BATTING_STATES - 1;
 
-const prefersGroup = (player, group) =>
-  (player.tactical?.positions ?? []).some((position) => group.positions.includes(position));
+// A player's rating (0–10) for a group.
+const battingGroupRating = (player, group) => player.batting?.phases?.[group.phase]?.rating ?? 0;
 
-// Rating (0–10) of a player in a group, after the preferred-position penalty.
-const battingGroupRating = (player, group) => {
-  const hasPreference = (player.tactical?.positions?.length ?? 0) > 0;
-  const penalty = hasPreference && !prefersGroup(player, group) ? OUT_OF_GROUP_PENALTY : 0;
-  return Math.max(0, group.rating(player.batting) - penalty);
+// A batter can fill only the groups that include one of their preferred
+// positions. A batter with no preferred positions can fill any group.
+const canBatInGroup = (player, group) => {
+  const preferred = player.tactical?.positions ?? [];
+  return preferred.length === 0 || preferred.some((position) => group.positions.includes(position));
 };
 
-// Points a player adds in each of the three groups. Bowlers add none.
+// Points a player adds in each of the three groups. Bowlers add none, and an
+// ineligible group is worth 0, so the DP never places a player in it.
 const battingGroupPoints = (player) => BATTING_GROUPS.map((group) => (
-  player.role === 'Bowler' ? 0 : (battingGroupRating(player, group) / 10) * (group.max / GROUP_SIZE)
+  player.role !== 'Bowler' && canBatInGroup(player, group)
+    ? (battingGroupRating(player, group) / 10) * (group.max / GROUP_SIZE)
+    : 0
 ));
 
 // Adds one batter to the DP. best[state] is the highest points using at most the
@@ -54,13 +47,13 @@ const battingGroupPoints = (player) => BATTING_GROUPS.map((group) => (
 const addBatter = (best, points, offset, choice = null, choiceOffset = 0) => {
   const top = points[offset];
   const middle = points[offset + 1];
-  const finisher = points[offset + 2];
+  const lower = points[offset + 2];
   for (let state = FULL_STATE; state > 0; state -= 1) {
     let value = best[state];
     let picked = 0;
     if ((state & 3) !== 0 && best[state - 1] + top > value) { value = best[state - 1] + top; picked = 1; }
     if ((state & 12) !== 0 && best[state - 4] + middle > value) { value = best[state - 4] + middle; picked = 2; }
-    if ((state & 48) !== 0 && best[state - 16] + finisher > value) { value = best[state - 16] + finisher; picked = 3; }
+    if ((state & 48) !== 0 && best[state - 16] + lower > value) { value = best[state - 16] + lower; picked = 3; }
     best[state] = value;
     if (choice) choice[choiceOffset + state] = picked;
   }
@@ -125,7 +118,6 @@ const battingPositionScore = (players) => {
       name: player.name,
       position,
       group: group?.key ?? null,
-      isPreferred: group ? prefersGroup(player, group) : null,
       slotScore: group ? round(battingGroupRating(player, group)) : 0,
       slotMax: group ? round(group.max / GROUP_SIZE) : 0,
       contribution: group ? round(points[3 * i + g]) : 0,
@@ -331,38 +323,26 @@ const spinOversScore = (players) => {
 // cover the required overs alone (powerplay = 6, middle = 10, death = 4).
 const eligibleBowlers = (players) => players.filter((p) => (p.tactical?.overs ?? 0) > 0);
 
-// bowling.positions is a 3-element array: [powerplay, middle, death]
-// A value of 1 means the bowler is designated for that phase.
-// Bowlers not designated for the phase they are bowling in receive a -2 effective rating penalty.
-// Returns { score, assigned } where assigned is the top-4 bowler list used for scoring.
-// Rating used for a bowler in a phase. The -2 penalty only applies if the bowler
-// has explicit phase designations set AND this phase isn't one of them. Bowlers
-// with no designations at all use their raw rating — "no designation" means
-// general-purpose, not "wrong phase".
-const phaseRating = (player, phaseKey, positionIndex) => {
-  const base = player.bowling?.phases?.[phaseKey] ?? 0;
-  const hasAnyDesignation = player.bowling?.positions?.some((v) => v === 1) ?? false;
-  const designated = !hasAnyDesignation || (player.bowling?.positions?.[positionIndex] ?? 0) === 1;
-  return { base, designated, effective: designated ? base : base - 2 };
-};
+// A bowler's rating (0–10) in a phase.
+const phaseRating = (player, phaseKey) => player.bowling?.phases?.[phaseKey] ?? 0;
 
-// [phase key, index in bowling.positions, multiplier, max points]
+// [phase key, multiplier, max points]
 const BOWLING_PHASES = [
-  ['powerplay', 0, 1.0, 10],
-  ['middle', 1, 1.1, 11],
-  ['death', 2, 1.0, 10],
+  ['powerplay', 1.0, 10],
+  ['middle', 1.1, 11],
+  ['death', 1.0, 10],
 ];
 
 // Returns { score, assigned } where assigned is the top-4 bowler list used for scoring.
-const phaseBowlingScore = (players, [phaseKey, positionIndex, multiplier, maxScore]) => {
+const phaseBowlingScore = (players, [phaseKey, multiplier, maxScore]) => {
   const bowlers = eligibleBowlers(players);
   if (bowlers.length < 2) return { score: 0, assigned: [] };
 
-  const entries = bowlers.map((p) => ({ name: p.name, ...phaseRating(p, phaseKey, positionIndex) }));
+  const entries = bowlers.map((p) => ({ name: p.name, rating: phaseRating(p, phaseKey) }));
 
-  // Take top 4 by effective rating
-  const top4 = [...entries].sort((a, b) => b.effective - a.effective).slice(0, 4);
-  const avg = top4.reduce((s, e) => s + e.effective, 0) / top4.length;
+  // Take top 4 by rating
+  const top4 = [...entries].sort((a, b) => b.rating - a.rating).slice(0, 4);
+  const avg = top4.reduce((s, e) => s + e.rating, 0) / top4.length;
   const score = clamp(avg * multiplier, 0, maxScore);
 
   return { score, assigned: top4 };

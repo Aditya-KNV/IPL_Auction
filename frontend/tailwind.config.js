@@ -1,4 +1,13 @@
 /** @type {import('tailwindcss').Config} */
+
+// Faint "white/NN" text and borders are lifted towards full strength by a
+// per-theme floor (see index.css), so they stay readable in both themes.
+const liftedForeground = (floor) => ({ opacityValue }) => (
+  opacityValue === undefined
+    ? 'rgb(var(--fg))'
+    : `rgb(var(--fg) / calc(var(${floor}) + (1 - var(${floor})) * ${opacityValue}))`
+);
+
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   theme: {
@@ -33,7 +42,11 @@ module.exports = {
         'csk-gold':    '#FFC72C',
         'rcb-red':     '#EC1C24',
       },
+      textColor: {
+        white: liftedForeground('--text-floor'),
+      },
       borderColor: {
+        white: liftedForeground('--border-floor'),
         DEFAULT: 'rgb(var(--fg) / 0.06)',
       },
       boxShadow: {

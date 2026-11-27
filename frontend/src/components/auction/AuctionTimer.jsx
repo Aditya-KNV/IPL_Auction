@@ -35,9 +35,9 @@ export default function AuctionTimer({ timeLeft, totalDuration = 30, active }) {
           className="h-full rounded-full transition-[width] duration-1000 linear"
           style={{
             width: `${barPct}%`,
-            background: state === 'critical' ? '#FF3355'
+            background: state === 'critical' ? 'rgb(var(--bid-red))'
                       : state === 'warning'  ? '#FF8C00'
-                      : '#00FF66',
+                      : 'rgb(var(--neon))',
           }}
         />
       </div>

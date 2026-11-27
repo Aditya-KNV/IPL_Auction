@@ -7,7 +7,7 @@ import { formatCroreAmount } from '../../utils/currency';
 import { hasBattingStats, hasBowlingStats } from '../../utils/playerDisplay';
 import { setAudioMuted, isAudioMuted } from '../../utils/auctionAudio';
 
-import PlayerStatsModal  from '../players/PlayerStatsModal';
+import PlayerStatsModal, { PlayerStatsDetails } from '../players/PlayerStatsModal';
 import BidPanel          from './BidPanel';
 import BidFeed           from './BidFeed';
 import AuctionTimer      from './AuctionTimer';
@@ -27,61 +27,6 @@ const ROLE_COLOR = {
 const ROLE_LABEL = {
   Batsman:'BAT', Bowler:'BWL', 'All-Rounder':'AR', 'Wicket-Keeper':'WK',
 };
-
-// ── Player stats sections (right panel) ─────────────────────────────────────
-const buildSections = (player) => {
-  if (!player) return [];
-  const sections = [];
-  if (hasBattingStats(player.role)) {
-    sections.push({
-      title:'Batting Phases', color:'text-blue-400', border:'border-blue-500/20', bg:'bg-blue-500/10',
-      items:[
-        { label:'Powerplay', rating: player.batting?.phases?.powerplay?.rating ?? 0 },
-        { label:'Middle',    rating: player.batting?.phases?.middle?.rating    ?? 0 },
-        { label:'Death',     rating: player.batting?.phases?.death?.rating     ?? 0 },
-      ],
-    });
-    sections.push({
-      title:'Batting Skills', color:'text-sky-400', border:'border-sky-500/20', bg:'bg-sky-500/10',
-      items:[
-        { label:'Finishing',  rating: player.batting?.skills?.finishing     ?? 0 },
-        { label:'Power Hit',  rating: player.batting?.skills?.power_hitting ?? 0 },
-        { label:'Anchor',     rating: player.batting?.skills?.anchor        ?? 0 },
-        { label:'Spin Play',  rating: player.batting?.skills?.spin_play     ?? 0 },
-        { label:'Pace Play',  rating: player.batting?.skills?.pace_play     ?? 0 },
-      ],
-    });
-  }
-  if (hasBowlingStats(player.role)) {
-    sections.push({
-      title:'Bowling Phases', color:'text-red-400', border:'border-red-500/20', bg:'bg-red-500/10',
-      items:[
-        { label:'Powerplay', rating: player.bowling?.phases?.powerplay ?? 0 },
-        { label:'Middle',    rating: player.bowling?.phases?.middle    ?? 0 },
-        { label:'Death',     rating: player.bowling?.phases?.death     ?? 0 },
-      ],
-    });
-    sections.push({
-      title:'Bowling Skills', color:'text-rose-400', border:'border-rose-500/20', bg:'bg-rose-500/10',
-      items:[
-        { label:'Variations', rating: player.bowling?.skills?.variations ?? 0 },
-        { label:'Yorker',     rating: player.bowling?.skills?.yorker     ?? 0 },
-        { label:'Bouncer',    rating: player.bowling?.skills?.bouncer    ?? 0 },
-      ],
-    });
-  }
-  return sections;
-};
-
-const RatingChip = ({ label, rating, color, border, bg }) => (
-  <div className={`relative rounded-lg border ${border} ${bg} px-2.5 py-1.5 overflow-hidden`}>
-    <div className="absolute inset-x-0 top-0 h-px bg-white/[0.15]" />
-    <p className="text-[8px] uppercase tracking-[0.1em] text-white/40 truncate">{label}</p>
-    <p className={`mt-0.5 text-sm font-black leading-none ${color}`}>
-      {rating ?? 0}<span className="text-[9px] ml-0.5 font-semibold opacity-50">/10</span>
-    </p>
-  </div>
-);
 
 // Smooth odometer counter hook
 function useOdometer(target) {
@@ -131,7 +76,7 @@ const SoldFlash = ({ soldFlash }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
       <div className="bg-obsidian/95 border border-neon/25 rounded-3xl
-                      px-12 py-10 text-center shadow-[0_0_60px_rgba(0,255,102,.25)]
+                      px-12 py-10 text-center shadow-[0_0_60px_rgb(var(--neon)/.25)]
                       animate-sold-pop">
         <p className="font-bebas text-7xl tracking-widest text-neon neon-glow">SOLD!</p>
         <p className="text-white text-xl font-bold mt-1">{soldFlash.player?.name}</p>
@@ -250,7 +195,6 @@ export default function AuctionBoard() {
   const roleColor  = currentPlayer ? (ROLE_COLOR[currentPlayer.role] || '#6b7280') : '#004FC7';
   const leadColor  = highestBidder?.color || (amLeading ? '#FFD060' : '#374151');
   const battingPositions = currentPlayer?.tactical?.positions ?? [];
-  const sections   = buildSections(currentPlayer);
 
   return (
     <>
@@ -395,7 +339,7 @@ export default function AuctionBoard() {
                       </div>
 
                       <button onClick={() => setModalPlayer(currentPlayer)}
-                        className="mt-5 text-[11px] font-bold tracking-wider text-white/40
+                        className="lg:hidden mt-5 text-[11px] font-bold tracking-wider text-white/40
                                    border border-white/[0.1] hover:border-white/25 hover:bg-white/[0.03]
                                    hover:text-white/70 px-5 py-2 rounded-lg transition-all">
                         FULL STATS
@@ -524,44 +468,33 @@ export default function AuctionBoard() {
                 </span>
               )}
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+            {/* keyed by player so the scroll position resets for each new player */}
+            <div key={currentPlayer?._id ?? 'none'}
+                 className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
               {!currentPlayer ? (
                 <div className="flex items-center justify-center h-full px-6 text-center">
                   <p className="text-white/20 text-xs">No player currently up for auction</p>
                 </div>
-              ) : sections.length === 0 ? (
-                <div className="flex items-center justify-center h-full px-6 text-center">
-                  <p className="text-white/20 text-xs">No rated stats for this player</p>
-                </div>
               ) : (
-                <div className="px-4 py-3 space-y-3">
-                  <div>
-                    <p className="text-white font-bold text-[13px] truncate">{currentPlayer.name}</p>
-                    <p className="text-white/30 text-[10px] mt-0.5">
-                      {currentPlayer.role}
-                      {currentPlayer.nationality && ` · ${currentPlayer.nationality}`}
+                <>
+                  <div className="px-5 pt-3">
+                    <p className="text-white font-bold text-[15px] truncate">{currentPlayer.name}</p>
+                    <p className="text-white/30 text-[11px] mt-0.5">
+                      {[
+                        currentPlayer.role,
+                        currentPlayer.nationality,
+                        currentPlayer.age && `${currentPlayer.age} yrs`,
+                        currentPlayer.batting_style === 'left-handed' ? 'Left-handed' : 'Right-handed',
+                        currentPlayer.bowling_style,
+                      ].filter(Boolean).join(' · ')}
                     </p>
                   </div>
-                  {sections.map(sec => (
-                    <div key={sec.title}>
-                      <p className={`text-[9px] font-black uppercase tracking-[1.5px] mb-1.5 ${sec.color}`}>
-                        {sec.title}
-                      </p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {sec.items.map(item => (
-                          <RatingChip key={item.label} {...item}
-                            color={sec.color} border={sec.border} bg={sec.bg} />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  <button onClick={() => setModalPlayer(currentPlayer)}
-                    className="w-full text-[10px] font-bold tracking-wider text-white/40
-                               border border-white/[0.1] hover:border-white/25
-                               hover:text-white/70 px-4 py-2 rounded-lg transition">
-                    FULL STATS
-                  </button>
-                </div>
+                  <PlayerStatsDetails
+                    player={currentPlayer}
+                    showBatting={hasBattingStats(currentPlayer.role)}
+                    showBowling={hasBowlingStats(currentPlayer.role)}
+                  />
+                </>
               )}
             </div>
           </aside>

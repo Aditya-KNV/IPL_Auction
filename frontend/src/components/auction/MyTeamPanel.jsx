@@ -20,7 +20,7 @@ const PurseMeter = ({ team }) => {
   const total     = normalizeCroreAmount(team.purse);
   const pct       = total > 0 ? (remaining / total) * 100 : 0;
   const spent     = normalizeCroreAmount(total - remaining);
-  const barColor  = pct > 60 ? '#00FF66' : pct > 30 ? '#f59e0b' : '#FF3355';
+  const barColor  = pct > 60 ? 'rgb(var(--neon))' : pct > 30 ? '#f59e0b' : 'rgb(var(--bid-red))';
 
   return (
     <div className="rounded-xl border border-white/[0.08] bg-surface-2/60 p-4">
@@ -130,7 +130,7 @@ export default function MyTeamPanel({ team, squadByRole }) {
       {selectedPlayer && <PlayerStatsModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />}
       <div className="rounded-2xl border border-white/[0.06] bg-surface/60 overflow-hidden">
         <div className="px-5 py-4 flex items-center justify-between border-l-2"
-             style={{ borderLeftColor: team.color || '#00FF66' }}>
+             style={{ borderLeftColor: team.color || 'rgb(var(--neon))' }}>
           <div>
             <p className="text-[10px] text-white/30 uppercase tracking-wider">My Team</p>
             <h2 className="text-xl font-black text-white mt-0.5">{team.name}</h2>
