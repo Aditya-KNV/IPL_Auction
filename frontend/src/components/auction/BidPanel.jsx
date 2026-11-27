@@ -92,9 +92,9 @@ export default function BidPanel({
 
   if (mode === 'withdraw') {
     return (
-      <div className="max-w-xl mx-auto w-full px-4 py-3">
+      <div className="max-w-xl mx-auto w-full px-3 py-2 lg:px-4 lg:py-3">
         <button type="button" onClick={handleWithdraw} disabled={!canWithdraw}
-          className={`w-full rounded-xl border px-4 py-3 text-sm font-semibold transition
+          className={`w-full rounded-xl border px-4 py-2.5 lg:py-3 text-sm font-semibold transition
             ${hasWithdrawn
               ? 'border-orange-400/30 bg-orange-400/[0.08] text-orange-300 cursor-default'
               : 'border-white/[0.08] bg-transparent text-white/40 hover:border-bid-red/35 hover:text-bid-red/80 disabled:opacity-30 disabled:cursor-not-allowed'
@@ -114,7 +114,7 @@ export default function BidPanel({
   const effectiveMin = minNextBid || (currentBid ? getMinNextBid(currentBid, hasExistingBid) : 0);
 
   return (
-    <div className="flex flex-col gap-2.5 max-w-xl mx-auto w-full px-4 py-3">
+    <div className="flex flex-col gap-2 lg:gap-2.5 max-w-xl mx-auto w-full px-3 py-2 lg:px-4 lg:py-3">
 
       {bidError && (
         <div className="flex items-center gap-2 bg-bid-red/10 border border-bid-red/25
@@ -137,7 +137,7 @@ export default function BidPanel({
       <div className="grid grid-cols-3 gap-2.5">
         {quickBids.map((amount, i) => (
           <button key={amount} onClick={() => handleQuickBid(amount)} disabled={!canBid}
-            className={`flex flex-col items-center py-3.5 rounded-xl font-bold text-sm
+            className={`flex flex-col items-center py-2.5 lg:py-3.5 rounded-xl font-bold text-sm
                         border transition-all active:scale-95
                         disabled:opacity-30 disabled:cursor-not-allowed
                         ${i === 0
@@ -151,12 +151,12 @@ export default function BidPanel({
                               ${i === 0 ? 'text-black/60' : 'text-white/30'}`}>
               {i === 0 ? (hasExistingBid ? 'MIN BID' : 'BASE') : `+${i} STEP`}
             </span>
-            <span className={`text-[9px] ${i === 0 ? 'text-black/40' : 'text-white/20'}`}>CR</span>
+            <span className={`hidden lg:inline text-[9px] ${i === 0 ? 'text-black/40' : 'text-white/20'}`}>CR</span>
           </button>
         ))}
       </div>
 
-      <div className="flex items-center justify-between px-0.5">
+      <div className="hidden lg:flex items-center justify-between px-0.5">
         <span className="text-[10px] text-white/25">
           Step: <span className="text-white/50">+{formatCroreAmount(getIncrement())} Cr</span>
         </span>

@@ -6,7 +6,7 @@ import { useRoom }     from '../../context/RoomContext';
 import { formatCroreAmount } from '../../utils/currency';
 import { setAudioMuted, isAudioMuted } from '../../utils/auctionAudio';
 
-import PlayerStatsModal, { PlayerStatsDetails } from '../players/PlayerStatsModal';
+import { PlayerStatsDetails } from '../players/PlayerStatsModal';
 import BidPanel          from './BidPanel';
 import BidFeed           from './BidFeed';
 import AuctionTimer      from './AuctionTimer';
@@ -153,7 +153,7 @@ const EmptyStage = ({ status }) => (
 
 // ── Main AuctionBoard ────────────────────────────────────────────────────────
 export default function AuctionBoard() {
-  const [modalPlayer,  setModalPlayer]  = useState(null);
+  const [mobileView,   setMobileView]   = useState('stats'); // below the card on phones
   const [muted,        setMuted]        = useState(isAudioMuted());
   const [soldHistory,  setSoldHistory]  = useState([]);
 
@@ -195,10 +195,27 @@ export default function AuctionBoard() {
   const leadColor  = highestBidder?.color || (amLeading ? '#FFD060' : '#374151');
   const battingPositions = currentPlayer?.tactical?.positions ?? [];
 
+  const playerStats = currentPlayer && (
+    <>
+      <div className="hidden lg:block px-5 pt-3">
+        <p className="text-white font-bold text-[15px] truncate">{currentPlayer.name}</p>
+        <p className="text-white/30 text-[11px] mt-0.5">
+          {[
+            currentPlayer.role,
+            currentPlayer.nationality,
+            currentPlayer.age && `${currentPlayer.age} yrs`,
+            currentPlayer.batting_style === 'left-handed' ? 'Left-handed' : 'Right-handed',
+            currentPlayer.bowling_style,
+          ].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+      <PlayerStatsDetails player={currentPlayer} />
+    </>
+  );
+
   return (
     <>
       {/* ── Modals ── */}
-      {modalPlayer && <PlayerStatsModal player={modalPlayer} onClose={() => setModalPlayer(null)} />}
       {accelerated && (
         <AcceleratedModal
           players={accelerated.players}
@@ -218,19 +235,20 @@ export default function AuctionBoard() {
       <UnsoldFlash player={unsoldFlash} />
 
       {/* ── Shell ── */}
-      <div className="flex flex-col gap-3 p-3 bg-obsidian h-full overflow-hidden
+      <div className="auction-shell flex flex-col gap-2 p-2 lg:gap-3 lg:p-3 bg-obsidian h-full overflow-hidden
                       relative stadium-backdrop">
 
         {/* ── Status strip ── */}
-        <div className="glass-panel top-accent flex-shrink-0 h-[54px] flex items-center justify-between px-5 z-10"
+        <div className="glass-panel top-accent flex-shrink-0 flex flex-wrap items-center justify-between gap-2
+                        px-3 py-2 z-10 lg:h-[54px] lg:flex-nowrap lg:px-5 lg:py-0"
              style={{ '--accent': roleColor, borderRadius: '18px' }}>
-          <div className="flex items-center gap-4">
-            <span className="text-white/40 text-sm font-semibold">
+          <div className="flex items-center gap-3 lg:gap-4">
+            <span className="text-white/40 text-xs lg:text-sm font-semibold">
               {soldCount} sold · {unsoldCount} unsold
             </span>
 
             <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}
-              className="flex items-center justify-center w-10 h-10 rounded-full
+              className="flex items-center justify-center w-9 h-9 lg:w-10 lg:h-10 rounded-full
                          border border-white/[0.08] bg-white/[0.04]
                          text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition">
               {muted
@@ -240,17 +258,19 @@ export default function AuctionBoard() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="contents lg:flex lg:items-center lg:gap-3">
             {amHost && (
-              <AuctionControls session={session} onRefetch={refetch} onAccelerated={initAcceleratedMode} />
+              <div className="flex justify-center">
+                <AuctionControls session={session} onRefetch={refetch} onAccelerated={initAcceleratedMode} />
+              </div>
             )}
             {isActive && (
-              <div className="flex items-center gap-1.5 px-1">
+              <div className="hidden lg:flex items-center gap-1.5 px-1">
                 <span className="w-2 h-2 rounded-full bg-bid-red animate-live-blink" />
                 <span className="text-bid-red text-[11px] font-black tracking-[1.5px]">LIVE</span>
               </div>
             )}
-            <span className={`px-3.5 py-1.5 rounded-full text-[11px] font-black border tracking-[1.2px] uppercase
+            <span className={`${amHost ? 'hidden sm:inline-block' : ''} px-3.5 py-1.5 rounded-full text-[11px] font-black border tracking-[1.2px] uppercase
                               ${STATUS_STYLE[statusKey] ?? STATUS_STYLE.waiting}`}>
               {statusKey}
             </span>
@@ -258,8 +278,8 @@ export default function AuctionBoard() {
         </div>
 
         {/* ── Bento grid ── */}
-        <div className="flex-1 min-h-0 grid overflow-hidden gap-3
-                        grid-cols-1 lg:grid-cols-[220px_1fr_420px]
+        <div className="auction-grid flex-1 min-h-0 grid overflow-hidden gap-3
+                        grid-cols-1 lg:grid-cols-[180px_minmax(0,1fr)_300px] xl:grid-cols-[220px_minmax(0,1fr)_400px]
                         grid-rows-[minmax(0,1fr)]">
 
           {/* LEFT — Bid Log ──────────────────────────────── */}
@@ -281,40 +301,40 @@ export default function AuctionBoard() {
           </aside>
 
           {/* CENTER — Main stage (~80% width): player card / bid controls / withdraw ── */}
-          <main className="flex flex-col gap-3 min-h-0 overflow-hidden relative"
+          <main className="auction-stage flex flex-col gap-2 lg:gap-3 min-h-0 min-w-0 overflow-hidden relative"
                 style={{ background: `radial-gradient(ellipse 70% 65% at 50% 40%, ${roleColor}12 0%, transparent 70%)` }}>
 
             {currentPlayer ? (
               <>
                 {/* ── Top: player card (name, age, batting position, full stats) ── */}
-                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar
-                                flex items-center justify-center px-8 py-4">
-                  <div className="glass-panel top-accent dot-matrix relative w-full max-w-4xl overflow-hidden
-                                  flex items-center justify-center gap-8 lg:gap-14 px-10 py-8"
+                <div className="auction-stage-scroll flex-1 min-h-0 overflow-y-auto custom-scrollbar
+                                flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-center lg:px-8 lg:py-2">
+                  <div className="glass-panel top-accent dot-matrix relative w-full max-w-4xl overflow-hidden flex-shrink-0
+                                  flex items-center justify-center gap-8 lg:gap-6 2xl:gap-14 px-3 py-2 lg:my-auto lg:px-6 lg:py-4 xl:py-8 2xl:px-10"
                        style={{ '--accent': roleColor }}>
 
                     {/* Role capsule (fills the left of the wide card) */}
-                    <div className="hidden sm:flex flex-col items-center gap-2 flex-shrink-0 z-[1]">
+                    <div className="hidden sm:flex lg:hidden xl:flex flex-col items-center gap-2 flex-shrink-0 z-[1]">
                       <span className="text-[9px] font-black tracking-[2px] text-white/30 uppercase">Role</span>
                       <span className="font-bebas text-2xl leading-none px-4 py-2 rounded-xl border"
                             style={{ color: roleColor, borderColor: roleColor + '35', background: roleColor + '12' }}>
                         {currentPlayer.role}
                       </span>
                     </div>
-                    <div className="hidden sm:block w-px h-20 flex-shrink-0"
+                    <div className="hidden sm:block lg:hidden xl:block w-px h-20 flex-shrink-0"
                          style={{ background: `linear-gradient(to bottom, transparent, rgb(var(--fg) / 0.12), transparent)` }} />
 
                     {/* Name + meta (center) */}
                     <div className="flex-1 min-w-0 text-center z-[1]">
-                      <p className="text-[10px] font-bold tracking-[3px] text-white/30 uppercase mb-2">
+                      <p className="text-[10px] font-bold tracking-[3px] text-white/30 uppercase mb-1 lg:mb-2">
                         {currentPlayer.auctionSetName || 'UP FOR AUCTION'}
                       </p>
-                      <h1 className="font-bebas text-[64px] lg:text-[80px] leading-none text-white tracking-[2px]"
+                      <h1 className="font-bebas text-4xl sm:text-6xl lg:text-5xl xl:text-6xl 2xl:text-[80px] leading-none text-white tracking-[2px]"
                           style={{ textShadow: `0 4px 32px ${roleColor}55, 0 1px 0 rgba(0,0,0,.3)` }}>
                         {currentPlayer.name}
                       </h1>
-                      <div className="flex items-center justify-center gap-2 flex-wrap mt-4">
-                        <span className="text-[13px] font-semibold text-white/50 sm:hidden">{currentPlayer.role}</span>
+                      <div className="flex items-center justify-center gap-x-2 gap-y-0 flex-wrap mt-1 lg:mt-4 [&>span]:text-[11px] lg:[&>span]:text-[13px]">
+                        <span className="text-[13px] font-semibold text-white/50 sm:hidden lg:inline xl:hidden">{currentPlayer.role}</span>
                         {currentPlayer.age && (
                           <>
                             <span className="text-white/15 sm:hidden">·</span>
@@ -336,19 +356,15 @@ export default function AuctionBoard() {
                           </>
                         )}
                       </div>
-
-                      <button onClick={() => setModalPlayer(currentPlayer)}
-                        className="lg:hidden mt-5 text-[11px] font-bold tracking-wider text-white/40
-                                   border border-white/[0.1] hover:border-white/25 hover:bg-white/[0.03]
-                                   hover:text-white/70 px-5 py-2 rounded-lg transition-all">
-                        FULL STATS
-                      </button>
+                      <p className="sm:hidden lg:block xl:hidden text-xs font-bold text-gold-bright">
+                        Base ₹{formatCroreAmount(currentPlayer.basePrice)} Cr
+                      </p>
                     </div>
 
-                    <div className="hidden sm:block w-px h-20 flex-shrink-0"
+                    <div className="hidden sm:block lg:hidden xl:block w-px h-20 flex-shrink-0"
                          style={{ background: `linear-gradient(to bottom, transparent, rgb(var(--fg) / 0.12), transparent)` }} />
                     {/* Base price capsule (fills the right of the wide card) */}
-                    <div className="hidden sm:flex flex-col items-center gap-2 flex-shrink-0 z-[1]">
+                    <div className="hidden sm:flex lg:hidden xl:flex flex-col items-center gap-2 flex-shrink-0 z-[1]">
                       <span className="text-[9px] font-black tracking-[2px] text-white/30 uppercase">Base Price</span>
                       <span className="font-bebas text-2xl leading-none px-4 py-2 rounded-xl border
                                        text-gold-bright border-gold-bright/30 bg-gold-bright/[0.08]">
@@ -356,13 +372,29 @@ export default function AuctionBoard() {
                       </span>
                     </div>
                   </div>
+
+                  <div className="lg:hidden glass-panel flex-shrink-0 [&_.player-price]:hidden">
+                    <div className="grid grid-cols-2 border-b border-white/[0.06]">
+                      {[['stats', 'Player stats'], ['bids', 'Bid log']].map(([key, label]) => (
+                        <button key={key} onClick={() => setMobileView(key)}
+                          className={`py-2 text-[11px] font-black uppercase tracking-wider border-b-2 ${
+                            mobileView === key ? 'text-neon border-neon' : 'text-white/40 border-transparent'
+                          }`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {mobileView === 'stats'
+                      ? playerStats
+                      : <BidFeed bids={bidHistory} currentPlayer={currentPlayer} />}
+                  </div>
                 </div>
 
                 {/* ── Middle: current bid + leader + timer, quick bid buttons ── */}
-                <div className="flex-shrink-0 flex justify-center px-4">
+                <div className="flex-shrink-0 flex justify-center lg:px-4">
                 <div className="glass-panel top-accent flex-shrink-0 w-full max-w-xl overflow-hidden"
                      style={{ '--accent': 'rgb(var(--neon))' }}>
-                  <div className="flex items-center justify-center px-4 py-3 gap-0
+                  <div className="flex items-center justify-center px-4 py-1.5 lg:py-3 gap-0
                                   border-b border-white/[0.06]">
                     {/* Current bid (odometer) */}
                     <div className="flex-1">
@@ -371,7 +403,7 @@ export default function AuctionBoard() {
                       </p>
                       <div className="flex items-baseline gap-1">
                         <span className="font-bebas text-2xl text-neon leading-none">₹</span>
-                        <span className="font-bebas text-[48px] text-neon leading-none tabular-nums neon-glow">
+                        <span className="font-bebas text-4xl lg:text-[48px] text-neon leading-none tabular-nums neon-glow">
                           {formatCroreAmount(displayBid)}
                         </span>
                         <span className="font-bebas text-xl text-neon/40 leading-none">CR</span>
@@ -386,7 +418,7 @@ export default function AuctionBoard() {
                       <p className="text-[8px] font-black tracking-[2px] text-white/25 uppercase">Leading</p>
                       {highestBidder ? (
                         <>
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center
+                          <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center
                                           text-[10px] font-black border-2"
                                style={{ borderColor: leadColor, color: leadColor, background: leadColor + '22', boxShadow: `0 0 16px ${leadColor}30` }}>
                             {highestBidder.shortName?.slice(0, 3) ?? '?'}
@@ -430,7 +462,7 @@ export default function AuctionBoard() {
                 </div>
 
                 {/* ── Bottom: withdraw — always docked, never clipped ── */}
-                <div className="flex-shrink-0 flex justify-center px-4 pb-1">
+                <div className="flex-shrink-0 flex justify-center lg:px-4 lg:pb-1">
                 <div className="glass-panel top-accent flex-shrink-0 w-full max-w-xl overflow-hidden"
                      style={{ '--accent': 'rgb(var(--bid-red))' }}>
                   <BidPanel
@@ -475,28 +507,16 @@ export default function AuctionBoard() {
                   <p className="text-white/20 text-xs">No player currently up for auction</p>
                 </div>
               ) : (
-                <>
-                  <div className="px-5 pt-3">
-                    <p className="text-white font-bold text-[15px] truncate">{currentPlayer.name}</p>
-                    <p className="text-white/30 text-[11px] mt-0.5">
-                      {[
-                        currentPlayer.role,
-                        currentPlayer.nationality,
-                        currentPlayer.age && `${currentPlayer.age} yrs`,
-                        currentPlayer.batting_style === 'left-handed' ? 'Left-handed' : 'Right-handed',
-                        currentPlayer.bowling_style,
-                      ].filter(Boolean).join(' · ')}
-                    </p>
-                  </div>
-                  <PlayerStatsDetails player={currentPlayer} />
-                </>
+                playerStats
               )}
             </div>
           </aside>
         </div>
 
         {/* ── Bottom ticker ── */}
-        <SoldTicker soldHistory={soldHistory} />
+        <div className="hidden lg:block flex-shrink-0">
+          <SoldTicker soldHistory={soldHistory} />
+        </div>
       </div>
     </>
   );

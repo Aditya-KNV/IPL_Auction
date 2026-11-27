@@ -209,7 +209,7 @@ function PlayersTab() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-3 md:p-6">
       {selected && (
         <PlayerStatsModal player={selected} onClose={() => setSelected(null)} />
       )}
@@ -227,15 +227,15 @@ function PlayersTab() {
         <h2 className="font-bebas text-3xl tracking-wider text-white">Players</h2>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-4 md:flex md:flex-wrap">
         {/* Search */}
-        <div className="flex items-center gap-2 bg-surface-2 border border-white/[0.08] rounded-lg px-3 py-2">
+        <div className="col-span-2 flex items-center gap-2 bg-surface-2 border border-white/[0.08] rounded-lg px-3 py-2">
           <svg className="h-4 w-4 text-white/30 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
           </svg>
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search player…"
-            className="bg-transparent text-white text-sm outline-none w-36 placeholder-white/20" />
+            className="bg-transparent text-white text-sm outline-none flex-1 min-w-0 md:w-36 placeholder-white/20" />
           {search && (
             <button onClick={() => setSearch("")} className="text-white/30 hover:text-white ml-1">
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,7 +300,38 @@ function PlayersTab() {
         )}
       </p>
 
-      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+      {/* Phone list */}
+      <ul className="md:hidden rounded-xl border border-white/[0.06] divide-y divide-white/[0.06]">
+        {filtered.map(p => {
+          const displayStatus = getDisplayStatus(p);
+          const phaseVal = phase ? resolvePath(p, phase) : null;
+          return (
+            <li key={p._id}>
+              <button onClick={() => openPlayer(p._id)}
+                className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left active:bg-white/[0.05]">
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold text-white">{p.name}</span>
+                  <span className="block truncate text-xs text-white/40">
+                    {p.role} · {p.nationality}
+                    {typeof phaseVal === "number" && ` · ${activeFilterLabel} ${phaseVal}/10`}
+                  </span>
+                </span>
+                <span className="flex-shrink-0 text-right">
+                  <span className={`block text-xs font-semibold capitalize ${STATUS_COLOR[displayStatus] || "text-white/30"}`}>
+                    {displayStatus}{p.team?.shortName ? ` · ${p.team.shortName}` : ""}
+                  </span>
+                  <span className="block text-xs text-white/40 tabular-nums">
+                    {p.soldPrice ? `₹${p.soldPrice} Cr` : `Base ₹${p.basePrice} Cr`}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+        {filtered.length === 0 && <li className="py-10 text-center text-sm text-white/20">No players found</li>}
+      </ul>
+
+      <div className="hidden md:block overflow-x-auto rounded-xl border border-white/[0.06]">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.06] text-white/30 bg-surface/60">
@@ -368,7 +399,7 @@ function TeamsTab() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
         <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Squads</p>
         <h2 className="font-bebas text-3xl tracking-wider text-white">Teams</h2>
@@ -434,7 +465,7 @@ function SettingsTab() {
   const otherUsers = room?.users.filter((u) => u.socketId !== mySocketId) || [];
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
         <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Configuration</p>
         <h2 className="font-bebas text-3xl tracking-wider text-white">Settings</h2>
@@ -452,10 +483,10 @@ function SettingsTab() {
         <p className="text-white/25 text-xs mb-4">
           Initial bidding window duration when a player enters auction. Each bid extends the clock by 10 s regardless.
         </p>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <input type="range" min={5} max={120} step={5} value={timerDuration}
             onChange={(e) => setTimerDuration(Number(e.target.value))}
-            className="flex-1 accent-neon" />
+            className="basis-full sm:basis-0 sm:flex-1 accent-neon" />
           <div className="flex items-center gap-1 bg-surface-2 border border-white/[0.08] rounded-lg px-3 py-2">
             <input type="number" min={5} max={120} step={1} value={timerDuration}
               onChange={(e) => setTimerDuration(Number(e.target.value))}
@@ -495,6 +526,17 @@ function SettingsTab() {
     </div>
   );
 }
+
+// Icon paths for the phone tab bar.
+const TAB_ICONS = {
+  Lobby:    "M3 11.5 12 4l9 7.5M5.5 10v10h13V10",
+  Auction:  "m14 5 5 5m-7-3 5 5M11.5 8.500 6 14l4 4 5.500-5.500M4 21h10m-6.500-6.500L4 18",
+  Teams:    "M16 19v-1.500a3.500 3.500 0 0 0-3.500-3.500h-5A3.500 3.500 0 0 0 4 17.500V19m6-8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm10 8v-1.500a3.500 3.500 0 0 0-2.500-3.360M15 5.150a3 3 0 0 1 0 5.700",
+  Players:  "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8c0-3.300 3.100-5.500 7-5.500s7 2.200 7 5.500",
+  Rankings: "M5 20v-7h4v7m1 0V5h4v15m1 0v-10h4v10M3 20h18",
+  Rules:    "M6 4h12v16H6zM9 8h6m-6 4h6m-6 4h3",
+  Settings: "M4 7h10m4 0h2M4 17h4m4 0h8M16 5v4M10 15v4",
+};
 
 const TABS = [
   "Lobby",
@@ -990,7 +1032,7 @@ function InRoomLayout() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative flex-shrink-0 px-4 py-3 text-xs font-bold uppercase tracking-wider transition border-b-2 ${
+              className={`hidden md:block relative flex-shrink-0 px-4 py-3 text-xs font-bold uppercase tracking-wider transition border-b-2 ${
                 activeTab === tab
                   ? "text-neon border-neon"
                   : "text-white/30 border-transparent hover:text-white hover:border-white/20"
@@ -1003,8 +1045,8 @@ function InRoomLayout() {
             </button>
           ))}
 
-          <div className="flex-shrink-0 ml-2 flex items-center gap-2 pb-1">
-            <span className="text-[10px] text-white/25 hidden sm:inline uppercase tracking-wider">Room:</span>
+          <div className="flex-shrink-0 ml-2 flex items-center gap-2 md:pb-1">
+            <span className="text-[10px] text-white/25 uppercase tracking-wider">Room:</span>
             <span className="font-mono font-black text-neon text-sm bg-neon/[0.07] px-2 py-0.5 rounded-lg border border-neon/25 neon-glow">
               {room?.code}
             </span>
@@ -1024,9 +1066,9 @@ function InRoomLayout() {
       </div>
 
       {/* All tabs are always mounted — hidden via CSS to preserve state across tab switches */}
-      <div className="h-full pt-[52px] overflow-hidden">
+      <div className="h-full pt-[52px] pb-tabbar overflow-hidden">
         <div className={`h-full overflow-y-auto ${activeTab === "Lobby" ? "" : "hidden"}`}>
-          <div className="max-w-2xl mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto px-3 py-3 md:px-4 md:py-8">
             <RoomLobby />
           </div>
         </div>
@@ -1077,6 +1119,31 @@ function InRoomLayout() {
           <SettingsTab />
         </div>
       </div>
+
+      {/* Phone tab bar */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom bg-surface border-t border-white/[0.08]">
+        <div className="grid grid-cols-7 h-[58px]">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              aria-current={activeTab === tab ? "page" : undefined}
+              className={`relative min-w-0 flex flex-col items-center justify-center gap-1 ${
+                activeTab === tab ? "text-neon" : "text-white/40"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8"
+                   strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d={TAB_ICONS[tab]} />
+              </svg>
+              <span className="text-[10px] font-semibold leading-none">{tab}</span>
+              {tab === "Auction" && room && (
+                <span className="absolute top-1.5 right-1/4 w-1.5 h-1.5 rounded-full bg-neon animate-live-blink" />
+              )}
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

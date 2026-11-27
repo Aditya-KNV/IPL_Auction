@@ -109,7 +109,7 @@ function AppShell() {
     <>
       <GlobalAuctionSounds />
       {!isRoomRoute && <Navbar />}
-      <div className={isRoomRoute ? 'h-screen overflow-hidden' : 'pt-[73px] min-h-screen'}>
+      <div className={isRoomRoute ? 'app-height overflow-hidden' : 'pt-[73px] min-h-screen'}>
         <Routes>
           <Route path="/login"    element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
