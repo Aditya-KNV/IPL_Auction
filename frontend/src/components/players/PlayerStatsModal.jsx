@@ -34,7 +34,7 @@ export function PlayerStatsDetails({ player }) {
   return (
     <div className="space-y-5 px-5 py-4">
       {/* Price */}
-      <div className="flex gap-3">
+      <div className="player-price flex gap-3">
         <div className="flex-1 rounded-xl border border-white/[0.06] bg-surface-2/60 p-3 text-center">
           <p className="text-[10px] uppercase tracking-wider text-white/30">Base Price</p>
           <p className="mt-0.5 text-lg font-black tabular-nums text-white/70">₹{player.basePrice} Cr</p>

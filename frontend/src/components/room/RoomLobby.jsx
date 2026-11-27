@@ -80,7 +80,7 @@ const TeamCard = ({ team, takenBy, isMyTeam, onPick }) => {
 const Toast = ({ message, onDone }) => {
   useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, [onDone]);
   return (
-    <div className="fixed bottom-6 right-6 z-50 bg-surface-2 border border-white/[0.1]
+    <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 bg-surface-2 border border-white/[0.1]
                     text-white text-sm px-4 py-3 rounded-xl shadow-2xl animate-fade-in">
       {message}
     </div>
@@ -148,7 +148,7 @@ export default function RoomLobby() {
     <div className="flex flex-col gap-5 w-full max-w-2xl mx-auto">
 
       {/* Room code */}
-      <div className="bg-surface border border-white/[0.07] rounded-2xl p-6">
+      <div className="bg-surface border border-white/[0.07] rounded-2xl p-4 md:p-6">
         <p className="text-[10px] font-bold tracking-[2px] text-white/30 uppercase mb-3">Room Code</p>
         <div className="flex items-center justify-center gap-4">
           <span className="font-bebas text-5xl tracking-[8px] text-neon neon-glow">{room.code}</span>
@@ -163,7 +163,7 @@ export default function RoomLobby() {
       </div>
 
       {/* Team picker */}
-      <div className={`bg-surface border rounded-2xl p-6
+      <div className={`bg-surface border rounded-2xl p-4 md:p-6
         ${auctionLocked ? 'border-white/[0.04] opacity-80' : 'border-white/[0.07]'}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export default function RoomLobby() {
         {allTeams.length === 0 ? (
           <p className="text-white/25 text-sm text-center py-4">Loading teams…</p>
         ) : (
-          <div className={`grid grid-cols-4 gap-2 ${auctionLocked ? 'pointer-events-none' : ''}`}>
+          <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 ${auctionLocked ? 'pointer-events-none' : ''}`}>
             {allTeams.map(team => (
               <TeamCard key={team._id} team={team}
                 takenBy={takenMap[team._id] ?? null}
@@ -206,7 +206,7 @@ export default function RoomLobby() {
       </div>
 
       {/* Users */}
-      <div className="bg-surface border border-white/[0.07] rounded-2xl p-6">
+      <div className="bg-surface border border-white/[0.07] rounded-2xl p-4 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-[10px] font-bold tracking-[2px] text-white/40 uppercase">Users in Room</p>
           <span className="text-[10px] text-white/30 bg-white/[0.05] px-2 py-0.5 rounded-full">

@@ -205,8 +205,8 @@ export default function AcceleratedModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div className="bg-surface border border-white/[0.08] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 md:p-4">
+        <div className="bg-surface border border-white/[0.08] rounded-2xl w-full max-w-2xl max-h-full md:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
 
           {/* ── Header ── */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] flex-shrink-0">

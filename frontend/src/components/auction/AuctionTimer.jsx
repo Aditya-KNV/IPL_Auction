@@ -22,10 +22,10 @@ export default function AuctionTimer({ timeLeft, totalDuration = 30, active }) {
       <p className="text-[8px] font-black tracking-[2px] text-white/25 uppercase">Time Left</p>
 
       <div className={`font-bebas leading-none tabular-nums transition-all select-none
-        ${state === 'critical' ? 'text-bid-red text-5xl animate-crit-pulse red-bloom'
-          : state === 'warning' ? 'text-orange-400 text-5xl'
-          : state === 'ok'     ? 'text-white text-5xl'
-          : 'text-white/25 text-5xl'}`}>
+        ${state === 'critical' ? 'text-bid-red text-4xl lg:text-5xl animate-crit-pulse red-bloom'
+          : state === 'warning' ? 'text-orange-400 text-4xl lg:text-5xl'
+          : state === 'ok'     ? 'text-white text-4xl lg:text-5xl'
+          : 'text-white/25 text-4xl lg:text-5xl'}`}>
         {display}
       </div>
 

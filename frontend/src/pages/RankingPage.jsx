@@ -1172,18 +1172,18 @@ export default function RankingPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <div className="mx-auto max-w-2xl p-3 md:p-6">
       {showInfo && <InfoModal onClose={() => setShowInfo(false)} mode={mode} />}
 
-      <div className="mb-6 flex items-start justify-between">
-        <div>
+      <div className="mb-4 md:mb-6 flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[3px] text-white/25 mb-1">Analysis</p>
           <h1 className="font-bebas text-4xl tracking-wider text-white">Team Rankings</h1>
           <p className="mt-1 text-sm text-white/30">
             Deterministic scoring based on squad composition and role balance
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {hasRankings && (() => {
             const hasP12   = data.rankings.some((r) => r.breakdown != null);
             const hasSquad = data.rankings.some((r) => r.squadBreakdown != null);
@@ -1268,7 +1268,7 @@ export default function RankingPage() {
       )}
 
       {amHost && (
-        <div className="mb-6 flex gap-3">
+        <div className="mb-6 flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button onClick={() => handleGenerate('playing12')} disabled={!auctionEnded || loadingP12 || loadingSquad}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-neon py-3 text-sm font-bold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
             {loadingP12 ? (

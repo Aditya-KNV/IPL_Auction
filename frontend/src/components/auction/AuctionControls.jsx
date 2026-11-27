@@ -37,14 +37,14 @@ const Btn = ({ onClick, disabled, variant, icon, children }) => {
     danger:  'border-bid-red/30 bg-gradient-to-b from-bid-red/[0.14] to-bid-red/[0.05] text-bid-red hover:from-bid-red/[0.22] hover:border-bid-red/45',
   };
   return (
-    <button type="button" onClick={onClick} disabled={disabled}
+    <button type="button" onClick={onClick} disabled={disabled} title={children}
       className={`inline-flex items-center gap-1.5 rounded-xl border
-                  px-4 py-2 text-xs font-bold tracking-wide
+                  min-h-[36px] px-3 sm:px-4 py-2 text-xs font-bold tracking-wide
                   transition-all duration-150 active:scale-[0.96]
                   disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
                   ${styles[variant] ?? styles.amber}`}>
       {icon}
-      {children}
+      <span className={variant === 'primary' ? '' : 'sr-only sm:not-sr-only'}>{children}</span>
     </button>
   );
 };
@@ -135,7 +135,7 @@ export default function AuctionControls({ session, onRefetch, onAccelerated }) {
   const notStarted = !session || status === 'waiting';
 
   return (
-    <div className="relative flex items-center gap-2 flex-wrap">
+    <div className="relative flex items-center gap-1.5 sm:gap-2">
       {notStarted && (
         <Btn onClick={() => action('start')} disabled={loading} variant="primary" icon={ICONS.play}>Start</Btn>
       )}

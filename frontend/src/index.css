@@ -303,6 +303,25 @@ body::after {
 /* ── Border dim ──────────────────────────────────────────────────────────── */
 .border-dim { border-color: rgb(var(--fg) / 0.06); }
 
+/* ── Phones and tablets ──────────────────────────────────────────────────── */
+/* dvh follows the mobile browser's collapsing address bar. */
+.app-height { height: 100vh; height: 100dvh; }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pb-tabbar { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 768px) { .pb-tabbar { padding-bottom: 0; } }
+
+@media (max-width: 767px) {
+  /* Smaller text makes iOS zoom the page when a field is focused. */
+  input:not([type="range"]), select, textarea { font-size: 16px !important; }
+}
+
+/* Short screens (phones held sideways): let the whole auction scroll. */
+@media (max-width: 1023px) and (max-height: 600px) {
+  .auction-shell { overflow-y: auto !important; }
+  .auction-grid { flex: none !important; overflow: visible !important; grid-template-rows: auto !important; }
+  .auction-stage, .auction-stage-scroll { overflow: visible !important; flex: none !important; }
+}
+
 /* ── Selection ───────────────────────────────────────────────────────────── */
 ::selection { background: rgb(var(--neon) / 0.18); color: rgb(var(--text-primary)); }
 
