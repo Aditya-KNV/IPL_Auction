@@ -110,7 +110,7 @@ export const useAuction = () => {
     } finally {
       setLoading(false);
     }
-  }, [startLocalTick]);
+  }, [startLocalTick, room?.code]);
 
   useEffect(() => {
     setLoading(true);

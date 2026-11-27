@@ -102,9 +102,13 @@ export default function RoomLobby() {
   const myAssignment = user ? teamAssignments[user.id] : null;
 
   useEffect(() => {
-    api.get('/teams').then(r => setAllTeams(r.data)).catch(() => {});
+    if (room?.code) {
+      api.get('/teams', { params: { roomCode: room.code } })
+        .then(r => setAllTeams(r.data))
+        .catch(() => {});
+    }
     api.get('/auction/session').then(r => setAuctionStatus(r.data?.status ?? null)).catch(() => {});
-  }, []);
+  }, [room?.code]);
 
   useEffect(() => {
     if (!socket) return;

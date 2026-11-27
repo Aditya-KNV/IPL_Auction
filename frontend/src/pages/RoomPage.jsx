@@ -169,7 +169,7 @@ function PlayersTab() {
       socket.off("auction:sold", load);
       socket.off("auction:unsold", load);
     };
-  }, [socket]);
+  }, [socket, role, status, auctionSetName, room?.code]);
 
   const filterGroups = role ? ROLE_FILTERS[role] || [] : [];
   const allFilterOptions = filterGroups.flatMap((g) => g.options);

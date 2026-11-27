@@ -7,6 +7,7 @@ const { getAssignedTeamIds } = require('../socket/roomStore');
 const acceleratedStore = require('../socket/acceleratedStore');
 const { getMinNextBid, normalizeBidAmount } = require('../utils/bidRules');
 const { canTeamBuyPlayer } = require('../utils/teamRules');
+const { ensureRoomData } = require('../services/roomData');
 
 const NEXT_PLAYER_DELAY_MS = 200;
 
@@ -25,7 +26,7 @@ const pickRandomPlayer = async (roomCode) => {
     if (poolIds.length === 0) return null; // pool exhausted → auction completes
 
     // Pick a random available player from the pool (Mongoose casts strings to ObjectId)
-    const available = await Player.find({ _id: { $in: poolIds }, status: 'available' }).lean();
+    const available = await Player.find({ roomCode, _id: { $in: poolIds }, status: 'available' }).lean();
     if (!available.length) return null;
     const pick = available[Math.floor(Math.random() * available.length)];
     return Player.findById(pick._id);
@@ -34,7 +35,7 @@ const pickRandomPlayer = async (roomCode) => {
   // ── Normal mode ────────────────────────────────────────────────────────────
   // Only look at 'available' players — unsold players are NOT re-queued.
   const [nextSet] = await Player.aggregate([
-    { $match: { status: 'available' } },
+    { $match: { roomCode, status: 'available' } },
     {
       $group: {
         _id: null,
@@ -46,7 +47,7 @@ const pickRandomPlayer = async (roomCode) => {
   if (nextSet?.minSetOrder == null) {
     // No sets left — try any remaining available player
     const fallbackResults = await Player.aggregate([
-      { $match: { status: 'available' } },
+      { $match: { roomCode, status: 'available' } },
       { $sample: { size: 1 } },
     ]);
     return fallbackResults[0] ? await Player.findById(fallbackResults[0]._id) : null;
@@ -55,6 +56,7 @@ const pickRandomPlayer = async (roomCode) => {
   const results = await Player.aggregate([
     {
       $match: {
+        roomCode,
         status: 'available',          // strictly available only — no re-queueing unsold
         auctionSetOrder: nextSet.minSetOrder,
       },
@@ -413,6 +415,7 @@ const startAuction = async (req, res) => {
     const roomCode = req.body.roomCode;
     if (!roomCode) return res.status(400).json({ message: 'roomCode required' });
 
+    await ensureRoomData(roomCode);
     let session = await AuctionSession.findOne({ roomCode });
     if (!session) session = new AuctionSession({ roomCode });
 
@@ -423,7 +426,7 @@ const startAuction = async (req, res) => {
     // Reset both 'in-auction' (crashed/stuck) and 'unsold' (from previous auction run)
     // so every player re-enters the fresh auction. 'sold' players are intentionally kept.
     await Player.updateMany(
-      { status: { $in: ['in-auction', 'unsold'] } },
+      { roomCode, status: { $in: ['in-auction', 'unsold'] } },
       { $set: { status: 'available' } }
     );
 
@@ -578,6 +581,7 @@ const openAcceleratedSelection = async (roomCode, maxPicks) => {
   // Only show unsold players that belong to THIS session, not globally
   const sessionUnsoldIds = (session.unsoldPlayers || []).map((id) => String(id));
   const players = await Player.find({
+    roomCode,
     $or: [
       { status: 'available' },
       ...(sessionUnsoldIds.length
@@ -603,7 +607,7 @@ const beginAcceleratedAuction = async (roomCode) => {
 
   if (poolIds.length === 0) return { error: 'No players were selected — add picks first' };
 
-  await Player.updateMany({ _id: { $in: poolIds }, status: 'unsold' }, { $set: { status: 'available' } });
+  await Player.updateMany({ roomCode, _id: { $in: poolIds }, status: 'unsold' }, { $set: { status: 'available' } });
 
   if (session.currentPlayer) {
     await Player.findByIdAndUpdate(session.currentPlayer, { status: 'available' });
@@ -626,7 +630,7 @@ const beginAcceleratedAuction = async (roomCode) => {
 
   await bringNextPlayer(session, io, roomCode);
 
-  const playerCount = await Player.countDocuments({ _id: { $in: poolIds }, status: { $in: ['available', 'in-auction'] } });
+  const playerCount = await Player.countDocuments({ roomCode, _id: { $in: poolIds }, status: { $in: ['available', 'in-auction'] } });
   return { playerCount };
 };
 
